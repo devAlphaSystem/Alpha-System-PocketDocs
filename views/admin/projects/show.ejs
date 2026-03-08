@@ -1,0 +1,55 @@
+<div class="project-detail">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
+    </div>
+    <div class="header-actions">
+      <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
+      <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+      <a href="/admin/projects/<%= project.id %>/members" class="btn btn-outline"><i class="ph ph-users-three"></i> Members</a>
+    </div>
+  </div>
+
+  <div class="page-header sub-header">
+    <h2>Versions</h2>
+    <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
+      <i class="ph ph-plus"></i> New Version
+    </a>
+  </div>
+
+  <% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+  <% } %>
+
+  <% if (versions.length === 0) { %>
+  <div class="empty-state small">
+    <div class="empty-icon"><i class="ph ph-git-branch"></i></div>
+    <h3>No versions yet</h3>
+    <p>Create your first version to start writing docs.</p>
+    <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary"><i class="ph ph-plus"></i> Create Version</a>
+  </div>
+  <% } else { %>
+  <div class="versions-list">
+    <% for (const ver of versions) { %>
+    <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" tabindex="0" aria-label="Open version <%= ver.label %>">
+      <div class="version-card-main">
+        <div class="version-info">
+          <h3><%= ver.label %></h3>
+          <span class="version-slug">/<%= ver.slug %></span>
+          <% if (ver.is_public) { %>
+          <span class="badge badge-public">Public</span>
+          <% } else { %>
+          <span class="badge badge-draft">Draft</span>
+          <% } %>
+        </div>
+        <div class="version-actions">
+          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-outline"><i class="ph ph-files"></i> Pages</a>
+          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" class="btn btn-outline"><i class="ph ph-clock-counter-clockwise"></i> Changelog</a>
+          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+  <% } %>
+</div>

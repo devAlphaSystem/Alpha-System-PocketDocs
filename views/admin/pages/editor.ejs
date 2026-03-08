@@ -1,0 +1,76 @@
+<div class="editor-page">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages" class="back-link"><i class="ph ph-arrow-left"></i> Pages</a>
+    </div>
+    <div class="header-actions">
+      <% if (typeof page !== 'undefined' && page) { %>
+      <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+      <% } %>
+      <button type="submit" form="pageForm" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save</button>
+    </div>
+  </div>
+
+  <div class="page-header sub-header">
+    <h2><%= typeof page !== 'undefined' && page ? 'Edit: ' + page.title : 'New Page' %></h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+  <% } %>
+
+  <form id="pageForm" method="POST" action="<%= typeof page !== 'undefined' && page ? '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/' + page.id : '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/new' %>" class="editor-form" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="editor-meta">
+      <div class="form-row">
+        <div class="form-group flex-2">
+          <label for="title">Title <span class="required">*</span></label>
+          <input type="text" id="title" name="title" placeholder="Getting Started" required maxlength="200" value="<%= typeof page !== 'undefined' && page ? page.title : (typeof formValues !== 'undefined' && formValues && formValues.title ? formValues.title : '') %>">
+        </div>
+        <div class="form-group flex-1">
+          <label for="slug">Slug</label>
+          <input type="text" id="slug" name="slug" placeholder="getting-started" maxlength="200" value="<%= typeof page !== 'undefined' && page ? page.slug : (typeof formValues !== 'undefined' && formValues && formValues.slug ? formValues.slug : '') %>">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="icon">Icon (Phosphor)</label>
+          <input type="text" id="icon" name="icon" placeholder="book-open" maxlength="50" value="<%= typeof page !== 'undefined' && page ? (page.icon || '') : (typeof formValues !== 'undefined' && formValues && formValues.icon ? formValues.icon : '') %>">
+        </div>
+        <div class="form-group">
+          <label for="parent">Parent page</label>
+          <select id="parent" name="parent">
+            <option value="">None (top-level)</option>
+            <% if (typeof pages !== 'undefined') { %>
+              <% for (const p of pages) { %>
+                <% if (typeof page === 'undefined' || !page || p.id !== page.id) { %>
+                <option value="<%= p.id %>"<%= (typeof page !== 'undefined' && page && page.parent === p.id) ? ' selected' : '' %>><%= p.title %></option>
+                <% } %>
+              <% } %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="editor-content">
+      <textarea id="content" name="content"><%= typeof page !== 'undefined' && page ? page.content : (typeof formValues !== 'undefined' && formValues && formValues.content ? formValues.content : '') %></textarea>
+    </div>
+  </form>
+</div>
+
+<script>
+  var titleInput = document.getElementById('title');
+  var slugInput = document.getElementById('slug');
+  var autoSlug = !slugInput.value;
+  slugInput.addEventListener('input', function() { autoSlug = false; });
+  titleInput.addEventListener('input', function() {
+    if (autoSlug) {
+      slugInput.value = titleInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+  });
+</script>

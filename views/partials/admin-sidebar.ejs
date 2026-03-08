@@ -1,0 +1,45 @@
+<div class="sidebar-brand">
+  <a href="/admin" class="sidebar-logo">
+    <% const sidebarSiteName = typeof siteName !== 'undefined' ? siteName : 'PocketDocs'; %>
+    <% if (sidebarSiteName === 'PocketDocs') { %>
+    <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+    <% } else { %>
+    <span><%= sidebarSiteName %></span>
+    <% } %>
+  </a>
+</div>
+<nav class="sidebar-nav">
+  <a href="/admin/projects" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/projects') ? ' active' : '' %>">
+    <i class="ph ph-folders"></i>
+    <span>Projects</span>
+  </a>
+  <% if (user && user.role === 'admin') { %>
+  <div class="sidebar-section-label">Administration</div>
+  <a href="/admin/settings" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
+    <i class="ph ph-gear"></i>
+    <span>Settings</span>
+  </a>
+  <% } %>
+</nav>
+<div class="sidebar-footer">
+  <% const sidebarUserLabel = user ? (user.name || user.email) : 'Guest'; %>
+  <div class="sidebar-footer-card">
+    <div class="sidebar-user">
+      <div class="sidebar-user-avatar">
+        <%= sidebarUserLabel.charAt(0).toUpperCase() %>
+      </div>
+      <div class="sidebar-user-info">
+        <span class="sidebar-user-name"><%= sidebarUserLabel %></span>
+        <span class="sidebar-user-role"><%= user ? user.role : 'visitor' %></span>
+      </div>
+    </div>
+
+    <form action="/auth/logout" method="POST" class="sidebar-logout-form" id="logoutForm">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <button type="submit" class="btn btn-outline sidebar-logout-btn" title="Sign out">
+        <i class="ph ph-sign-out"></i>
+        <span>Sign Out</span>
+      </button>
+    </form>
+  </div>
+</div>

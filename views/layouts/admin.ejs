@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      try {
+        var key = 'pd_theme';
+        var theme = localStorage.getItem(key);
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <title><%= title %> | <%= siteName %></title>
+  <link rel="icon" type="image/png" href="/img/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <% if (typeof extraCss !== 'undefined' && extraCss) { %>
+    <% if (Array.isArray(extraCss)) { extraCss.forEach(function(href) { %><link rel="stylesheet" href="<%= href %>">
+    <% }); } else { %><link rel="stylesheet" href="<%= extraCss %>"><% } %>
+  <% } %>
+</head>
+<body class="admin-body">
+  <aside class="admin-sidebar" id="adminSidebar">
+    <%- include('../partials/admin-sidebar', { user: typeof currentUser !== 'undefined' ? currentUser : user, currentPath: typeof currentPath !== 'undefined' ? currentPath : '' }) %>
+  </aside>
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <%- include('../partials/admin-header', {
+        user: typeof currentUser !== 'undefined' ? currentUser : user,
+        title: title,
+        headerSubtitle: typeof headerSubtitle !== 'undefined' ? headerSubtitle : '',
+        headerBadge: typeof headerBadge !== 'undefined' ? headerBadge : null
+      }) %>
+    </header>
+    <main class="admin-content">
+      <%- body %>
+    </main>
+  </div>
+  <%- include('../partials/toast') %>
+  <script src="/js/theme-toggle.js"></script>
+  <script src="/js/admin.js"></script>
+  <% if (typeof extraJs !== 'undefined' && extraJs) { %>
+    <% if (Array.isArray(extraJs)) { extraJs.forEach(function(src) { %><script src="<%= src %>"></script>
+    <% }); } else { %><script src="<%= extraJs %>"></script><% } %>
+  <% } %>
+</body>
+</html>

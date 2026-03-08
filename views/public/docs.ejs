@@ -1,0 +1,52 @@
+<div class="docs-layout">
+  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page }) %>
+
+  <main class="docs-main">
+    <article class="docs-article">
+      <div class="docs-article-header">
+        <% if (page.icon) { %><i class="ph ph-<%= page.icon %> docs-page-icon"></i><% } %>
+        <h1><%= page.title %></h1>
+      </div>
+      <div class="docs-content prose">
+        <%- contentHtml %>
+      </div>
+      <% if (typeof prevPage !== 'undefined' || typeof nextPage !== 'undefined') { %>
+      <nav class="docs-pagination">
+        <% if (typeof prevPage !== 'undefined' && prevPage) { %>
+        <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %>" class="docs-pagination-link prev">
+          <i class="ph ph-arrow-left"></i>
+          <div>
+            <span class="docs-pagination-label">Previous</span>
+            <span class="docs-pagination-title"><%= prevPage.title %></span>
+          </div>
+        </a>
+        <% } else { %><div></div><% } %>
+        <% if (typeof nextPage !== 'undefined' && nextPage) { %>
+        <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %>" class="docs-pagination-link next">
+          <div>
+            <span class="docs-pagination-label">Next</span>
+            <span class="docs-pagination-title"><%= nextPage.title %></span>
+          </div>
+          <i class="ph ph-arrow-right"></i>
+        </a>
+        <% } %>
+      </nav>
+      <% } %>
+    </article>
+
+    <% if (typeof headings !== 'undefined' && headings.length > 0) { %>
+    <aside class="docs-toc">
+      <h4>On this page</h4>
+      <ul>
+        <% for (const h of headings) { %>
+        <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
+        <% } %>
+      </ul>
+    </aside>
+    <% } %>
+  </main>
+</div>
+
+<script src="/js/search.js"></script>
+<script src="/js/version-switcher.js"></script>
+<script src="/js/code-copy.js"></script>

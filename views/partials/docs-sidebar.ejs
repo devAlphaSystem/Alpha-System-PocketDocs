@@ -1,0 +1,40 @@
+<nav class="docs-sidebar" id="docsSidebar">
+  <div class="docs-sidebar-header">
+    <% if (typeof version !== 'undefined' && version) { %>
+    <%- include('./version-switcher', { project: project, version: version, versions: versions }) %>
+    <% } %>
+  </div>
+  <div class="docs-sidebar-search">
+    <div class="search-input-wrap">
+      <i class="ph ph-magnifying-glass"></i>
+      <input type="search" id="docsSearch" placeholder="Search docs..." autocomplete="off" data-project="<%= project.slug %>" data-version="<%= version ? version.id : '' %>">
+    </div>
+    <div class="search-results" id="searchResults"></div>
+  </div>
+  <ul class="docs-nav" id="docsNav">
+    <% function renderTree(nodes, depth) { %>
+      <% for (const node of nodes) { %>
+        <li class="docs-nav-item<%= (typeof page !== 'undefined' && page && page.id === node.id) ? ' active' : '' %><%= node.children && node.children.length > 0 ? ' has-children' : '' %>" data-depth="<%= depth %>">
+          <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %>" class="docs-nav-link">
+            <% if (node.icon) { %><i class="ph ph-<%= node.icon %>"></i><% } else { %><i class="ph ph-file-text"></i><% } %>
+            <span><%= node.title %></span>
+          </a>
+          <% if (node.children && node.children.length > 0) { %>
+            <ul class="docs-nav-children">
+              <% renderTree(node.children, depth + 1); %>
+            </ul>
+          <% } %>
+        </li>
+      <% } %>
+    <% } %>
+    <% if (typeof pageTree !== 'undefined') { renderTree(pageTree, 0); } %>
+  </ul>
+  <% if (typeof version !== 'undefined' && version) { %>
+  <div class="docs-sidebar-footer">
+    <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="docs-nav-link changelog-link">
+      <i class="ph ph-clock-counter-clockwise"></i>
+      <span>Changelog</span>
+    </a>
+  </div>
+  <% } %>
+</nav>

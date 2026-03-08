@@ -1,0 +1,51 @@
+<div class="dashboard">
+  <div class="page-header">
+    <h1>Dashboard</h1>
+    <a href="/admin/projects/create" class="btn btn-primary">
+      <i class="ph ph-plus"></i>
+      New Project
+    </a>
+  </div>
+
+  <% if (projects.length === 0) { %>
+  <div class="empty-state">
+    <div class="empty-icon">
+      <i class="ph ph-book-open-text"></i>
+    </div>
+    <h2>No projects yet</h2>
+    <p>Create your first documentation project to get started.</p>
+    <a href="/admin/projects/create" class="btn btn-primary">
+      <i class="ph ph-plus"></i>
+      Create Project
+    </a>
+  </div>
+  <% } else { %>
+  <div class="project-grid">
+    <% for (const proj of projects) { %>
+    <a href="/admin/projects/<%= proj.id %>" class="project-card">
+      <div class="project-card-header">
+        <% if (proj.logo) { %>
+        <img src="<%= sitePbUrl %>/api/files/projects/<%= proj.id %>/<%= proj.logo %>" alt="" class="project-logo">
+        <% } else { %>
+        <div class="project-logo-placeholder">
+          <%= proj.name.charAt(0).toUpperCase() %>
+        </div>
+        <% } %>
+        <div class="project-meta">
+          <span class="badge badge-<%= proj.visibility %>"><%= proj.visibility %></span>
+        </div>
+      </div>
+      <div class="project-card-body">
+        <h3><%= proj.name %></h3>
+        <% if (proj.description) { %>
+        <p><%= proj.description %></p>
+        <% } %>
+      </div>
+      <div class="project-card-footer">
+        <span class="project-slug">/<%= proj.slug %></span>
+      </div>
+    </a>
+    <% } %>
+  </div>
+  <% } %>
+</div>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      try {
+        var key = 'pd_theme';
+        var theme = localStorage.getItem(key);
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <title><%= mode === 'register' ? 'Create Account' : 'Sign In' %> | <%= siteName %></title>
+  <link rel="icon" type="image/png" href="/img/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="auth-body">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <a href="/" class="auth-brand">
+          <% if (siteName === 'PocketDocs') { %>
+          <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+          <% } else { %>
+          <span><%= siteName %></span>
+          <% } %>
+        </a>
+        <h1><%= mode === 'register' ? 'Create your account' : 'Welcome back' %></h1>
+        <p><%= mode === 'register' ? 'Get started with your documentation' : 'Sign in to manage your docs' %></p>
+      </div>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-error">
+        <i class="ph ph-warning-circle"></i>
+        <span><%= error %></span>
+      </div>
+      <% } %>
+
+      <form method="POST" action="<%= mode === 'register' ? '/auth/register' : '/auth/login' %>" class="auth-form" novalidate>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+        <% if (mode === 'register') { %>
+        <div class="form-group">
+          <label for="name">Full name</label>
+          <div class="input-wrap">
+            <i class="ph ph-user"></i>
+            <input type="text" id="name" name="name" placeholder="Jane Doe" required autocomplete="name" value="<%= typeof body !== 'undefined' && body.name ? body.name : '' %>">
+          </div>
+        </div>
+        <% } %>
+
+        <div class="form-group">
+          <label for="email">Email address</label>
+          <div class="input-wrap">
+            <i class="ph ph-envelope"></i>
+            <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="<%= typeof body !== 'undefined' && body.email ? body.email : '' %>">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="input-wrap">
+            <i class="ph ph-lock"></i>
+            <input type="password" id="password" name="password" placeholder="<%= mode === 'register' ? 'Min 8 characters' : 'Your password' %>" required autocomplete="<%= mode === 'register' ? 'new-password' : 'current-password' %>" minlength="8">
+            <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+              <i class="ph ph-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <% if (mode === 'register') { %>
+        <div class="form-group">
+          <label for="passwordConfirm">Confirm password</label>
+          <div class="input-wrap">
+            <i class="ph ph-lock"></i>
+            <input type="password" id="passwordConfirm" name="passwordConfirm" placeholder="Repeat your password" required autocomplete="new-password" minlength="8">
+          </div>
+        </div>
+        <% } %>
+
+        <button type="submit" class="btn btn-primary btn-full">
+          <% if (mode === 'register') { %>
+          <i class="ph ph-user-plus"></i> Create Account
+          <% } else { %>
+          <i class="ph ph-sign-in"></i> Sign In
+          <% } %>
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <% if (mode === 'register') { %>
+        <p>Already have an account? <a href="/auth/login">Sign in</a></p>
+        <% } else { %>
+        <p>Don't have an account? <a href="/auth/register">Create one</a></p>
+        <% } %>
+      </div>
+    </div>
+  </div>
+  <script src="/js/theme-toggle.js"></script>
+  <script>
+    document.querySelectorAll('.password-toggle').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var input = btn.parentElement.querySelector('input');
+        var icon = btn.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.className = 'ph ph-eye-slash';
+        } else {
+          input.type = 'password';
+          icon.className = 'ph ph-eye';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

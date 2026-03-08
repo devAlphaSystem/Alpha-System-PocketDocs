@@ -1,0 +1,23 @@
+<div class="header-left">
+  <button class="sidebar-toggle btn btn-ghost icon-btn" id="sidebarToggle" aria-label="Toggle sidebar">
+    <i class="ph ph-list"></i>
+  </button>
+  <div class="header-title-wrap">
+    <h1 class="header-title"><%= title %></h1>
+    <% if (headerSubtitle || (headerBadge && headerBadge.text)) { %>
+    <div class="header-meta">
+      <% if (headerSubtitle) { %>
+      <span class="header-subtitle"><%= headerSubtitle %></span>
+      <% } %>
+      <% if (headerBadge && headerBadge.text) { %>
+      <span class="badge badge-<%= headerBadge.variant || 'draft' %>"><%= headerBadge.text %></span>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+</div>
+<div class="topbar-right">
+  <button class="theme-toggle-btn btn btn-ghost icon-btn" id="themeToggle" aria-label="Toggle theme">
+    <i class="ph ph-moon"></i>
+  </button>
+</div>

@@ -1,0 +1,54 @@
+<% if (typeof statusCode !== 'undefined') { %>
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    (function () {
+      try {
+        var key = 'pd_theme';
+        var theme = localStorage.getItem(key);
+        if (theme !== 'dark' && theme !== 'light') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (_e) {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+  <title>Error <%= statusCode %> | <%= siteName %></title>
+  <link rel="icon" type="image/png" href="/img/logo.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  <link rel="stylesheet" href="/css/design-system.css">
+  <link rel="stylesheet" href="/css/public.css">
+</head>
+<body class="public-body">
+  <main class="error-page">
+    <div class="error-container">
+      <div class="error-icon">
+        <% if (statusCode === 404) { %>
+        <i class="ph ph-magnifying-glass"></i>
+        <% } else if (statusCode === 403) { %>
+        <i class="ph ph-lock"></i>
+        <% } else { %>
+        <i class="ph ph-warning-circle"></i>
+        <% } %>
+      </div>
+      <h1 class="error-code"><%= statusCode %></h1>
+      <p class="error-message"><%= message %></p>
+      <div class="error-actions">
+        <a href="/" class="btn btn-primary">Go Home</a>
+        <button onclick="history.back()" class="btn btn-outline">Go Back</button>
+      </div>
+      <% if (typeof requestId !== 'undefined' && requestId) { %>
+      <p class="error-request-id">Request ID: <%= requestId %></p>
+      <% } %>
+    </div>
+  </main>
+  <script src="/js/theme-toggle.js"></script>
+</body>
+</html>
+<% } %>

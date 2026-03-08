@@ -1,0 +1,28 @@
+<header class="public-header">
+  <a href="/" class="header-brand">
+    <% const _ss = typeof siteSettings !== 'undefined' ? siteSettings : null; %>
+    <% if (_ss) { %>
+    <span><%= _ss.headerBrand %></span>
+    <% } else if (siteName === 'PocketDocs') { %>
+    <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+    <% } else { %>
+    <span><%= siteName %></span>
+    <% } %>
+  </a>
+  <% if (typeof project !== 'undefined' && project) { %>
+  <ul class="header-breadcrumb">
+    <li><a href="/">Home</a></li>
+    <li><a href="/docs/<%= project.slug %>"><%= project.name %></a></li>
+  </ul>
+  <% } %>
+  <div class="header-right">
+    <button class="theme-toggle-btn btn btn-ghost public-theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <i class="ph ph-moon"></i>
+    </button>
+    <% if (user) { %>
+    <a href="/admin" class="btn btn-outline">Dashboard</a>
+    <% } else { %>
+    <a href="/auth/login" class="btn btn-outline">Sign In</a>
+    <% } %>
+  </div>
+</header>

@@ -1,0 +1,57 @@
+<div class="form-page">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
+    </div>
+  </div>
+
+  <div class="page-header sub-header">
+    <h2>Site Customization</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/settings" class="card form-card" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="form-section">
+      <h3>Public Header</h3>
+      <p class="form-section-desc">The brand text shown in the public navigation header.</p>
+
+      <div class="form-group">
+        <label for="headerBrand">Header Brand <span class="required">*</span></label>
+        <input type="text" id="headerBrand" name="headerBrand" value="<%= settings.headerBrand %>" required maxlength="100" placeholder="e.g. Acme Docs">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3>Home Page Hero</h3>
+      <p class="form-section-desc">The hero section on the landing page. Word 1 is rendered in light weight, Word 2 in bold.</p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="heroWord1">Word 1 <span class="required">*</span></label>
+          <input type="text" id="heroWord1" name="heroWord1" value="<%= settings.heroWord1 %>" required maxlength="50" placeholder="e.g. Acme">
+        </div>
+        <div class="form-group">
+          <label for="heroWord2">Word 2 <span class="required">*</span></label>
+          <input type="text" id="heroWord2" name="heroWord2" value="<%= settings.heroWord2 %>" required maxlength="50" placeholder="e.g. Docs">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="heroSubtitle">Subtitle</label>
+        <input type="text" id="heroSubtitle" name="heroSubtitle" value="<%= settings.heroSubtitle %>" maxlength="300" placeholder="e.g. Documentation for your team.">
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Settings</button>
+    </div>
+  </form>
+</div>

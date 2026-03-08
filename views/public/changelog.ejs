@@ -1,0 +1,33 @@
+<div class="docs-layout">
+  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page: null }) %>
+
+  <main class="docs-main">
+    <article class="docs-article">
+      <div class="docs-article-header">
+        <i class="ph ph-clock-counter-clockwise docs-page-icon"></i>
+        <h1>Changelog &mdash; <%= version.label %></h1>
+      </div>
+      <% if (typeof changelog !== 'undefined' && changelog) { %>
+      <% if (changelog.published_at) { %>
+      <p class="changelog-date">
+        <i class="ph ph-calendar"></i>
+        <%= new Date(changelog.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+      </p>
+      <% } %>
+      <div class="docs-content prose">
+        <%- contentHtml %>
+      </div>
+      <% } else { %>
+      <div class="empty-state small">
+        <div class="empty-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
+        <h3>No changelog yet</h3>
+        <p>No changelog has been published for this version.</p>
+      </div>
+      <% } %>
+    </article>
+  </main>
+</div>
+
+<script src="/js/search.js"></script>
+<script src="/js/version-switcher.js"></script>
+<script src="/js/code-copy.js"></script>

@@ -1,0 +1,11 @@
+<div class="version-switcher">
+  <label for="versionSelect" class="sr-only">Version</label>
+  <div class="select-wrap">
+    <select id="versionSelect" class="version-select" data-project="<%= project.slug %>">
+      <% for (const v of versions) { %>
+        <option value="<%= v.slug %>"<%= v.id === version.id ? ' selected' : '' %>><%= v.label %></option>
+      <% } %>
+    </select>
+    <i class="ph ph-caret-down select-icon"></i>
+  </div>
+</div>

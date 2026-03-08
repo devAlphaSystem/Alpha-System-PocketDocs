@@ -1,0 +1,87 @@
+<div class="members-page">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= project.name %></a>
+    </div>
+  </div>
+
+  <div class="page-header sub-header">
+    <div>
+      <h2>Members</h2>
+    </div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+  <% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+  <% } %>
+
+  <div class="card">
+    <div class="card-header">
+      <h3>Add Member</h3>
+    </div>
+    <form method="POST" action="/admin/projects/<%= project.id %>/members" class="card-body inline-add-form" novalidate>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="form-group">
+        <label for="email" class="sr-only">Email</label>
+        <input type="email" id="email" name="email" placeholder="user@example.com" required>
+      </div>
+      <div class="form-group">
+        <label for="role" class="sr-only">Role</label>
+        <select id="role" name="role">
+          <option value="editor">Editor</option>
+          <option value="viewer">Viewer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary"><i class="ph ph-user-plus"></i> Add</button>
+    </form>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Role</th>
+          <th>Joined</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const member of members) { %>
+        <tr>
+          <td>
+            <div class="table-user-cell">
+              <div class="table-avatar-placeholder"><%= member.expand && member.expand.user ? member.expand.user.name.charAt(0).toUpperCase() : '?' %></div>
+              <div>
+                <strong><%= member.expand && member.expand.user ? member.expand.user.name : 'Unknown' %></strong>
+                <span class="text-muted"><%= member.expand && member.expand.user ? member.expand.user.email : '' %></span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <form method="POST" action="/admin/projects/<%= project.id %>/members/<%= member.id %>/role" class="inline-form">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <select name="role" onchange="this.form.submit()" class="select-sm">
+                <option value="admin"<%= member.role === 'admin' ? ' selected' : '' %>>Admin</option>
+                <option value="editor"<%= member.role === 'editor' ? ' selected' : '' %>>Editor</option>
+                <option value="viewer"<%= member.role === 'viewer' ? ' selected' : '' %>>Viewer</option>
+              </select>
+            </form>
+          </td>
+          <td><%= new Date(member.created).toLocaleDateString() %></td>
+          <td>
+            <form method="POST" action="/admin/projects/<%= project.id %>/members/<%= member.id %>/delete" class="inline-form" onsubmit="return confirm('Remove this member?')">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn btn-ghost btn-danger-text" title="Remove"><i class="ph ph-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>

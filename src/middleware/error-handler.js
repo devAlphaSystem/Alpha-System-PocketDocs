@@ -1,0 +1,61 @@
+import { AppError } from "../errors/app-error.js";
+import { buildErrorEnvelope, logError } from "../errors/handler.js";
+import { AuthenticationError } from "../errors/taxonomy.js";
+import { env } from "../config/env.js";
+
+export function errorHandlerMiddleware(err, req, res, _next) {
+  logError(err, req.requestId, req.originalUrl);
+
+  if (res.headersSent) {
+    return;
+  }
+
+  const isHtml = req.accepts("html") && !req.xhr && !req.path.startsWith("/api/");
+
+  if (isHtml && err instanceof AuthenticationError) {
+    return res.redirect("/auth/login");
+  }
+
+  if (err instanceof AppError) {
+    const { statusCode, body } = buildErrorEnvelope(err, req.requestId);
+
+    if (req.accepts("html") && !req.xhr && !req.path.startsWith("/api/")) {
+      return res.status(statusCode).render("error", {
+        layout: false,
+        title: "Error",
+        statusCode,
+        message: body.error.message,
+        code: body.error.code,
+        requestId: req.requestId,
+        user: req.user || null,
+        siteName: env.SITE_NAME,
+      });
+    }
+
+    return res.status(statusCode).json(body);
+  }
+
+  const { statusCode, body } = buildErrorEnvelope(err, req.requestId);
+
+  if (req.accepts("html") && !req.xhr && !req.path.startsWith("/api/")) {
+    return res.status(statusCode).render("error", {
+      layout: false,
+      title: "Error",
+      statusCode,
+      message: "An unexpected error occurred. Please try again later.",
+      code: "INTERNAL_ERROR",
+      requestId: req.requestId,
+      user: req.user || null,
+      siteName: env.SITE_NAME,
+    });
+  }
+
+  res.status(statusCode).json(body);
+}
+
+export async function notFoundMiddleware(req, _res, next) {
+  const { NotFoundError } = await import("../errors/taxonomy.js");
+  const err = new NotFoundError("Page");
+  err.requestedUrl = `${req.method} ${req.originalUrl}`;
+  next(err);
+}

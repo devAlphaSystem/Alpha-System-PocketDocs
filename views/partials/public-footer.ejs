@@ -1,0 +1,12 @@
+<footer class="public-footer">
+  <div class="container footer-inner">
+    <p>
+      Powered by
+      <% if (siteName === 'PocketDocs') { %>
+      <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+      <% } else { %>
+      <strong><%= siteName %></strong>
+      <% } %>
+    </p>
+  </div>
+</footer>

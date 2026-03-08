@@ -1,0 +1,52 @@
+<div class="form-page">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= project.name %></a>
+    </div>
+  </div>
+
+  <div class="page-header sub-header">
+    <h2>Create Version</h2>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/projects/<%= project.id %>/versions" class="card form-card" novalidate>
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+    <div class="form-group">
+      <label for="label">Version label <span class="required">*</span></label>
+      <input type="text" id="label" name="label" placeholder="v2.0, Beta, Latest..." required maxlength="50" value="<%= typeof formValues !== 'undefined' && formValues && formValues.label ? formValues.label : '' %>">
+      <p class="form-hint">Freeform label: e.g. "v1.0", "2024.1", "Beta"</p>
+    </div>
+
+    <div class="form-group">
+      <label for="is_public">Visibility <span class="required">*</span></label>
+      <select id="is_public" name="is_public">
+        <option value="false"<%= typeof formValues === 'undefined' || !formValues || formValues.is_public !== 'true' ? ' selected' : '' %>>Draft</option>
+        <option value="true"<%= typeof formValues !== 'undefined' && formValues && formValues.is_public === 'true' ? ' selected' : '' %>>Public</option>
+      </select>
+      <p class="form-hint">Public versions appear on the docs website. Draft versions stay hidden.</p>
+    </div>
+
+    <% if (existingVersions && existingVersions.length > 0) { %>
+    <div class="form-group">
+      <label for="clone_from">Clone from existing version</label>
+      <select id="clone_from" name="clone_from">
+        <option value="">Start fresh (empty)</option>
+        <% for (const v of existingVersions) { %>
+        <option value="<%= v.id %>"<%= typeof formValues !== 'undefined' && formValues && formValues.clone_from === v.id ? ' selected' : '' %>><%= v.label %></option>
+        <% } %>
+      </select>
+      <p class="form-hint">Clone all pages from another version to get a head start.</p>
+    </div>
+    <% } %>
+
+    <div class="form-actions">
+      <a href="/admin/projects/<%= project.id %>" class="btn btn-outline">Cancel</a>
+      <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Create Version</button>
+    </div>
+  </form>
+</div>

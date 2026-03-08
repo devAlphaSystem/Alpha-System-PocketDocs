@@ -1,0 +1,43 @@
+<div class="docs-layout">
+  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page: null }) %>
+
+  <main class="docs-main">
+    <article class="docs-article">
+      <div class="docs-article-header">
+        <i class="ph ph-magnifying-glass docs-page-icon"></i>
+        <h1>Search Results</h1>
+      </div>
+
+      <div class="search-page-input">
+        <form method="GET" action="/docs/<%= project.slug %>/<%= version.slug %>/search">
+          <div class="search-input-wrap large">
+            <i class="ph ph-magnifying-glass"></i>
+            <input type="search" name="q" value="<%= typeof query !== 'undefined' ? query : '' %>" placeholder="Search documentation..." autofocus>
+          </div>
+        </form>
+      </div>
+
+      <% if (typeof results !== 'undefined' && results.length > 0) { %>
+      <p class="search-summary"><%= results.length %> result<%= results.length !== 1 ? 's' : '' %> for "<%= query %>"</p>
+      <div class="search-results-list">
+        <% for (const result of results) { %>
+        <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= result.slug %>" class="search-result-card">
+          <h3><%= result.title %></h3>
+          <% if (result.snippet) { %><p><%- result.snippet %></p><% } %>
+          <span class="search-result-slug">/<%= result.slug %></span>
+        </a>
+        <% } %>
+      </div>
+      <% } else if (typeof query !== 'undefined' && query) { %>
+      <div class="empty-state small">
+        <div class="empty-icon"><i class="ph ph-magnifying-glass"></i></div>
+        <h3>No results found</h3>
+        <p>Try a different search term.</p>
+      </div>
+      <% } %>
+    </article>
+  </main>
+</div>
+
+<script src="/js/search.js"></script>
+<script src="/js/version-switcher.js"></script>
