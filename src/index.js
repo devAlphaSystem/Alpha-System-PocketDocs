@@ -1,5 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { createRequire } from "node:module";
 import express from "express";
 import compression from "compression";
 import cookieParser from "cookie-parser";
@@ -32,6 +33,8 @@ import { checkOwnerExists, isOwnerSetupComplete } from "./modules/setup/service.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
+const { updated: assetVersion } = require("../package.json");
 
 const app = express();
 
@@ -119,6 +122,14 @@ app.use((req, res, next) => {
   res.locals.siteName = env.SITE_NAME;
   res.locals.siteUrl = env.SITE_URL;
   res.locals.sitePbUrl = env.POCKETBASE_URL;
+  res.locals.assetVersion = assetVersion;
+  res.locals.assetUrl = (path) => {
+    if (typeof path !== "string" || !path.startsWith("/")) {
+      return path;
+    }
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}v=${encodeURIComponent(assetVersion)}`;
+  };
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();

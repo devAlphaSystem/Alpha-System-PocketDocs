@@ -22,8 +22,8 @@
   <link rel="icon" type="image/png" href="/img/logo.png">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
-  <link rel="stylesheet" href="/css/design-system.css">
-  <link rel="stylesheet" href="/css/public.css">
+  <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
+  <link rel="stylesheet" href="<%= assetUrl('/css/public.css') %>">
 </head>
 <body class="public-body">
   <main class="error-page">
@@ -48,7 +48,7 @@
       <% } %>
     </div>
   </main>
-  <script src="/js/theme-toggle.js"></script>
+  <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
 </body>
 </html>
 <% } %>

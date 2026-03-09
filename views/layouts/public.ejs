@@ -29,8 +29,8 @@
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css" media="(prefers-color-scheme: light)">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github-dark.min.css" media="(prefers-color-scheme: dark)">
-  <link rel="stylesheet" href="/css/design-system.css">
-  <link rel="stylesheet" href="/css/public.css">
+  <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
+  <link rel="stylesheet" href="<%= assetUrl('/css/public.css') %>">
 </head>
 <body class="public-body">
   <%- include('../partials/public-header', { siteName: siteName, siteUrl: typeof siteUrl !== 'undefined' ? siteUrl : '/', user: typeof currentUser !== 'undefined' ? currentUser : null, project: typeof project !== 'undefined' ? project : null }) %>
@@ -38,9 +38,9 @@
     <%- body %>
   </main>
   <%- include('../partials/public-footer', { siteName: siteName }) %>
-  <script src="/js/theme-toggle.js"></script>
-  <script src="/js/custom-select.js"></script>
-  <script src="/js/swipe-sidebar.js"></script>
-  <% if (typeof extraJs !== 'undefined' && extraJs) { %><script src="<%= extraJs %>"></script><% } %>
+  <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
+  <script src="<%= assetUrl('/js/custom-select.js') %>"></script>
+  <script src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
+  <% if (typeof extraJs !== 'undefined' && extraJs) { %><script src="<%= assetUrl(extraJs) %>"></script><% } %>
 </body>
 </html>
