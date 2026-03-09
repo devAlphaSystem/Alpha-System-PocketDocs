@@ -1,17 +1,4 @@
 (function () {
-  var sidebar = document.querySelector(".admin-sidebar");
-  var toggle = document.querySelector(".sidebar-toggle");
-  if (toggle && sidebar) {
-    toggle.addEventListener("click", function () {
-      sidebar.classList.toggle("open");
-    });
-    document.addEventListener("click", function (e) {
-      if (sidebar.classList.contains("open") && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
-        sidebar.classList.remove("open");
-      }
-    });
-  }
-
   var container = document.getElementById("toastContainer");
   window.showToast = function (message, type) {
     if (!container) return;

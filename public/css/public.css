@@ -385,48 +385,6 @@
 .version-switcher {
   margin-bottom: var(--space-2);
 }
-.select-wrap {
-  position: relative;
-}
-.version-select {
-  appearance: none;
-  -moz-appearance: none;
-  -webkit-appearance: none;
-  width: 100%;
-  padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
-  background: var(--surface-0);
-  background-image: none !important;
-  background-repeat: no-repeat;
-  border: 1px solid var(--surface-border-strong);
-  border-radius: var(--radius-md);
-  font-family: var(--font-sans);
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-primary);
-  cursor: pointer;
-  outline: none;
-  transition:
-    border-color var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-.version-select:hover {
-  border-color: var(--color-primary);
-}
-.version-select:focus {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-focus);
-}
-.version-select::-ms-expand {
-  display: none;
-}
-.select-icon {
-  position: absolute;
-  right: var(--space-3);
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--text-tertiary);
-}
 
 .docs-main {
   flex: 1;

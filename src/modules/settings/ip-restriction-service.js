@@ -15,10 +15,25 @@ const DEFAULTS = Object.freeze({
 
 let cached = null;
 
+function parseAllowedIps(value) {
+  return String(value || "")
+    .split(/[\r\n,]+/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function normalizeAllowedIps(value) {
+  return parseAllowedIps(value).join("\n");
+}
+
 export async function loadIpRestriction() {
   try {
     const raw = await readFile(IP_RESTRICTION_PATH, "utf-8");
-    cached = { ...DEFAULTS, ...JSON.parse(raw) };
+    cached = {
+      ...DEFAULTS,
+      ...JSON.parse(raw),
+    };
+    cached.allowedIps = normalizeAllowedIps(cached.allowedIps);
   } catch (err) {
     if (err.code === "ENOENT") {
       await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
@@ -38,7 +53,11 @@ export function getIpRestriction() {
 }
 
 export async function updateIpRestriction(data) {
-  const updated = { ...getIpRestriction(), ...data };
+  const updated = {
+    ...getIpRestriction(),
+    ...data,
+    allowedIps: normalizeAllowedIps(data.allowedIps ?? getIpRestriction().allowedIps),
+  };
   await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
   await writeFile(IP_RESTRICTION_PATH, JSON.stringify(updated, null, 2));
   cached = updated;
@@ -51,10 +70,7 @@ export function isIpAllowed(ip) {
   if (config.enabled !== "enable") return true;
   if (!config.allowedIps || !config.allowedIps.trim()) return true;
 
-  const allowedList = config.allowedIps
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const allowedList = parseAllowedIps(config.allowedIps);
 
   if (allowedList.length === 0) return true;
 

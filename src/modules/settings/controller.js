@@ -1,35 +1,65 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
-import { validate } from "../../middleware/validate.js";
 import { getSettings, updateSettings } from "./service.js";
 import { getIpRestriction, updateIpRestriction } from "./ip-restriction-service.js";
-import { updateAllSettingsSchema } from "./validation.js";
+import { updateAllSettingsSchema, updateSettingsSchema } from "./validation.js";
 import { ROLES } from "../../config/constants.js";
+import { AuthorizationError, ValidationError } from "../../errors/taxonomy.js";
 
 const router = Router();
+
+function parseSettingsBody(schema, body) {
+  const result = schema.safeParse(body);
+  if (result.success) {
+    return result.data;
+  }
+
+  const details = result.error.issues.map((issue) => ({
+    field: issue.path.join("."),
+    code: issue.code.toUpperCase(),
+    message: issue.message,
+  }));
+
+  throw new ValidationError("One or more fields are invalid.", details);
+}
 
 router.use(requireAuth, requireRole(ROLES.ADMIN, ROLES.OWNER), csrfMiddleware);
 
 router.get("/", (req, res) => {
   const settings = getSettings();
-  const ipRestriction = getIpRestriction();
+  const canManageIpRestriction = req.user.role === ROLES.OWNER;
   res.render("admin/settings/index", {
     title: "Settings",
     user: req.user,
     csrfToken: res.locals.csrfToken,
     settings,
-    ipRestriction,
+    canManageIpRestriction,
+    ipRestriction: canManageIpRestriction ? getIpRestriction() : null,
     error: req.query.error || null,
     success: req.query.success || null,
   });
 });
 
-router.post("/", validate(updateAllSettingsSchema), async (req, res, next) => {
+router.post("/", async (req, res, next) => {
   try {
-    const { heroWord1, heroWord2, heroSubtitle, enabled, allowedIps } = req.validatedBody;
+    const canManageIpRestriction = req.user.role === ROLES.OWNER;
+    const requestedIpRestrictionUpdate = Object.prototype.hasOwnProperty.call(req.body, "enabled") || Object.prototype.hasOwnProperty.call(req.body, "allowedIps");
+
+    if (!canManageIpRestriction && requestedIpRestrictionUpdate) {
+      throw new AuthorizationError("Only owners can update IP restriction settings.");
+    }
+
+    const validatedBody = parseSettingsBody(canManageIpRestriction ? updateAllSettingsSchema : updateSettingsSchema, req.body);
+    const { heroWord1, heroWord2, heroSubtitle } = validatedBody;
+
     await updateSettings({ heroWord1, heroWord2, heroSubtitle });
-    await updateIpRestriction({ enabled, allowedIps });
+
+    if (canManageIpRestriction) {
+      const { enabled, allowedIps } = validatedBody;
+      await updateIpRestriction({ enabled, allowedIps });
+    }
+
     res.redirect("/admin/settings?success=Settings saved successfully.");
   } catch (err) {
     next(err);

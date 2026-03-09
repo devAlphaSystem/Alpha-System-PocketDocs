@@ -582,8 +582,16 @@
 .editor-content .CodeMirror-focused .CodeMirror-selected,
 .editor-content .CodeMirror-line::selection,
 .editor-content .CodeMirror-line > span::selection,
-.editor-content .CodeMirror-line > span > span::selection {
-  background: color-mix(in srgb, var(--color-primary) 28%, transparent);
+.editor-content .CodeMirror-line > span > span::selection,
+.editor-content .CodeMirror-line::-moz-selection,
+.editor-content .CodeMirror-line > span::-moz-selection,
+.editor-content .CodeMirror-line > span > span::-moz-selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+.editor-content span.CodeMirror-selectedtext {
+  color: inherit;
 }
 
 .editor-content .editor-preview,
@@ -726,11 +734,6 @@ body.fullscreen .editor-content .editor-preview-side {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-xl);
-  background: radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 42%), linear-gradient(180deg, color-mix(in srgb, var(--surface-0) 94%, transparent), var(--surface-0));
-  box-shadow: var(--shadow-xs);
 }
 
 .settings-tabs-nav {

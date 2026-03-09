@@ -841,6 +841,23 @@ body.admin-body .editor-content .preview-shell.prose code {
   color: var(--text-primary);
 }
 
+body.admin-body .editor-content .CodeMirror-selected,
+body.admin-body .editor-content .CodeMirror-focused .CodeMirror-selected,
+body.admin-body .editor-content .CodeMirror-line::selection,
+body.admin-body .editor-content .CodeMirror-line > span::selection,
+body.admin-body .editor-content .CodeMirror-line > span > span::selection,
+body.admin-body .editor-content .CodeMirror-line::-moz-selection,
+body.admin-body .editor-content .CodeMirror-line > span::-moz-selection,
+body.admin-body .editor-content .CodeMirror-line > span > span::-moz-selection {
+  background: var(--selection-bg) !important;
+  color: var(--selection-text) !important;
+}
+
+body.admin-body .editor-content span.CodeMirror-selectedtext,
+body.admin-body .editor-content span.CodeMirror-selectedtext * {
+  color: var(--selection-text) !important;
+}
+
 body.admin-body .editor-content .preview-shell.prose pre {
   background: var(--gray-900);
   color: #e2e8f0;
