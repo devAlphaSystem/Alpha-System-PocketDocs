@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { listProjects, getProject, createProject, updateProject, deleteProject, listMembers, addMember, removeMember, updateMemberRole } from "./service.js";
+import { listProjects, getProject, createProject, updateProject, deleteProject } from "./service.js";
 import { listVersions } from "../versions/service.js";
-import { createProjectSchema, updateProjectSchema, addMemberSchema } from "./validation.js";
+import { createProjectSchema, updateProjectSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
-import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
+import { requireAuth, requireRole, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
@@ -31,7 +31,7 @@ router.get("/", csrfMiddleware, async (req, res, next) => {
   }
 });
 
-router.get("/create", csrfMiddleware, (req, res) => {
+router.get("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), (req, res) => {
   res.render("admin/projects/create", {
     title: "New Project",
     user: req.user,
@@ -42,7 +42,7 @@ router.get("/create", csrfMiddleware, (req, res) => {
   });
 });
 
-router.post("/create", csrfMiddleware, validate(createProjectSchema), async (req, res, next) => {
+router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), validate(createProjectSchema), async (req, res, next) => {
   try {
     const project = await createProject(req.validatedBody, req.user.id, req.requestId);
     res.redirect(`/admin/projects/${project.id}?success=Project created.`);
@@ -126,72 +126,6 @@ router.post("/:projectId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADM
   try {
     await deleteProject(req.params.projectId, req.requestId);
     res.redirect("/admin/projects?success=Project deleted.");
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.get("/:projectId/members", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
-  try {
-    const [project, membersResult] = await Promise.all([getProject(req.params.projectId), listMembers(req.params.projectId)]);
-    const totalMembers = (membersResult.items || []).length;
-    res.render("admin/projects/members", {
-      title: `${project.name} - Members`,
-      headerSubtitle: `${totalMembers} member${totalMembers !== 1 ? "s" : ""}`,
-      project,
-      members: membersResult.items || [],
-      user: req.user,
-      csrfToken: res.locals.csrfToken,
-      error: null,
-      success: req.query.success || null,
-      siteName: env.SITE_NAME,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post("/:projectId/members", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(addMemberSchema), async (req, res, next) => {
-  try {
-    await addMember(req.params.projectId, req.validatedBody.email, req.validatedBody.role, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/members?success=Member added.`);
-  } catch (err) {
-    if (err.statusCode === 404 || err.statusCode === 409) {
-      const [project, membersResult] = await Promise.all([getProject(req.params.projectId), listMembers(req.params.projectId)]);
-      const totalMembers = (membersResult.items || []).length;
-      return res.status(err.statusCode).render("admin/projects/members", {
-        title: `${project.name} - Members`,
-        headerSubtitle: `${totalMembers} member${totalMembers !== 1 ? "s" : ""}`,
-        project,
-        members: membersResult.items || [],
-        user: req.user,
-        csrfToken: res.locals.csrfToken,
-        error: err.message,
-        success: null,
-        siteName: env.SITE_NAME,
-      });
-    }
-    next(err);
-  }
-});
-
-router.post("/:projectId/members/:memberId/role", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
-  try {
-    const { role } = req.body;
-    if (!["admin", "editor", "viewer"].includes(role)) {
-      return res.redirect(`/admin/projects/${req.params.projectId}/members`);
-    }
-    await updateMemberRole(req.params.memberId, role, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/members?success=Role updated.`);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post("/:projectId/members/:memberId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
-  try {
-    await removeMember(req.params.memberId, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/members?success=Member removed.`);
   } catch (err) {
     next(err);
   }

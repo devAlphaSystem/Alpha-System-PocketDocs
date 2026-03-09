@@ -13,11 +13,17 @@
     <i class="ph ph-folders"></i>
     <span>Projects</span>
   </a>
-  <% if (user && user.role === 'admin') { %>
+  <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
   <div class="sidebar-section-label">Administration</div>
   <a href="/admin/settings" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
     <i class="ph ph-gear"></i>
     <span>Settings</span>
+  </a>
+  <% } %>
+  <% if (user && user.role === 'owner') { %>
+  <a href="/admin/users" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/users') ? ' active' : '' %>">
+    <i class="ph ph-users"></i>
+    <span>Users</span>
   </a>
   <% } %>
 </nav>

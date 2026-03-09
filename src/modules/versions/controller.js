@@ -15,7 +15,7 @@ router.get("/", requireProjectAccess(), async (req, res) => {
   res.redirect(`/admin/projects/${req.params.projectId}`);
 });
 
-router.get("/create", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+router.get("/create", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
     res.render("admin/versions/create", {
@@ -33,7 +33,7 @@ router.get("/create", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.ED
   }
 });
 
-router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const parsed = createVersionSchema.safeParse(req.body);
     if (!parsed.success) {

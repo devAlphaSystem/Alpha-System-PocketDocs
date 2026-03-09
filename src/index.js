@@ -15,13 +15,18 @@ import { loadUserMiddleware } from "./middleware/auth.js";
 import { errorHandlerMiddleware, notFoundMiddleware } from "./middleware/error-handler.js";
 
 import authRoutes from "./modules/auth/controller.js";
+import setupRoutes from "./modules/setup/controller.js";
 import projectRoutes from "./modules/projects/controller.js";
 import versionRoutes from "./modules/versions/controller.js";
 import pageRoutes from "./modules/pages/controller.js";
 import changelogRoutes from "./modules/changelogs/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
+import userRoutes from "./modules/users/controller.js";
 import publicRoutes from "./modules/public/controller.js";
 import { loadSettings, getSettings } from "./modules/settings/service.js";
+import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
+import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
+import { checkOwnerExists, isOwnerSetupComplete } from "./modules/setup/service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,6 +75,15 @@ const authLimiter = rateLimit({
 app.use(loadUserMiddleware);
 app.use(generalLimiter);
 
+const setupRedirectMiddleware = (req, res, next) => {
+  if (!isOwnerSetupComplete() && !req.path.startsWith("/setup") && !req.path.startsWith("/css") && !req.path.startsWith("/js") && !req.path.startsWith("/img") && req.path !== "/favicon.ico") {
+    return res.redirect("/setup");
+  }
+  next();
+};
+
+app.use(setupRedirectMiddleware);
+
 app.use((req, res, next) => {
   res.locals.siteName = env.SITE_NAME;
   res.locals.siteUrl = env.SITE_URL;
@@ -77,11 +91,23 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();
+  res.locals.ipAllowed = isIpAllowed(req.ip);
   next();
 });
 
 app.use(
+  "/setup",
+  (req, res, next) => {
+    res.locals.layout = false;
+    next();
+  },
+  authLimiter,
+  setupRoutes,
+);
+
+app.use(
   "/auth",
+  ipRestrictionMiddleware,
   (req, res, next) => {
     res.locals.layout = false;
     next();
@@ -90,10 +116,9 @@ app.use(
   authRoutes,
 );
 
-app.get("/admin/login", (_req, res) => res.redirect(301, "/auth/login"));
-app.get("/admin/register", (_req, res) => res.redirect(301, "/auth/register"));
+app.get("/admin/login", ipRestrictionMiddleware, (_req, res) => res.redirect(301, "/auth/login"));
 
-app.get("/admin", (req, res) => {
+app.get("/admin", ipRestrictionMiddleware, (req, res) => {
   if (!req.user) {
     return res.redirect("/auth/login");
   }
@@ -105,11 +130,12 @@ const adminLayoutMiddleware = (req, res, next) => {
   next();
 };
 
-app.use("/admin/settings", adminLayoutMiddleware, settingsRoutes);
-app.use("/admin/projects", adminLayoutMiddleware, projectRoutes);
-app.use("/admin/projects/:projectId/versions", adminLayoutMiddleware, versionRoutes);
-app.use("/admin/projects/:projectId/versions/:versionId/pages", adminLayoutMiddleware, pageRoutes);
-app.use("/admin/projects/:projectId/versions/:versionId/changelog", adminLayoutMiddleware, changelogRoutes);
+app.use("/admin/settings", ipRestrictionMiddleware, adminLayoutMiddleware, settingsRoutes);
+app.use("/admin/users", ipRestrictionMiddleware, adminLayoutMiddleware, userRoutes);
+app.use("/admin/projects", ipRestrictionMiddleware, adminLayoutMiddleware, projectRoutes);
+app.use("/admin/projects/:projectId/versions", ipRestrictionMiddleware, adminLayoutMiddleware, versionRoutes);
+app.use("/admin/projects/:projectId/versions/:versionId/pages", ipRestrictionMiddleware, adminLayoutMiddleware, pageRoutes);
+app.use("/admin/projects/:projectId/versions/:versionId/changelog", ipRestrictionMiddleware, adminLayoutMiddleware, changelogRoutes);
 
 app.use("/", publicRoutes);
 
@@ -124,6 +150,9 @@ async function start() {
   await loadSettings();
   logger.info("Site settings loaded");
 
+  await loadIpRestriction();
+  logger.info("IP restriction settings loaded");
+
   try {
     await authenticateAdmin();
     logger.info("PocketBase admin connection verified");
@@ -134,6 +163,9 @@ async function start() {
     });
     process.exit(1);
   }
+
+  const ownerReady = await checkOwnerExists();
+  logger.info(ownerReady ? "Owner account found" : "No owner account — setup required");
 
   app.listen(env.PORT, env.HOST, () => {
     logger.info("PocketDocs server started", {

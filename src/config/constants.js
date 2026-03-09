@@ -1,7 +1,7 @@
 export const ROLES = Object.freeze({
+  OWNER: "owner",
   ADMIN: "admin",
   EDITOR: "editor",
-  VIEWER: "viewer",
 });
 
 export const VISIBILITY = Object.freeze({
@@ -13,7 +13,6 @@ export const COLLECTIONS = Object.freeze({
   USERS: "users",
   SUPERUSERS: "_superusers",
   PROJECTS: "projects",
-  PROJECT_MEMBERS: "project_members",
   VERSIONS: "versions",
   PAGES: "pages",
   CHANGELOGS: "changelogs",

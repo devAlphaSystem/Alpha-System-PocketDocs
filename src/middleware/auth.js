@@ -1,5 +1,5 @@
-import { pbAuthRefresh, pbGetOne } from "../lib/pocketbase.js";
-import { COOKIE_NAMES, COLLECTIONS, ROLES } from "../config/constants.js";
+import { pbAuthRefresh } from "../lib/pocketbase.js";
+import { COOKIE_NAMES, ROLES } from "../config/constants.js";
 import { AuthenticationError, AuthorizationError } from "../errors/taxonomy.js";
 import { logger } from "../lib/logger.js";
 
@@ -32,43 +32,21 @@ export function requireRole(...allowedRoles) {
 }
 
 export function requireProjectAccess(...allowedRoles) {
-  return async (req, _res, next) => {
+  return (req, _res, next) => {
     if (!req.user) {
       return next(new AuthenticationError());
     }
 
-    if (req.user.role === ROLES.ADMIN) {
+    if (req.user.role === ROLES.OWNER || req.user.role === ROLES.ADMIN) {
       return next();
     }
 
-    const projectId = req.params.projectId || req.body?.project;
-    if (!projectId) {
+    if (allowedRoles.length > 0 && !allowedRoles.includes(req.user.role)) {
       return next(new AuthorizationError());
     }
 
-    try {
-      const membership = await findMembership(req.user.id, projectId);
-      if (!membership) {
-        return next(new AuthorizationError());
-      }
-      if (allowedRoles.length > 0 && !allowedRoles.includes(membership.role)) {
-        return next(new AuthorizationError());
-      }
-      req.projectMembership = membership;
-      next();
-    } catch (err) {
-      next(err);
-    }
+    next();
   };
-}
-
-async function findMembership(userId, projectId) {
-  const { pbList } = await import("../lib/pocketbase.js");
-  const result = await pbList(COLLECTIONS.PROJECT_MEMBERS, {
-    filter: `user = "${userId}" && project = "${projectId}"`,
-    perPage: 1,
-  });
-  return result.items && result.items.length > 0 ? result.items[0] : null;
 }
 
 export async function loadUserMiddleware(req, _res, next) {
@@ -97,7 +75,7 @@ export async function loadUserMiddleware(req, _res, next) {
       id: refreshResult.record.id,
       email: refreshResult.record.email,
       name: refreshResult.record.name,
-      role: refreshResult.record.role || ROLES.VIEWER,
+      role: refreshResult.record.role || ROLES.EDITOR,
       verified: refreshResult.record.verified,
     };
 

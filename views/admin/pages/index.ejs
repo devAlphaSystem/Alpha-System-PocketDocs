@@ -9,9 +9,11 @@
     <div>
       <h2>Pages</h2>
     </div>
+    <% if (user.role === 'owner' || user.role === 'admin') { %>
     <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary">
       <i class="ph ph-plus"></i> New Page
     </a>
+    <% } %>
   </div>
 
   <% if (typeof success !== 'undefined' && success) { %>
@@ -23,7 +25,6 @@
     <div class="empty-icon"><i class="ph ph-file-text"></i></div>
     <h3>No pages yet</h3>
     <p>Create the first page for this version.</p>
-    <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary"><i class="ph ph-plus"></i> New Page</a>
   </div>
   <% } else { %>
   <div class="versions-list pages-tree" id="pagesTree" data-project="<%= project.id %>" data-version="<%= version.id %>" data-csrf="<%= csrfToken %>">
@@ -39,10 +40,12 @@
           </div>
           <div class="version-actions page-tree-actions">
             <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
-          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this page?')">
+          <% if (user.role === 'owner' || user.role === 'admin') { %>
+          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>/delete" class="inline-form" data-confirm-title="Delete page?" data-confirm-message="Delete this page?" data-confirm-button="Delete" data-confirm-variant="danger">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
           </form>
+          <% } %>
           </div>
         </div>
       </div>

@@ -7,7 +7,9 @@
       <% if (typeof changelog !== 'undefined' && changelog) { %>
       <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
       <% } %>
+      <% if (user.role === 'owner' || user.role === 'admin') { %>
       <button type="submit" form="changelogForm" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save</button>
+      <% } %>
     </div>
   </div>
 

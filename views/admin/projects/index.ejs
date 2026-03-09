@@ -1,9 +1,11 @@
 <div class="projects-page">
   <div class="page-header page-header-compact">
+    <% if (user.role === 'owner' || user.role === 'admin') { %>
     <a href="/admin/projects/create" class="btn btn-primary">
       <i class="ph ph-plus"></i>
       New Project
     </a>
+    <% } %>
   </div>
 
   <% if (projects.length === 0) { %>
@@ -11,7 +13,6 @@
     <div class="empty-icon"><i class="ph ph-folders"></i></div>
     <h2>No projects yet</h2>
     <p>Create your first documentation project.</p>
-    <a href="/admin/projects/create" class="btn btn-primary"><i class="ph ph-plus"></i> Create Project</a>
   </div>
   <% } else { %>
   <div class="table-wrap">

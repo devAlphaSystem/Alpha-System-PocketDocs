@@ -38,7 +38,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
   }
 });
 
-router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
     const project = version.expand?.project;
@@ -62,7 +62,7 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITO
   }
 });
 
-router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const parsed = createPageSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -164,7 +164,7 @@ router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
   }
 });
 
-router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     await deletePage(req.params.pageId, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=Page deleted.`);

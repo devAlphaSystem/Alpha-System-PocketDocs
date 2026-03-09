@@ -275,9 +275,9 @@
         "system": false,
         "type": "select",
         "values": [
+          "owner",
           "admin",
-          "editor",
-          "viewer"
+          "editor"
         ]
       },
       {
@@ -1021,98 +1021,6 @@
       "CREATE UNIQUE INDEX `idx_page_version_slug` ON `pages` (`version`, `slug`)",
       "CREATE INDEX `idx_page_version_order` ON `pages` (`version`, `order`)",
       "CREATE INDEX `idx_page_parent` ON `pages` (`parent`)"
-    ],
-    "system": false
-  },
-  {
-    "id": "pd_members_001",
-    "listRule": "@request.auth.id != ''",
-    "viewRule": "@request.auth.id != ''",
-    "createRule": "@request.auth.id != ''",
-    "updateRule": "@request.auth.id != ''",
-    "deleteRule": "@request.auth.id != ''",
-    "name": "project_members",
-    "type": "base",
-    "fields": [
-      {
-        "autogeneratePattern": "[a-z0-9]{15}",
-        "hidden": false,
-        "id": "text3208210256",
-        "max": 15,
-        "min": 15,
-        "name": "id",
-        "pattern": "^[a-z0-9]+$",
-        "presentable": false,
-        "primaryKey": true,
-        "required": true,
-        "system": true,
-        "type": "text"
-      },
-      {
-        "cascadeDelete": true,
-        "collectionId": "pd_projects_001",
-        "hidden": false,
-        "id": "rel_mem_project",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "project",
-        "presentable": false,
-        "required": true,
-        "system": false,
-        "type": "relation"
-      },
-      {
-        "cascadeDelete": false,
-        "collectionId": "_pb_users_auth_",
-        "hidden": false,
-        "id": "rel_mem_user",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "user",
-        "presentable": false,
-        "required": true,
-        "system": false,
-        "type": "relation"
-      },
-      {
-        "hidden": false,
-        "id": "select_mem_role",
-        "maxSelect": 1,
-        "name": "role",
-        "presentable": false,
-        "required": true,
-        "system": false,
-        "type": "select",
-        "values": [
-          "admin",
-          "editor",
-          "viewer"
-        ]
-      },
-      {
-        "hidden": false,
-        "id": "autodate2990389176",
-        "name": "created",
-        "onCreate": true,
-        "onUpdate": false,
-        "presentable": false,
-        "system": false,
-        "type": "autodate"
-      },
-      {
-        "hidden": false,
-        "id": "autodate3332085495",
-        "name": "updated",
-        "onCreate": true,
-        "onUpdate": true,
-        "presentable": false,
-        "system": false,
-        "type": "autodate"
-      }
-    ],
-    "indexes": [
-      "CREATE UNIQUE INDEX `idx_mem_project_user` ON `project_members` (`project`, `user`)",
-      "CREATE INDEX `idx_mem_user` ON `project_members` (`user`)"
     ],
     "system": false
   },

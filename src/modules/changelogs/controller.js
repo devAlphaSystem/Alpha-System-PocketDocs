@@ -35,7 +35,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
   }
 });
 
-router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), validate(updateChangelogSchema), async (req, res, next) => {
+router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(updateChangelogSchema), async (req, res, next) => {
   try {
     await upsertChangelog(req.params.versionId, req.validatedBody, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/changelog?success=Changelog saved.`);

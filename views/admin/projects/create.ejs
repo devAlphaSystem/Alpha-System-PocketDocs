@@ -3,6 +3,10 @@
     <div>
       <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
     </div>
+    <div class="header-actions">
+      <a href="/admin/projects" class="btn btn-outline">Cancel</a>
+      <button type="submit" form="project-create-form" class="btn btn-primary"><i class="ph ph-plus"></i> Create Project</button>
+    </div>
   </div>
 
   <div class="page-header sub-header">
@@ -13,7 +17,7 @@
   <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
 
-  <form method="POST" action="/admin/projects/create" class="card form-card" novalidate>
+  <form method="POST" action="/admin/projects/create" novalidate id="project-create-form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <div class="form-group">
@@ -42,11 +46,6 @@
         <option value="public"<%= (typeof body !== 'undefined' && body.visibility === 'public') || typeof body === 'undefined' ? ' selected' : '' %>>Public</option>
         <option value="private"<%= typeof body !== 'undefined' && body.visibility === 'private' ? ' selected' : '' %>>Private</option>
       </select>
-    </div>
-
-    <div class="form-actions">
-      <a href="/admin/projects" class="btn btn-outline">Cancel</a>
-      <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Create Project</button>
     </div>
   </form>
 </div>

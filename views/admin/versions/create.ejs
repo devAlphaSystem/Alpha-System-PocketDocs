@@ -3,6 +3,10 @@
     <div>
       <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= project.name %></a>
     </div>
+    <div class="header-actions">
+      <a href="/admin/projects/<%= project.id %>" class="btn btn-outline">Cancel</a>
+      <button type="submit" form="version-create-form" class="btn btn-primary"><i class="ph ph-plus"></i> Create Version</button>
+    </div>
   </div>
 
   <div class="page-header sub-header">
@@ -13,7 +17,7 @@
   <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
 
-  <form method="POST" action="/admin/projects/<%= project.id %>/versions" class="card form-card" novalidate>
+  <form method="POST" action="/admin/projects/<%= project.id %>/versions" novalidate id="version-create-form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <div class="form-group">
@@ -28,7 +32,6 @@
         <option value="false"<%= typeof formValues === 'undefined' || !formValues || formValues.is_public !== 'true' ? ' selected' : '' %>>Draft</option>
         <option value="true"<%= typeof formValues !== 'undefined' && formValues && formValues.is_public === 'true' ? ' selected' : '' %>>Public</option>
       </select>
-      <p class="form-hint">Public versions appear on the docs website. Draft versions stay hidden.</p>
     </div>
 
     <% if (existingVersions && existingVersions.length > 0) { %>
@@ -43,10 +46,5 @@
       <p class="form-hint">Clone all pages from another version to get a head start.</p>
     </div>
     <% } %>
-
-    <div class="form-actions">
-      <a href="/admin/projects/<%= project.id %>" class="btn btn-outline">Cancel</a>
-      <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Create Version</button>
-    </div>
   </form>
 </div>

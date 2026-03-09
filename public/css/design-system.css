@@ -763,6 +763,10 @@ input[type="color"] {
   border-bottom: 1px solid var(--surface-border);
   margin-bottom: var(--space-6);
 }
+.page-header:not(.sub-header) {
+  min-height: 64px;
+  align-items: center;
+}
 .page-header h1 {
   margin-bottom: var(--space-1);
 }
@@ -790,7 +794,6 @@ input[type="color"] {
   gap: var(--space-1);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--space-2);
 }
 .back-link:hover {
   color: var(--text-primary);
@@ -1136,6 +1139,10 @@ input[type="color"] {
   }
   .page-header {
     flex-direction: column;
+  }
+  .page-header:not(.sub-header) {
+    min-height: 0;
+    align-items: flex-start;
   }
   .header-actions {
     flex-wrap: wrap;

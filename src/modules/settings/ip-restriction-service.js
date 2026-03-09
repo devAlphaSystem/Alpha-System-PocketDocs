@@ -1,0 +1,66 @@
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { logger } from "../../lib/logger.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const IP_RESTRICTION_PATH = join(__dirname, "../../../data/ip-restriction.json");
+
+const DEFAULTS = Object.freeze({
+  enabled: "disable",
+  allowedIps: "127.0.0.1",
+});
+
+let cached = null;
+
+export async function loadIpRestriction() {
+  try {
+    const raw = await readFile(IP_RESTRICTION_PATH, "utf-8");
+    cached = { ...DEFAULTS, ...JSON.parse(raw) };
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
+      await writeFile(IP_RESTRICTION_PATH, JSON.stringify(DEFAULTS, null, 2));
+      cached = { ...DEFAULTS };
+      logger.info("Created default IP restriction settings");
+    } else {
+      logger.error("Failed to load IP restriction settings", { error: err.message });
+      cached = { ...DEFAULTS };
+    }
+  }
+  return cached;
+}
+
+export function getIpRestriction() {
+  return cached || { ...DEFAULTS };
+}
+
+export async function updateIpRestriction(data) {
+  const updated = { ...getIpRestriction(), ...data };
+  await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
+  await writeFile(IP_RESTRICTION_PATH, JSON.stringify(updated, null, 2));
+  cached = updated;
+  logger.info("IP restriction settings updated");
+  return updated;
+}
+
+export function isIpAllowed(ip) {
+  const config = getIpRestriction();
+  if (config.enabled !== "enable") return true;
+  if (!config.allowedIps || !config.allowedIps.trim()) return true;
+
+  const allowedList = config.allowedIps
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (allowedList.length === 0) return true;
+
+  const normalizedIp = ip === "::1" ? "127.0.0.1" : ip.replace(/^::ffff:/, "");
+  return allowedList.some((allowed) => {
+    const normalizedAllowed = allowed === "::1" ? "127.0.0.1" : allowed.replace(/^::ffff:/, "");
+    return normalizedIp === normalizedAllowed;
+  });
+}

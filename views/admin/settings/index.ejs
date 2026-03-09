@@ -3,6 +3,10 @@
     <div>
       <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
     </div>
+    <button type="submit" form="settings-form" class="btn btn-primary">
+      <i class="ph ph-floppy-disk"></i>
+      Save Settings
+    </button>
   </div>
 
   <div class="page-header sub-header">
@@ -16,42 +20,80 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
-  <form method="POST" action="/admin/settings" class="card form-card" novalidate>
+  <form method="POST" action="/admin/settings" novalidate id="settings-form" class="settings-form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-    <div class="form-section">
-      <h3>Public Header</h3>
-      <p class="form-section-desc">The brand text shown in the public navigation header.</p>
-
-      <div class="form-group">
-        <label for="headerBrand">Header Brand <span class="required">*</span></label>
-        <input type="text" id="headerBrand" name="headerBrand" value="<%= settings.headerBrand %>" required maxlength="100" placeholder="e.g. Acme Docs">
+    <div class="settings-tabs" data-tabs>
+      <div class="settings-tabs-nav" role="tablist" aria-label="Settings sections">
+        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-brand" aria-controls="settings-panel-brand" aria-selected="true" data-tab-target="settings-panel-brand" tabindex="0">
+          <i class="ph ph-app-window"></i>
+          <span>Branding</span>
+        </button>
+        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-hero" aria-controls="settings-panel-hero" aria-selected="false" data-tab-target="settings-panel-hero" tabindex="-1">
+          <i class="ph ph-image"></i>
+          <span>Home Hero</span>
+        </button>
+        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-ip" aria-controls="settings-panel-ip" aria-selected="false" data-tab-target="settings-panel-ip" tabindex="-1">
+          <i class="ph ph-shield-check"></i>
+          <span>IP Restriction</span>
+        </button>
       </div>
-    </div>
 
-    <div class="form-section">
-      <h3>Home Page Hero</h3>
-      <p class="form-section-desc">The hero section on the landing page. Word 1 is rendered in light weight, Word 2 in bold.</p>
+      <section class="settings-tab-panel" id="settings-panel-brand" role="tabpanel" aria-labelledby="settings-tab-brand" data-tab-panel>
+        <div class="form-section">
+          <h3>Public Header</h3>
+          <p class="form-section-desc">The brand text shown in the public navigation header.</p>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label for="heroWord1">Word 1 <span class="required">*</span></label>
-          <input type="text" id="heroWord1" name="heroWord1" value="<%= settings.heroWord1 %>" required maxlength="50" placeholder="e.g. Acme">
+          <div class="form-group">
+            <label for="headerBrand">Header Brand <span class="required">*</span></label>
+            <input type="text" id="headerBrand" name="headerBrand" value="<%= settings.headerBrand %>" required maxlength="100" placeholder="e.g. Acme Docs">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="heroWord2">Word 2 <span class="required">*</span></label>
-          <input type="text" id="heroWord2" name="heroWord2" value="<%= settings.heroWord2 %>" required maxlength="50" placeholder="e.g. Docs">
+      </section>
+
+      <section class="settings-tab-panel" id="settings-panel-hero" role="tabpanel" aria-labelledby="settings-tab-hero" data-tab-panel hidden>
+        <div class="form-section">
+          <h3>Home Page Hero</h3>
+          <p class="form-section-desc">The hero section on the landing page. Word 1 is rendered in light weight, Word 2 in bold.</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="heroWord1">Word 1 <span class="required">*</span></label>
+              <input type="text" id="heroWord1" name="heroWord1" value="<%= settings.heroWord1 %>" required maxlength="50" placeholder="e.g. Acme">
+            </div>
+            <div class="form-group">
+              <label for="heroWord2">Word 2 <span class="required">*</span></label>
+              <input type="text" id="heroWord2" name="heroWord2" value="<%= settings.heroWord2 %>" required maxlength="50" placeholder="e.g. Docs">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="heroSubtitle">Subtitle</label>
+            <input type="text" id="heroSubtitle" name="heroSubtitle" value="<%= settings.heroSubtitle %>" maxlength="300" placeholder="e.g. Documentation for your team.">
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="form-group">
-        <label for="heroSubtitle">Subtitle</label>
-        <input type="text" id="heroSubtitle" name="heroSubtitle" value="<%= settings.heroSubtitle %>" maxlength="300" placeholder="e.g. Documentation for your team.">
-      </div>
-    </div>
+      <section class="settings-tab-panel" id="settings-panel-ip" role="tabpanel" aria-labelledby="settings-tab-ip" data-tab-panel hidden>
+        <div class="form-section">
+          <h3>IP Restriction</h3>
+          <p class="form-section-desc">Restrict access to the admin dashboard and login pages by IP address. When enabled, only the listed IPs can access <code>/admin</code> and <code>/auth/login</code> routes.</p>
 
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Settings</button>
+          <div class="form-group">
+            <label for="ipEnabled">Status</label>
+            <select id="ipEnabled" name="enabled">
+              <option value="disable" <%= ipRestriction.enabled === 'disable' ? 'selected' : '' %>>Disabled</option>
+              <option value="enable" <%= ipRestriction.enabled === 'enable' ? 'selected' : '' %>>Enabled</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="allowedIps">Allowed IPs</label>
+            <textarea id="allowedIps" name="allowedIps" rows="5" maxlength="5000" placeholder="e.g. 127.0.0.1, 192.168.1.100, 10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
+            <p class="form-hint">Enter IP addresses separated by commas. IPv4 and IPv6 are supported.</p>
+          </div>
+        </div>
+      </section>
     </div>
   </form>
 </div>

@@ -9,10 +9,3 @@ export const createProjectSchema = z.object({
 });
 
 export const updateProjectSchema = createProjectSchema.partial();
-
-export const addMemberSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email address."),
-  role: z.enum(["admin", "editor", "viewer"], {
-    errorMap: () => ({ message: "Role must be admin, editor, or viewer." }),
-  }),
-});
