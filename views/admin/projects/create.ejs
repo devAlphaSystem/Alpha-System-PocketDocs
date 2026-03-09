@@ -5,7 +5,7 @@
     </div>
     <div class="header-actions">
       <a href="/admin/projects" class="btn btn-outline">Cancel</a>
-      <button type="submit" form="project-create-form" class="btn btn-primary"><i class="ph ph-plus"></i> Create Project</button>
+      <button type="submit" form="project-create-form" class="btn btn-primary" id="manual-submit-btn"><i class="ph ph-plus"></i> Create Project</button>
     </div>
   </div>
 
@@ -15,6 +15,22 @@
 
   <% if (typeof error !== 'undefined' && error) { %>
   <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+
+  <% if (typeof githubConfigured !== 'undefined' && githubConfigured) { %>
+  <div class="settings-tabs" data-tabs>
+    <div class="settings-tabs-nav" role="tablist" aria-label="Project creation method">
+      <button type="button" class="settings-tab-btn" role="tab" id="tab-manual" aria-controls="panel-manual" aria-selected="true" data-tab-target="panel-manual" tabindex="0">
+        <i class="ph ph-pencil-simple"></i>
+        <span>Manual</span>
+      </button>
+      <button type="button" class="settings-tab-btn" role="tab" id="tab-github" aria-controls="panel-github" aria-selected="false" data-tab-target="panel-github" tabindex="-1">
+        <i class="ph ph-github-logo"></i>
+        <span>Import from GitHub</span>
+      </button>
+    </div>
+
+    <section class="settings-tab-panel" id="panel-manual" role="tabpanel" aria-labelledby="tab-manual" data-tab-panel>
   <% } %>
 
   <form method="POST" action="/admin/projects/create" novalidate id="project-create-form">
@@ -48,6 +64,127 @@
       </select>
     </div>
   </form>
+
+  <% if (typeof githubConfigured !== 'undefined' && githubConfigured) { %>
+    </section>
+
+    <section class="settings-tab-panel" id="panel-github" role="tabpanel" aria-labelledby="tab-github" data-tab-panel hidden>
+      <div class="gh-import">
+        <div class="gh-step" id="gh-step-repo">
+          <h3><span class="gh-step-num">1</span> Select Repository</h3>
+
+          <div class="form-group" style="margin-bottom: var(--space-3)">
+            <label for="gh-repo-url">Repository URL</label>
+            <div class="gh-repo-input-row">
+              <input type="text" id="gh-repo-url" placeholder="https://github.com/owner/repo" autocomplete="off">
+              <button type="button" class="btn btn-outline" id="gh-fetch-btn"><i class="ph ph-magnifying-glass"></i> Fetch</button>
+            </div>
+            <p class="form-hint">Paste a GitHub repo URL, or pick from your repositories below.</p>
+          </div>
+
+          <div id="gh-repo-list-wrap" class="gh-repo-list-wrap">
+            <button type="button" class="btn btn-outline" id="gh-load-repos-btn"><i class="ph ph-list"></i> Load my repositories</button>
+            <div id="gh-repo-list" class="gh-repo-list" hidden></div>
+            <button type="button" class="btn btn-outline" id="gh-load-more-repos" hidden><i class="ph ph-arrow-down"></i> Load more</button>
+          </div>
+
+          <div id="gh-repo-info" class="gh-repo-info" hidden>
+            <div class="gh-repo-card">
+              <div class="gh-repo-card-header">
+                <i class="ph ph-github-logo"></i>
+                <strong id="gh-repo-fullname"></strong>
+                <span class="badge" id="gh-repo-visibility"></span>
+              </div>
+              <p id="gh-repo-desc" class="gh-repo-desc"></p>
+              <div class="gh-repo-meta">
+                <span><i class="ph ph-star"></i> <span id="gh-repo-stars">0</span></span>
+                <span><i class="ph ph-git-branch"></i> <span id="gh-repo-branch"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gh-step" id="gh-step-versions" hidden>
+          <h3><span class="gh-step-num">2</span> Select Versions</h3>
+          <p class="form-hint">Choose tags or commits to import as documentation versions. Each selected item will become a version, and its <code>/docs</code> folder will be imported as pages.</p>
+
+          <div class="gh-version-tabs">
+            <button type="button" class="btn gh-vtab active" data-vtab="tags"><i class="ph ph-tag"></i> Tags</button>
+            <button type="button" class="btn gh-vtab" data-vtab="commits"><i class="ph ph-git-commit"></i> Commits</button>
+          </div>
+
+          <div id="gh-tags-panel" class="gh-ref-panel">
+            <table class="gh-ref-table" id="gh-tags-table">
+              <thead>
+                <tr>
+                  <th class="gh-check-col"><input type="checkbox" id="gh-select-all-tags" title="Select all"></th>
+                  <th>Tag</th>
+                  <th>SHA</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <div id="gh-tags-empty" class="gh-empty" hidden>No tags found in this repository.</div>
+            <button type="button" class="btn btn-outline" id="gh-load-more-tags" hidden><i class="ph ph-arrow-down"></i> Load more</button>
+          </div>
+
+          <div id="gh-commits-panel" class="gh-ref-panel" hidden>
+            <table class="gh-ref-table" id="gh-commits-table">
+              <thead>
+                <tr>
+                  <th class="gh-check-col"><input type="checkbox" id="gh-select-all-commits" title="Select all"></th>
+                  <th>Message</th>
+                  <th>SHA</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <button type="button" class="btn btn-outline" id="gh-load-more-commits" hidden><i class="ph ph-arrow-down"></i> Load more</button>
+          </div>
+        </div>
+
+        <div class="gh-step" id="gh-step-details" hidden>
+          <h3><span class="gh-step-num">3</span> Project Details</h3>
+
+          <div class="form-group">
+            <label for="gh-project-name">Project name <span class="required">*</span></label>
+            <input type="text" id="gh-project-name" placeholder="My Documentation" required maxlength="100">
+          </div>
+
+          <div class="form-group">
+            <label for="gh-project-slug">Slug <span class="required">*</span></label>
+            <div class="input-prefix-wrap">
+              <span class="input-prefix">/docs/</span>
+              <input type="text" id="gh-project-slug" placeholder="my-docs" required maxlength="80" pattern="[a-z0-9]+(?:-[a-z0-9]+)*">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="gh-visibility">Visibility</label>
+            <select id="gh-visibility">
+              <option value="public" selected>Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
+          <div class="gh-import-actions">
+            <button type="button" class="btn btn-primary" id="gh-import-btn" disabled>
+              <i class="ph ph-download-simple"></i> Import <span id="gh-import-count">0</span> version(s)
+            </button>
+          </div>
+        </div>
+
+        <div id="gh-progress" class="gh-progress" hidden>
+          <div class="gh-progress-bar">
+            <div class="gh-progress-fill" id="gh-progress-fill"></div>
+          </div>
+          <p id="gh-progress-text">Importing...</p>
+        </div>
+      </div>
+    </section>
+  </div>
+  <% } %>
 </div>
 
 <script>
@@ -61,3 +198,10 @@
     }
   });
 </script>
+
+<% if (typeof githubConfigured !== 'undefined' && githubConfigured) { %>
+<script>
+  var ghCsrfToken = '<%= csrfToken %>';
+</script>
+<script src="/js/github-import.js"></script>
+<% } %>

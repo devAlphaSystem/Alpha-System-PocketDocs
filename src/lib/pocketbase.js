@@ -3,6 +3,11 @@ import { env } from "../config/env.js";
 import { logger } from "./logger.js";
 import { ExternalServiceError, InfrastructureError } from "../errors/taxonomy.js";
 
+export function pbFilterValue(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
 const pb = new PocketBase(env.POCKETBASE_URL);
 pb.autoCancellation(false);
 
@@ -10,7 +15,6 @@ function wrapPbError(err, operation) {
   if (err.status) {
     return new ExternalServiceError(`PocketBase error during ${operation}: ${err.status}`, {
       cause: err,
-      statusCode: err.status,
     });
   }
   if (err.message?.includes("ETIMEDOUT") || err.message?.includes("timeout")) {
@@ -60,50 +64,65 @@ export async function pbAuthWithPassword(collection, identity, password) {
 
 export async function pbList(collection, params = {}) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
-    return await pb.collection(collection).getList(params.page || 1, params.perPage || 30, {
+    const result = await pb.collection(collection).getList(params.page || 1, params.perPage || 30, {
       sort: params.sort,
       filter: params.filter,
       expand: params.expand,
       fields: params.fields,
     });
+    logger.debug("PocketBase query completed", { operation: "list", collection, duration_ms: Date.now() - start });
+    return result;
   } catch (err) {
+    logger.debug("PocketBase query failed", { operation: "list", collection, duration_ms: Date.now() - start });
     throw wrapPbError(err, `list:${collection}`);
   }
 }
 
 export async function pbGetOne(collection, id, params = {}) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
-    return await pb.collection(collection).getOne(id, {
+    const result = await pb.collection(collection).getOne(id, {
       expand: params.expand,
       fields: params.fields,
     });
+    logger.debug("PocketBase query completed", { operation: "getOne", collection, duration_ms: Date.now() - start });
+    return result;
   } catch (err) {
     if (err.status === 404) return null;
+    logger.debug("PocketBase query failed", { operation: "getOne", collection, duration_ms: Date.now() - start });
     throw wrapPbError(err, `getOne:${collection}:${id}`);
   }
 }
 
 export async function pbGetFirstByFilter(collection, filter, params = {}) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
-    return await pb.collection(collection).getFirstListItem(filter, {
+    const result = await pb.collection(collection).getFirstListItem(filter, {
       expand: params.expand,
       fields: params.fields,
     });
+    logger.debug("PocketBase query completed", { operation: "getFirstByFilter", collection, duration_ms: Date.now() - start });
+    return result;
   } catch (err) {
     if (err.status === 404) return null;
+    logger.debug("PocketBase query failed", { operation: "getFirstByFilter", collection, duration_ms: Date.now() - start });
     throw wrapPbError(err, `getFirstByFilter:${collection}`);
   }
 }
 
 export async function pbCreate(collection, data) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
     const record = await pb.collection(collection).create(data);
+    logger.debug("PocketBase write completed", { operation: "create", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 200, data: record };
   } catch (err) {
+    logger.debug("PocketBase write failed", { operation: "create", collection, duration_ms: Date.now() - start });
     if (err.status) {
       return { ok: false, status: err.status, data: err.data };
     }
@@ -113,10 +132,13 @@ export async function pbCreate(collection, data) {
 
 export async function pbUpdate(collection, id, data) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
     const record = await pb.collection(collection).update(id, data);
+    logger.debug("PocketBase write completed", { operation: "update", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 200, data: record };
   } catch (err) {
+    logger.debug("PocketBase write failed", { operation: "update", collection, duration_ms: Date.now() - start });
     if (err.status) {
       return { ok: false, status: err.status, data: err.data };
     }
@@ -126,10 +148,13 @@ export async function pbUpdate(collection, id, data) {
 
 export async function pbDelete(collection, id) {
   await ensureAdminAuth();
+  const start = Date.now();
   try {
     await pb.collection(collection).delete(id);
+    logger.debug("PocketBase write completed", { operation: "delete", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 204 };
   } catch (err) {
+    logger.debug("PocketBase write failed", { operation: "delete", collection, duration_ms: Date.now() - start });
     if (err.status) {
       return { ok: false, status: err.status };
     }

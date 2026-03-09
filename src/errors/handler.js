@@ -41,5 +41,7 @@ export function logError(err, requestId, url) {
     logger.error(err.message, meta);
   } else if (err.statusCode >= 400) {
     logger.warn(err.message, meta);
+  } else {
+    logger.info(err.message, meta);
   }
 }

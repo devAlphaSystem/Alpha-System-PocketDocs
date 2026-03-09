@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual, createHmac } from "node:crypto";
 import { COOKIE_NAMES } from "../config/constants.js";
 import { env } from "../config/env.js";
 import { CsrfError } from "../errors/taxonomy.js";
+import { logger } from "../lib/logger.js";
 
 function generateToken() {
   return randomBytes(32).toString("hex");
@@ -31,6 +32,7 @@ export function csrfMiddleware(req, res, next) {
   const formToken = req.body?._csrf || req.headers["x-csrf-token"];
 
   if (!cookieToken || !formToken) {
+    logger.warn("CSRF validation failed", { requestId: req.requestId, reason: "missing_token", path: req.originalUrl });
     return next(new CsrfError());
   }
 
@@ -41,9 +43,11 @@ export function csrfMiddleware(req, res, next) {
     const actualBuf = Buffer.from(formToken, "hex");
 
     if (expectedBuf.length !== actualBuf.length || !timingSafeEqual(expectedBuf, actualBuf)) {
+      logger.warn("CSRF validation failed", { requestId: req.requestId, reason: "token_mismatch", path: req.originalUrl });
       return next(new CsrfError());
     }
   } catch (_err) {
+    logger.warn("CSRF validation failed", { requestId: req.requestId, reason: "invalid_format", path: req.originalUrl });
     return next(new CsrfError());
   }
 

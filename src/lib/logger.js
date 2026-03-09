@@ -1,13 +1,21 @@
 import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import { env } from "../config/env.js";
-import { maskObject } from "./masking.js";
+import { maskObject, maskSensitiveValue } from "./masking.js";
 
 const { combine, timestamp, json, colorize, printf, errors } = winston.format;
 
+const SAFE_INFO_KEYS = new Set(["level", "message", "timestamp", "service", "stack"]);
+
 const maskFormat = winston.format((info) => {
-  if (info.metadata && typeof info.metadata === "object") {
-    info.metadata = maskObject(info.metadata);
+  for (const key of Object.keys(info)) {
+    if (SAFE_INFO_KEYS.has(key)) continue;
+    const val = info[key];
+    if (val && typeof val === "object") {
+      info[key] = maskObject(val);
+    } else {
+      info[key] = maskSensitiveValue(key, val);
+    }
   }
   return info;
 });
@@ -15,6 +23,7 @@ const maskFormat = winston.format((info) => {
 const consoleFormat = combine(
   colorize({ all: true }),
   timestamp({ format: "HH:mm:ss.SSS" }),
+  maskFormat(),
   printf(({ timestamp: ts, level, message, requestId, service, ...rest }) => {
     const reqPart = requestId ? ` [${requestId}]` : "";
     const svcPart = service ? ` (${service})` : "";

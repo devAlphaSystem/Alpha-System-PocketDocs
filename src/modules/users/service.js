@@ -14,7 +14,7 @@ export async function listUsers(page = 1) {
 export async function getUser(id) {
   const user = await pbGetOne(COLLECTIONS.USERS, id);
   if (!user) {
-    throw new NotFoundError("User not found.");
+    throw new NotFoundError("User");
   }
   return user;
 }
@@ -49,7 +49,7 @@ export async function createUser(data, requestId) {
 export async function updateUser(id, data, currentUserId, requestId) {
   const existing = await pbGetOne(COLLECTIONS.USERS, id);
   if (!existing) {
-    throw new NotFoundError("User not found.");
+    throw new NotFoundError("User");
   }
 
   if (existing.role === ROLES.OWNER && id !== currentUserId) {
@@ -93,7 +93,7 @@ export async function deleteUser(id, currentUserId, requestId) {
 
   const existing = await pbGetOne(COLLECTIONS.USERS, id);
   if (!existing) {
-    throw new NotFoundError("User not found.");
+    throw new NotFoundError("User");
   }
 
   if (existing.role === ROLES.OWNER) {

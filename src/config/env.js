@@ -24,6 +24,8 @@ const envSchema = z.object({
 
   SITE_NAME: z.string().min(1).default("PocketDocs"),
   SITE_URL: z.string().url().default("http://localhost:3000"),
+
+  GITHUB_TOKEN: z.string().optional().default(""),
 });
 
 const parsed = envSchema.safeParse(process.env);

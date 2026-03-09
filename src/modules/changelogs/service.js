@@ -1,10 +1,10 @@
-import { pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete } from "../../lib/pocketbase.js";
+import { pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS } from "../../config/constants.js";
 import { NotFoundError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
 export async function getChangelog(versionId) {
-  return pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${versionId}"`);
+  return pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${pbFilterValue(versionId)}"`);
 }
 
 export async function upsertChangelog(versionId, data, requestId) {

@@ -6,6 +6,7 @@ import { COOKIE_NAMES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { clearAuthCache } from "../../middleware/auth.js";
+import { logger } from "../../lib/logger.js";
 
 const router = Router();
 
@@ -56,6 +57,7 @@ router.post("/logout", (req, res) => {
   if (token) {
     clearAuthCache(token);
   }
+  logger.info("User logged out", { requestId: req.requestId, userId: req.user?.id });
   res.clearCookie(COOKIE_NAMES.AUTH_TOKEN, { path: "/" });
   res.redirect("/auth/login");
 });

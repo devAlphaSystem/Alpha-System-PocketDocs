@@ -38,11 +38,11 @@ export function getSettings() {
   return cached || { ...DEFAULTS };
 }
 
-export async function updateSettings(data) {
+export async function updateSettings(data, requestId) {
   const updated = { ...getSettings(), ...data };
   await mkdir(dirname(SETTINGS_PATH), { recursive: true });
   await writeFile(SETTINGS_PATH, JSON.stringify(updated, null, 2));
   cached = updated;
-  logger.info("Site settings updated");
+  logger.info("Site settings updated", { requestId });
   return updated;
 }

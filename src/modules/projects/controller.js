@@ -7,6 +7,7 @@ import { requireAuth, requireRole, requireProjectAccess } from "../../middleware
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
+import { isGitHubConfigured } from "../github/service.js";
 
 const router = Router();
 
@@ -39,6 +40,7 @@ router.get("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), (re
     error: null,
     values: {},
     siteName: env.SITE_NAME,
+    githubConfigured: isGitHubConfigured(),
   });
 });
 
@@ -55,6 +57,7 @@ router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), va
         error: err.message,
         values: req.validatedBody,
         siteName: env.SITE_NAME,
+        githubConfigured: isGitHubConfigured(),
       });
     }
     next(err);

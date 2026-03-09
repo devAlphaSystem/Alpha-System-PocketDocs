@@ -53,11 +53,11 @@ router.post("/", async (req, res, next) => {
     const validatedBody = parseSettingsBody(canManageIpRestriction ? updateAllSettingsSchema : updateSettingsSchema, req.body);
     const { heroWord1, heroWord2, heroSubtitle } = validatedBody;
 
-    await updateSettings({ heroWord1, heroWord2, heroSubtitle });
+    await updateSettings({ heroWord1, heroWord2, heroSubtitle }, req.requestId);
 
     if (canManageIpRestriction) {
       const { enabled, allowedIps } = validatedBody;
-      await updateIpRestriction({ enabled, allowedIps });
+      await updateIpRestriction({ enabled, allowedIps }, req.requestId);
     }
 
     res.redirect("/admin/settings?success=Settings saved successfully.");

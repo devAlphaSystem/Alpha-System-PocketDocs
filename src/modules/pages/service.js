@@ -1,11 +1,11 @@
-import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete } from "../../lib/pocketbase.js";
+import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
 export async function listPages(versionId) {
   return pbList(COLLECTIONS.PAGES, {
-    filter: `version = "${versionId}"`,
+    filter: `version = "${pbFilterValue(versionId)}"`,
     sort: "order,title",
     perPage: 500,
   });
@@ -40,7 +40,7 @@ export async function getPage(pageId) {
 }
 
 export async function getPageBySlug(versionId, slug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${versionId}" && slug = "${slug}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(slug)}"`);
 }
 
 export async function createPage(versionId, data, requestId) {
@@ -92,7 +92,7 @@ export async function deletePage(pageId, requestId) {
   const page = await getPage(pageId);
 
   const children = await pbList(COLLECTIONS.PAGES, {
-    filter: `parent = "${pageId}"`,
+    filter: `parent = "${pbFilterValue(pageId)}"`,
     perPage: 200,
   });
   await Promise.all((children.items || []).map((child) => pbUpdate(COLLECTIONS.PAGES, child.id, { parent: page.parent || "" })));

@@ -4,7 +4,19 @@ import { AuthenticationError, AuthorizationError } from "../errors/taxonomy.js";
 import { logger } from "../lib/logger.js";
 
 const AUTH_CACHE_TTL = 120_000;
+const AUTH_CACHE_MAX_SIZE = 10_000;
 const authCache = new Map();
+
+function evictStaleEntries() {
+  const now = Date.now();
+  for (const [key, value] of authCache) {
+    if (now >= value.expiry) {
+      authCache.delete(key);
+    }
+  }
+}
+
+setInterval(evictStaleEntries, 60_000).unref();
 
 export function clearAuthCache(token) {
   if (token) {
@@ -80,6 +92,10 @@ export async function loadUserMiddleware(req, _res, next) {
     };
 
     authCache.set(token, { user, pbToken: refreshResult.token, expiry: Date.now() + AUTH_CACHE_TTL });
+
+    if (authCache.size > AUTH_CACHE_MAX_SIZE) {
+      evictStaleEntries();
+    }
 
     req.user = user;
     req.pbToken = refreshResult.token;

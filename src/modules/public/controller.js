@@ -4,6 +4,7 @@ import { buildPageTree } from "../pages/service.js";
 import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 import { env } from "../../config/env.js";
+import { logger } from "../../lib/logger.js";
 
 const router = Router();
 
@@ -174,6 +175,7 @@ router.get("/api/search", async (req, res, next) => {
       })),
     });
   } catch (err) {
+    logger.warn("Search query failed", { requestId: req.requestId, query: q, error: err.message });
     res.json({ results: [] });
   }
 });

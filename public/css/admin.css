@@ -951,6 +951,299 @@ body.fullscreen .editor-content .editor-preview-side {
   }
 }
 
+.gh-import {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.gh-step {
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
+
+.gh-step[hidden],
+.gh-progress[hidden] {
+  display: none !important;
+}
+
+.gh-step h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-lg);
+}
+
+.gh-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.gh-repo-input-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+
+.gh-repo-input-row input {
+  flex: 1;
+}
+
+.gh-repo-list-wrap {
+  margin-bottom: var(--space-5);
+}
+
+.gh-repo-list {
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  margin: var(--space-2) 0;
+}
+
+.gh-repo-info {
+  margin-top: var(--space-3);
+}
+
+.gh-repo-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--surface-border);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  transition: background 0.15s;
+}
+
+.gh-repo-item:last-child {
+  border-bottom: none;
+}
+
+.gh-repo-item:hover {
+  background: var(--surface-1);
+}
+
+.gh-repo-item-name {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.gh-repo-item-name i {
+  color: var(--text-3);
+}
+
+.gh-repo-item-desc {
+  color: var(--text-3);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gh-repo-card {
+  background: var(--surface-1);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+}
+
+.gh-repo-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-base);
+}
+
+.gh-repo-card-header i {
+  font-size: 1.25em;
+}
+
+.gh-repo-desc {
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-2);
+}
+
+.gh-repo-meta {
+  display: flex;
+  gap: var(--space-4);
+  color: var(--text-3);
+  font-size: var(--text-xs);
+}
+
+.gh-repo-meta i {
+  margin-right: 2px;
+}
+
+.gh-version-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+.gh-vtab {
+  border: 1px solid var(--surface-border) !important;
+  background: var(--surface-0) !important;
+  color: var(--text-2) !important;
+  padding: var(--space-2) var(--space-4) !important;
+  min-height: 36px;
+  font-size: var(--text-sm);
+}
+
+.gh-vtab.active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary) !important;
+}
+
+.gh-ref-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  margin-top: 0;
+}
+
+.gh-ref-table th,
+.gh-ref-table td {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--surface-border);
+}
+
+.gh-ref-table tbody tr:hover {
+  background: var(--surface-1);
+}
+
+.gh-ref-table th {
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--surface-1);
+}
+
+.gh-ref-table code {
+  font-size: var(--text-xs);
+  background: var(--surface-1);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.gh-check-col {
+  width: 40px;
+  text-align: center !important;
+}
+
+.gh-empty {
+  padding: var(--space-5);
+  text-align: center;
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.gh-import-actions {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--surface-border);
+}
+
+#gh-load-more-repos,
+#gh-load-more-tags,
+#gh-load-more-commits {
+  margin-top: var(--space-2);
+}
+
+.gh-progress {
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.gh-progress-bar {
+  height: 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.gh-progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+  width: 0;
+}
+
+.gh-progress p {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .gh-step {
+    padding: var(--space-4);
+  }
+
+  .gh-repo-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  #gh-fetch-btn,
+  #gh-load-repos-btn,
+  #gh-load-more-repos,
+  #gh-load-more-tags,
+  #gh-load-more-commits,
+  #gh-import-btn {
+    width: 100%;
+  }
+
+  .gh-ref-table th,
+  .gh-ref-table td {
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .gh-progress {
+    padding: var(--space-4);
+  }
+}
+
+.ph-spin {
+  animation: ph-spin 1s linear infinite;
+}
+
+@keyframes ph-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .admin-dialog {
   position: fixed;
   top: 50%;

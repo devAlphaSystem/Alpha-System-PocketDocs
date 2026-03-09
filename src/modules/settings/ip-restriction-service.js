@@ -52,7 +52,7 @@ export function getIpRestriction() {
   return cached || { ...DEFAULTS };
 }
 
-export async function updateIpRestriction(data) {
+export async function updateIpRestriction(data, requestId) {
   const updated = {
     ...getIpRestriction(),
     ...data,
@@ -61,7 +61,7 @@ export async function updateIpRestriction(data) {
   await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
   await writeFile(IP_RESTRICTION_PATH, JSON.stringify(updated, null, 2));
   cached = updated;
-  logger.info("IP restriction settings updated");
+  logger.info("IP restriction settings updated", { requestId });
   return updated;
 }
 
@@ -73,6 +73,8 @@ export function isIpAllowed(ip) {
   const allowedList = parseAllowedIps(config.allowedIps);
 
   if (allowedList.length === 0) return true;
+
+  if (!ip) return false;
 
   const normalizedIp = ip === "::1" ? "127.0.0.1" : ip.replace(/^::ffff:/, "");
   return allowedList.some((allowed) => {

@@ -23,6 +23,7 @@ import changelogRoutes from "./modules/changelogs/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
 import userRoutes from "./modules/users/controller.js";
 import publicRoutes from "./modules/public/controller.js";
+import githubRoutes from "./modules/github/controller.js";
 import { loadSettings, getSettings } from "./modules/settings/service.js";
 import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
 import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
@@ -56,12 +57,38 @@ app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
 app.use(securityHeadersMiddleware);
 
+app.get("/health", async (_req, res) => {
+  const uptime = process.uptime();
+  const mem = process.memoryUsage();
+  try {
+    await authenticateAdmin();
+    res.json({
+      status: "healthy",
+      uptime_s: Math.floor(uptime),
+      memory: {
+        rss_mb: Math.round(mem.rss / 1048576),
+        heap_used_mb: Math.round(mem.heapUsed / 1048576),
+        heap_total_mb: Math.round(mem.heapTotal / 1048576),
+      },
+    });
+  } catch (_err) {
+    res.status(503).json({
+      status: "unhealthy",
+      uptime_s: Math.floor(uptime),
+      checks: { pocketbase: "unreachable" },
+    });
+  }
+});
+
 const generalLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: env.RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } },
+  handler: (req, res) => {
+    logger.warn("Rate limit exceeded", { requestId: req.requestId, ip: req.ip, path: req.originalUrl });
+    res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } });
+  },
 });
 
 const authLimiter = rateLimit({
@@ -69,7 +96,10 @@ const authLimiter = rateLimit({
   max: env.AUTH_RATE_LIMIT_MAX_REQUESTS,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: { code: "RATE_LIMITED", message: "Too many login attempts. Please try again later." } },
+  handler: (req, res) => {
+    logger.warn("Auth rate limit exceeded", { requestId: req.requestId, ip: req.ip, path: req.originalUrl });
+    res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many login attempts. Please try again later." } });
+  },
 });
 
 app.use(loadUserMiddleware);
@@ -130,6 +160,7 @@ const adminLayoutMiddleware = (req, res, next) => {
   next();
 };
 
+app.use("/admin/github", ipRestrictionMiddleware, adminLayoutMiddleware, githubRoutes);
 app.use("/admin/settings", ipRestrictionMiddleware, adminLayoutMiddleware, settingsRoutes);
 app.use("/admin/users", ipRestrictionMiddleware, adminLayoutMiddleware, userRoutes);
 app.use("/admin/projects", ipRestrictionMiddleware, adminLayoutMiddleware, projectRoutes);
@@ -147,6 +178,8 @@ app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
 async function start() {
+  const startTime = Date.now();
+
   await loadSettings();
   logger.info("Site settings loaded");
 
@@ -167,22 +200,28 @@ async function start() {
   const ownerReady = await checkOwnerExists();
   logger.info(ownerReady ? "Owner account found" : "No owner account — setup required");
 
-  app.listen(env.PORT, env.HOST, () => {
+  app.listen(env.PORT, env.HOST, function () {
+    const server = this;
+
+    function shutdown(signal) {
+      logger.info(`${signal} received, shutting down gracefully`);
+      server.close(() => {
+        process.exit(0);
+      });
+      setTimeout(() => process.exit(1), 10_000).unref();
+    }
+
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+
     logger.info("PocketDocs server started", {
       port: env.PORT,
       host: env.HOST,
       environment: env.NODE_ENV,
       url: `http://${env.HOST === "0.0.0.0" ? "localhost" : env.HOST}:${env.PORT}`,
+      startup_ms: Date.now() - startTime,
     });
   });
 }
-
-function shutdown(signal) {
-  logger.info(`${signal} received, shutting down gracefully`);
-  process.exit(0);
-}
-
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
 
 start();

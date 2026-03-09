@@ -1,4 +1,4 @@
-import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete } from "../../lib/pocketbase.js";
+import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
@@ -22,7 +22,7 @@ export async function getProject(projectId) {
 }
 
 export async function getProjectBySlug(slug) {
-  return pbGetFirstByFilter(COLLECTIONS.PROJECTS, `slug = "${slug}"`, { expand: "owner" });
+  return pbGetFirstByFilter(COLLECTIONS.PROJECTS, `slug = "${pbFilterValue(slug)}"`, { expand: "owner" });
 }
 
 export async function createProject(data, userId, requestId) {

@@ -1,4 +1,4 @@
-import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete } from "../../lib/pocketbase.js";
+import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
@@ -13,7 +13,7 @@ function generateSlug(label) {
 
 export async function listVersions(projectId) {
   return pbList(COLLECTIONS.VERSIONS, {
-    filter: `project = "${projectId}"`,
+    filter: `project = "${pbFilterValue(projectId)}"`,
     sort: "-order,-created",
     perPage: 200,
   });
@@ -28,7 +28,7 @@ export async function getVersion(versionId) {
 }
 
 export async function getVersionBySlug(projectId, slug) {
-  return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project = "${projectId}" && slug = "${slug}"`);
+  return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project = "${pbFilterValue(projectId)}" && slug = "${pbFilterValue(slug)}"`);
 }
 
 export async function createVersion(projectId, data, requestId) {
@@ -54,7 +54,10 @@ export async function createVersion(projectId, data, requestId) {
   }
 
   if (data.clone_from) {
-    await cloneVersionContent(data.clone_from, result.data.id, requestId);
+    const sourceVersion = await pbGetOne(COLLECTIONS.VERSIONS, data.clone_from);
+    if (sourceVersion && sourceVersion.project === projectId) {
+      await cloneVersionContent(data.clone_from, result.data.id, requestId);
+    }
   }
 
   logger.info("Version created", { requestId, versionId: result.data.id, projectId });
@@ -63,32 +66,40 @@ export async function createVersion(projectId, data, requestId) {
 
 async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) {
   const sourcePages = await pbList(COLLECTIONS.PAGES, {
-    filter: `version = "${sourceVersionId}"`,
+    filter: `version = "${pbFilterValue(sourceVersionId)}"`,
     sort: "order",
     perPage: 500,
   });
 
   const idMap = new Map();
+  const allPages = sourcePages.items || [];
 
-  const rootPages = (sourcePages.items || []).filter((p) => !p.parent);
-  for (const page of rootPages) {
-    const cloned = await pbCreate(COLLECTIONS.PAGES, {
-      version: targetVersionId,
-      title: page.title,
-      slug: page.slug,
-      content: page.content,
-      icon: page.icon || "",
-      order: page.order,
-      parent: "",
-    });
-    if (cloned.ok) {
-      idMap.set(page.id, cloned.data.id);
+  const sorted = [];
+  const remaining = [...allPages];
+  const processed = new Set();
+
+  for (let i = remaining.length - 1; i >= 0; i--) {
+    if (!remaining[i].parent) {
+      sorted.push(remaining[i]);
+      processed.add(remaining[i].id);
+      remaining.splice(i, 1);
     }
   }
 
-  const childPages = (sourcePages.items || []).filter((p) => p.parent);
-  for (const page of childPages) {
-    const newParent = idMap.get(page.parent) || "";
+  let safety = remaining.length + 1;
+  while (remaining.length > 0 && safety-- > 0) {
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      if (processed.has(remaining[i].parent)) {
+        sorted.push(remaining[i]);
+        processed.add(remaining[i].id);
+        remaining.splice(i, 1);
+      }
+    }
+  }
+  sorted.push(...remaining);
+
+  for (const page of sorted) {
+    const newParent = page.parent ? idMap.get(page.parent) || "" : "";
     const cloned = await pbCreate(COLLECTIONS.PAGES, {
       version: targetVersionId,
       title: page.title,
@@ -103,7 +114,7 @@ async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) 
     }
   }
 
-  const sourceChangelog = await pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${sourceVersionId}"`);
+  const sourceChangelog = await pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${pbFilterValue(sourceVersionId)}"`);
   if (sourceChangelog) {
     await pbCreate(COLLECTIONS.CHANGELOGS, {
       version: targetVersionId,
@@ -120,17 +131,19 @@ async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) 
 }
 
 export async function updateVersion(versionId, data, requestId) {
-  if (data.label) {
+  const updateData = { ...data };
+
+  if (updateData.label) {
     const version = await getVersion(versionId);
-    const slug = generateSlug(data.label);
+    const slug = generateSlug(updateData.label);
     const existing = await getVersionBySlug(version.project, slug);
     if (existing && existing.id !== versionId) {
       throw new ConflictError("A version with this label already exists.");
     }
-    data.slug = slug;
+    updateData.slug = slug;
   }
 
-  const result = await pbUpdate(COLLECTIONS.VERSIONS, versionId, data);
+  const result = await pbUpdate(COLLECTIONS.VERSIONS, versionId, updateData);
   if (!result.ok) {
     throw new ValidationError("Failed to update version.");
   }
