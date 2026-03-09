@@ -9,7 +9,6 @@ const __dirname = dirname(__filename);
 const SETTINGS_PATH = join(__dirname, "../../../data/site-settings.json");
 
 const DEFAULTS = Object.freeze({
-  headerBrand: "PocketDocs",
   heroWord1: "Pocket",
   heroWord2: "Docs",
   heroSubtitle: "Beautiful, self-hosted documentation for your projects.",

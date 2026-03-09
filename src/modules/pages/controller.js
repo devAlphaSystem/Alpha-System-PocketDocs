@@ -7,6 +7,7 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
+import { renderMarkdown } from "../../lib/markdown.js";
 
 const router = Router({ mergeParams: true });
 
@@ -129,6 +130,15 @@ router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, 
       extraCss: "/css/easymde.css",
       extraJs: ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js", "/js/editor.js"],
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/preview", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
+  try {
+    const html = renderMarkdown(req.body?.content || "");
+    res.json({ html });
   } catch (err) {
     next(err);
   }

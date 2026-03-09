@@ -27,8 +27,8 @@ router.get("/", (req, res) => {
 
 router.post("/", validate(updateAllSettingsSchema), async (req, res, next) => {
   try {
-    const { headerBrand, heroWord1, heroWord2, heroSubtitle, enabled, allowedIps } = req.validatedBody;
-    await updateSettings({ headerBrand, heroWord1, heroWord2, heroSubtitle });
+    const { heroWord1, heroWord2, heroSubtitle, enabled, allowedIps } = req.validatedBody;
+    await updateSettings({ heroWord1, heroWord2, heroSubtitle });
     await updateIpRestriction({ enabled, allowedIps });
     res.redirect("/admin/settings?success=Settings saved successfully.");
   } catch (err) {

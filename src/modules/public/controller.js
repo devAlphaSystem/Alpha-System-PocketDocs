@@ -68,20 +68,7 @@ router.get("/docs/:projectSlug/:versionSlug", async (req, res, next) => {
       return res.redirect(`/docs/${project.slug}/${version.slug}/${firstPage.slug}`);
     }
 
-    res.render("public/docs", {
-      title: `${project.name} - ${version.label}`,
-      project,
-      version,
-      versions: versionsResult.items || [],
-      page: null,
-      pages,
-      pageTree,
-      contentHtml: "<p>No documentation pages yet.</p>",
-      headings: [],
-      siteName: env.SITE_NAME,
-      siteUrl: env.SITE_URL,
-      user: req.user || null,
-    });
+    return res.redirect(`/docs/${project.slug}/${version.slug}/changelog`);
   } catch (err) {
     next(err);
   }

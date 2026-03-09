@@ -1,14 +1,4 @@
 <header class="public-header">
-  <a href="/" class="header-brand">
-    <% const _ss = typeof siteSettings !== 'undefined' ? siteSettings : null; %>
-    <% if (_ss) { %>
-    <span><%= _ss.headerBrand %></span>
-    <% } else if (siteName === 'PocketDocs') { %>
-    <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
-    <% } else { %>
-    <span><%= siteName %></span>
-    <% } %>
-  </a>
   <% if (typeof project !== 'undefined' && project) { %>
   <ul class="header-breadcrumb">
     <li><a href="/">Home</a></li>

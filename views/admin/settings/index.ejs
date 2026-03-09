@@ -25,11 +25,7 @@
 
     <div class="settings-tabs" data-tabs>
       <div class="settings-tabs-nav" role="tablist" aria-label="Settings sections">
-        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-brand" aria-controls="settings-panel-brand" aria-selected="true" data-tab-target="settings-panel-brand" tabindex="0">
-          <i class="ph ph-app-window"></i>
-          <span>Branding</span>
-        </button>
-        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-hero" aria-controls="settings-panel-hero" aria-selected="false" data-tab-target="settings-panel-hero" tabindex="-1">
+        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-hero" aria-controls="settings-panel-hero" aria-selected="true" data-tab-target="settings-panel-hero" tabindex="0">
           <i class="ph ph-image"></i>
           <span>Home Hero</span>
         </button>
@@ -39,19 +35,7 @@
         </button>
       </div>
 
-      <section class="settings-tab-panel" id="settings-panel-brand" role="tabpanel" aria-labelledby="settings-tab-brand" data-tab-panel>
-        <div class="form-section">
-          <h3>Public Header</h3>
-          <p class="form-section-desc">The brand text shown in the public navigation header.</p>
-
-          <div class="form-group">
-            <label for="headerBrand">Header Brand <span class="required">*</span></label>
-            <input type="text" id="headerBrand" name="headerBrand" value="<%= settings.headerBrand %>" required maxlength="100" placeholder="e.g. Acme Docs">
-          </div>
-        </div>
-      </section>
-
-      <section class="settings-tab-panel" id="settings-panel-hero" role="tabpanel" aria-labelledby="settings-tab-hero" data-tab-panel hidden>
+      <section class="settings-tab-panel" id="settings-panel-hero" role="tabpanel" aria-labelledby="settings-tab-hero" data-tab-panel>
         <div class="form-section">
           <h3>Home Page Hero</h3>
           <p class="form-section-desc">The hero section on the landing page. Word 1 is rendered in light weight, Word 2 in bold.</p>

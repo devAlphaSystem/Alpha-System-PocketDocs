@@ -24,7 +24,7 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
-  <form id="changelogForm" method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/changelog" class="editor-form" novalidate>
+  <form id="changelogForm" method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/changelog" class="editor-form" data-preview-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/changelog/preview" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <div class="editor-meta">

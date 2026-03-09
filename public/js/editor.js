@@ -2,6 +2,60 @@
   var textarea = document.getElementById("content");
   if (!textarea || typeof EasyMDE === "undefined") return;
 
+  var form = textarea.closest("form");
+  var csrfInput = form ? form.querySelector('input[name="_csrf"]') : null;
+  var previewUrl = form ? form.getAttribute("data-preview-url") : "";
+  var previewRequestId = 0;
+  var previewCache = new Map();
+
+  function wrapPreviewHtml(html) {
+    return '<div class="preview-shell docs-content prose">' + html + "</div>";
+  }
+
+  function fetchPreviewHtml(markdown, previewElement) {
+    if (!previewUrl || !previewElement) {
+      previewElement.innerHTML = wrapPreviewHtml("");
+      return;
+    }
+
+    if (previewCache.has(markdown)) {
+      previewElement.innerHTML = previewCache.get(markdown);
+      return;
+    }
+
+    previewRequestId += 1;
+    var requestId = previewRequestId;
+
+    fetch(previewUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrfInput ? csrfInput.value : "",
+      },
+      body: JSON.stringify({ content: markdown }),
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error("Preview request failed");
+        }
+        return response.json();
+      })
+      .then(function (payload) {
+        if (requestId !== previewRequestId) {
+          return;
+        }
+        var rendered = wrapPreviewHtml(payload && payload.html ? payload.html : "");
+        previewCache.set(markdown, rendered);
+        previewElement.innerHTML = rendered;
+      })
+      .catch(function () {
+        if (requestId !== previewRequestId) {
+          return;
+        }
+        previewElement.innerHTML = wrapPreviewHtml('<p class="preview-error">Preview unavailable.</p>');
+      });
+  }
+
   var editor = new EasyMDE({
     element: textarea,
     autoDownloadFontAwesome: false,
@@ -38,9 +92,22 @@
       codeSyntaxHighlighting: true,
     },
     minHeight: "400px",
+    previewRender: function (plainText, preview) {
+      if (!preview) {
+        return wrapPreviewHtml("");
+      }
+
+      preview.innerHTML = wrapPreviewHtml('<p class="preview-loading">Rendering preview...</p>');
+      fetchPreviewHtml(plainText, preview);
+      return preview.innerHTML;
+    },
   });
 
-  var form = textarea.closest("form");
+  function refreshEditorLayout() {
+    window.requestAnimationFrame(function () {
+      editor.codemirror.refresh();
+    });
+  }
 
   function submitEditorForm() {
     if (!form) return;
@@ -79,4 +146,20 @@
     },
     true,
   );
+
+  var toolbar = editor.gui && editor.gui.toolbar;
+  if (toolbar) {
+    toolbar.addEventListener("click", function (event) {
+      var target = event.target;
+      if (!(target instanceof Element)) return;
+      var button = target.closest("button");
+      if (!button) return;
+      if (button.classList.contains("preview") || button.classList.contains("side-by-side") || button.classList.contains("fullscreen")) {
+        setTimeout(refreshEditorLayout, 0);
+      }
+    });
+  }
+
+  window.addEventListener("resize", refreshEditorLayout);
+  document.addEventListener("fullscreenchange", refreshEditorLayout);
 })();

@@ -53,29 +53,68 @@ const sanitizeOptions = {
   },
 };
 
+function slugifyHeading(text) {
+  return text
+    .toLowerCase()
+    .replace(/&[a-z0-9#]+;/gi, "-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function withUniqueSlug(base, seen) {
+  const root = base || "section";
+  const count = seen.get(root) || 0;
+  seen.set(root, count + 1);
+  return count === 0 ? root : `${root}-${count + 1}`;
+}
+
+function addHeadingIds(html) {
+  const seen = new Map();
+
+  const reserveId = (candidate) => {
+    const key = candidate || "section";
+    const count = seen.get(key) || 0;
+    seen.set(key, count + 1);
+    return count === 0 ? key : `${key}-${count + 1}`;
+  };
+
+  return html.replace(/<h([1-6])([^>]*)>([\s\S]*?)<\/h\1>/gi, (full, level, attrs, inner) => {
+    const idMatch = attrs.match(/\sid=["']([^"']+)["']/i);
+    if (idMatch) {
+      const reservedId = reserveId(idMatch[1]);
+      if (reservedId === idMatch[1]) {
+        return full;
+      }
+      return `<h${level}${attrs.replace(/\sid=["'][^"']+["']/i, ` id="${reservedId}"`)}>${inner}</h${level}>`;
+    }
+
+    const plainText = inner.replace(/<[^>]+>/g, " ").trim();
+    const id = withUniqueSlug(slugifyHeading(plainText), seen);
+    return `<h${level}${attrs} id="${id}">${inner}</h${level}>`;
+  });
+}
+
 export function renderMarkdown(content) {
   if (!content) {
     return "";
   }
   const raw = marked.parse(content);
-  return sanitizeHtml(raw, sanitizeOptions);
+  const sanitized = sanitizeHtml(raw, sanitizeOptions);
+  return addHeadingIds(sanitized);
 }
 
 export function extractHeadings(html) {
-  const headingRegex = /<h([2-4])\s*(?:id="([^"]*)")?[^>]*>(.*?)<\/h[2-4]>/gi;
+  const headingRegex = /<h([2-4])([^>]*)>([\s\S]*?)<\/h\1>/gi;
   const headings = [];
+  const seen = new Map();
   let match;
 
   while ((match = headingRegex.exec(html)) !== null) {
     const level = parseInt(match[1], 10);
-    const id =
-      match[2] ||
-      match[3]
-        .replace(/<[^>]+>/g, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-    const text = match[3].replace(/<[^>]+>/g, "");
+    const attrs = match[2] || "";
+    const text = match[3].replace(/<[^>]+>/g, "").trim();
+    const attrId = attrs.match(/\sid=["']([^"']+)["']/i)?.[1] || "";
+    const id = attrId ? withUniqueSlug(attrId, seen) : withUniqueSlug(slugifyHeading(text), seen);
     headings.push({ level, id, text });
   }
 
