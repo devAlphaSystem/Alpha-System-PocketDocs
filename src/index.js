@@ -6,9 +6,10 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import expressLayouts from "express-ejs-layouts";
 
-import { env } from "./config/env.js";
+import { env, trustProxy } from "./config/env.js";
 import { logger } from "./lib/logger.js";
 import { authenticateAdmin } from "./lib/pocketbase.js";
+import { getClientIp } from "./lib/request-ip.js";
 import { requestIdMiddleware, requestLoggerMiddleware } from "./middleware/request-id.js";
 import { securityHeadersMiddleware } from "./middleware/security-headers.js";
 import { loadUserMiddleware } from "./middleware/auth.js";
@@ -37,7 +38,7 @@ const app = express();
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "../views"));
 app.set("x-powered-by", false);
-app.set("trust proxy", 1);
+app.set("trust proxy", trustProxy);
 
 app.use(expressLayouts);
 app.set("layout", "layouts/public");
@@ -86,7 +87,7 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    logger.warn("Rate limit exceeded", { requestId: req.requestId, ip: req.ip, path: req.originalUrl });
+    logger.warn("Rate limit exceeded", { requestId: req.requestId, ip: getClientIp(req), path: req.originalUrl });
     res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } });
   },
 });
@@ -97,7 +98,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   handler: (req, res) => {
-    logger.warn("Auth rate limit exceeded", { requestId: req.requestId, ip: req.ip, path: req.originalUrl });
+    logger.warn("Auth rate limit exceeded", { requestId: req.requestId, ip: getClientIp(req), path: req.originalUrl });
     res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many login attempts. Please try again later." } });
   },
 });
@@ -121,7 +122,7 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();
-  res.locals.ipAllowed = isIpAllowed(req.ip);
+  res.locals.ipAllowed = isIpAllowed(getClientIp(req));
   next();
 });
 
@@ -217,6 +218,7 @@ async function start() {
     logger.info("PocketDocs server started", {
       port: env.PORT,
       host: env.HOST,
+      trustProxy: env.TRUST_PROXY,
       environment: env.NODE_ENV,
       url: `http://${env.HOST === "0.0.0.0" ? "localhost" : env.HOST}:${env.PORT}`,
       startup_ms: Date.now() - startTime,

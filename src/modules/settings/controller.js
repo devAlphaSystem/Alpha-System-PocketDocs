@@ -6,6 +6,7 @@ import { getIpRestriction, updateIpRestriction } from "./ip-restriction-service.
 import { updateAllSettingsSchema, updateSettingsSchema } from "./validation.js";
 import { ROLES } from "../../config/constants.js";
 import { AuthorizationError, ValidationError } from "../../errors/taxonomy.js";
+import { getClientIp } from "../../lib/request-ip.js";
 
 const router = Router();
 
@@ -36,6 +37,7 @@ router.get("/", (req, res) => {
     settings,
     canManageIpRestriction,
     ipRestriction: canManageIpRestriction ? getIpRestriction() : null,
+    detectedIp: canManageIpRestriction ? getClientIp(req) : null,
     error: req.query.error || null,
     success: req.query.success || null,
   });
@@ -57,7 +59,8 @@ router.post("/", async (req, res, next) => {
 
     if (canManageIpRestriction) {
       const { enabled, allowedIps } = validatedBody;
-      await updateIpRestriction({ enabled, allowedIps }, req.requestId);
+      const currentIp = getClientIp(req);
+      await updateIpRestriction({ enabled, allowedIps }, req.requestId, currentIp);
     }
 
     res.redirect("/admin/settings?success=Settings saved successfully.");

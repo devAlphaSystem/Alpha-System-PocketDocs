@@ -78,6 +78,9 @@
             <label for="allowedIps">Allowed IPs</label>
             <textarea id="allowedIps" name="allowedIps" rows="5" maxlength="5000" placeholder="e.g. 127.0.0.1&#10;192.168.1.100&#10;10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
             <p class="form-hint">Enter one IP address per line. IPv4 and IPv6 are supported.</p>
+            <% if (detectedIp) { %>
+            <p class="form-hint"><strong>Your current IP:</strong> <code><%= detectedIp %></code> — make sure this is in the list above or you will be locked out.</p>
+            <% } %>
           </div>
         </div>
       </section>

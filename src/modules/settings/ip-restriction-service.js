@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { logger } from "../../lib/logger.js";
+import { normalizeIp } from "../../lib/request-ip.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -52,11 +53,23 @@ export function getIpRestriction() {
   return cached || { ...DEFAULTS };
 }
 
-export async function updateIpRestriction(data, requestId) {
+export async function updateIpRestriction(data, requestId, currentIp) {
+  let ips = normalizeAllowedIps(data.allowedIps ?? getIpRestriction().allowedIps);
+
+  if (data.enabled === "enable" && currentIp) {
+    const ipList = parseAllowedIps(ips);
+    const normalizedCurrent = normalizeIp(currentIp);
+    const alreadyIncluded = ipList.some((entry) => normalizeIp(entry) === normalizedCurrent);
+    if (!alreadyIncluded && normalizedCurrent) {
+      ips = ips ? `${normalizedCurrent}\n${ips}` : normalizedCurrent;
+      logger.info("Auto-included current IP in allowed list to prevent lockout", { requestId, ip: normalizedCurrent });
+    }
+  }
+
   const updated = {
     ...getIpRestriction(),
     ...data,
-    allowedIps: normalizeAllowedIps(data.allowedIps ?? getIpRestriction().allowedIps),
+    allowedIps: ips,
   };
   await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
   await writeFile(IP_RESTRICTION_PATH, JSON.stringify(updated, null, 2));
@@ -74,11 +87,11 @@ export function isIpAllowed(ip) {
 
   if (allowedList.length === 0) return true;
 
-  if (!ip) return false;
+  const normalizedIp = normalizeIp(ip);
+  if (!normalizedIp) return false;
 
-  const normalizedIp = ip === "::1" ? "127.0.0.1" : ip.replace(/^::ffff:/, "");
   return allowedList.some((allowed) => {
-    const normalizedAllowed = allowed === "::1" ? "127.0.0.1" : allowed.replace(/^::ffff:/, "");
+    const normalizedAllowed = normalizeIp(allowed);
     return normalizedIp === normalizedAllowed;
   });
 }
