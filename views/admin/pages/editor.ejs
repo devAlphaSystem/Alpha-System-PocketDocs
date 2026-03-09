@@ -38,7 +38,7 @@
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label for="icon">Icon (Phosphor)</label>
+          <label for="icon">Icon (<a href="https://phosphoricons.com/#toolbar" target="_blank" rel="noopener noreferrer">Phosphor</a>)</label>
           <input type="text" id="icon" name="icon" placeholder="book-open" maxlength="50" value="<%= typeof page !== 'undefined' && page ? (page.icon || '') : (typeof formValues !== 'undefined' && formValues && formValues.icon ? formValues.icon : '') %>">
         </div>
         <div class="form-group">
@@ -66,11 +66,69 @@
 <script>
   var titleInput = document.getElementById('title');
   var slugInput = document.getElementById('slug');
+  var iconInput = document.getElementById('icon');
   var autoSlug = !slugInput.value;
+  var autoIcon = !iconInput.value;
+
+  /**
+   * Map of page-title patterns to Phosphor icon names.
+   * Keys are matched case-insensitively against the trimmed title.
+   */
+  var PAGE_ICON_MAP = {
+    'readme':          'book-open-text',
+    'license':         'scales',
+    'licence':         'scales',
+    'changelog':       'clock-counter-clockwise',
+    'contributing':    'git-pull-request',
+    'code of conduct': 'handshake',
+    'security':        'shield-check',
+    'faq':             'question',
+    'getting started': 'rocket-launch',
+    'installation':    'download-simple',
+    'setup':           'gear',
+    'configuration':   'sliders-horizontal',
+    'api':             'plugs-connected',
+    'api reference':   'plugs-connected',
+    'authentication':  'lock-key',
+    'deployment':      'cloud-arrow-up',
+    'troubleshooting': 'wrench',
+    'architecture':    'tree-structure',
+    'migration':       'arrows-left-right',
+    'testing':         'test-tube',
+    'examples':        'code',
+    'tutorial':        'graduation-cap',
+    'introduction':    'hand-waving',
+    'overview':        'binoculars',
+    'quickstart':      'lightning',
+    'quick start':     'lightning',
+    'upgrade':         'arrow-circle-up',
+    'plugins':         'puzzle-piece',
+    'extensions':      'puzzle-piece',
+    'glossary':        'book-bookmark',
+    'reference':       'files',
+    'usage':           'book-open',
+    'guide':           'compass',
+    'features':        'star',
+    'release notes':   'newspaper',
+    'about':           'info',
+    'support':         'lifebuoy',
+    'contact':         'envelope-simple',
+    'privacy':         'eye-slash',
+    'privacy policy':  'eye-slash',
+    'terms':           'file-text',
+    'terms of service':'file-text',
+  };
+
   slugInput.addEventListener('input', function() { autoSlug = false; });
+  iconInput.addEventListener('input', function() { autoIcon = false; });
+
   titleInput.addEventListener('input', function() {
     if (autoSlug) {
       slugInput.value = titleInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+    if (autoIcon) {
+      var key = titleInput.value.trim().toLowerCase();
+      iconInput.value = PAGE_ICON_MAP[key] || '';
     }
   });
 </script>

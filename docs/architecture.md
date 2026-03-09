@@ -250,7 +250,8 @@ Error taxonomy (in `src/errors/taxonomy.js`):
 flowchart LR
     MD["Raw Markdown"] --> Marked["Marked (GFM)"]
     Marked --> HL["highlight.js (code blocks)"]
-    HL --> HID["addHeadingIds (anchor links)"]
+    HL --> MER["convertMermaidBlocks"]
+    MER --> HID["addHeadingIds (anchor links)"]
     HID --> SAN["sanitize-html"]
     SAN --> HTML["Safe HTML"]
 ```
@@ -258,6 +259,7 @@ flowchart LR
 The `renderMarkdown` function in `src/lib/markdown.js` produces sanitized HTML with:
 - GitHub Flavored Markdown (tables, task lists, strikethrough)
 - Syntax-highlighted code blocks
+- Mermaid diagram support (fenced `mermaid` code blocks → rendered diagrams)
 - Auto-generated heading IDs for table-of-contents linking
 - External links open in new tabs with `rel="noopener noreferrer"`
 

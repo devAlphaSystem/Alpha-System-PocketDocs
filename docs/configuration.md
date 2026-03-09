@@ -72,7 +72,7 @@ The `TRUST_PROXY` variable controls how Express reads the client IP from proxy h
 | `false` | Do not trust any proxy headers |
 | `127.0.0.1,10.0.0.0/8` | Trust specific proxy IPs (comma-separated) |
 
-**Recommendation:** Set to `1` for a single reverse proxy. Set to the exact proxy count or IP list for more complex setups. See [ADR-005](adr/005-ip-trust-proxy.md) for details.
+**Recommendation:** Set to `1` for a single reverse proxy. Set to the exact proxy count or IP list for more complex setups.
 
 ---
 

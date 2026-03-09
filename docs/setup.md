@@ -83,7 +83,6 @@ Open `http://localhost:3000` — you will be redirected to the setup page. Creat
 
 ## Developer Onboarding Checklist
 
-```markdown
 - [ ] Clone the repository
 - [ ] Install prerequisites: Node.js ≥ 20, PocketBase ≥ 0.26
 - [ ] Start PocketBase: `./pocketbase serve`
@@ -93,7 +92,6 @@ Open `http://localhost:3000` — you will be redirected to the setup page. Creat
 - [ ] Start the development server: `npm run dev`
 - [ ] Complete owner setup at http://localhost:3000/setup
 - [ ] Review architecture overview in docs/architecture.md
-```
 
 ## Production Deployment
 
@@ -119,7 +117,7 @@ server {
 }
 ```
 
-Set `TRUST_PROXY=1` in `.env` when behind a single proxy. For CDN + proxy chains, use `TRUST_PROXY=2` or a comma-separated list of trusted IPs. See [ADR-005](adr/005-ip-trust-proxy.md) for details.
+Set `TRUST_PROXY=1` in `.env` when behind a single proxy. For CDN + proxy chains, use `TRUST_PROXY=2` or a comma-separated list of trusted IPs.
 
 ### Process Manager
 

@@ -7,6 +7,9 @@ const marked = new Marked(
   markedHighlight({
     langPrefix: "hljs language-",
     highlight(code, lang) {
+      if (lang === "mermaid") {
+        return code;
+      }
       if (lang && hljs.getLanguage(lang)) {
         return hljs.highlight(code, { language: lang }).value;
       }
@@ -26,7 +29,7 @@ const sanitizeOptions = {
     ...sanitizeHtml.defaults.allowedAttributes,
     code: ["class"],
     span: ["class"],
-    pre: ["class"],
+    pre: ["class", "data-*"],
     div: ["class", "id"],
     img: ["src", "alt", "title", "width", "height", "loading"],
     a: ["href", "title", "target", "rel"],
@@ -95,8 +98,19 @@ function addHeadingIds(html) {
 }
 
 /**
+ * Converts `<pre><code class="...language-mermaid">` blocks produced by Marked into
+ * `<pre class="mermaid">` elements that the Mermaid client library can render.
+ *
+ * @param {string} html - The raw HTML string from the Marked parser.
+ * @returns {string} HTML with mermaid code blocks converted to `<pre class="mermaid">`.
+ */
+function convertMermaidBlocks(html) {
+  return html.replace(/<pre><code class="[^"]*language-mermaid[^"]*">([\s\S]*?)<\/code><\/pre>/gi, (_match, inner) => `<pre class="mermaid">${inner}</pre>`);
+}
+
+/**
  * Renders a Markdown string to sanitized HTML with syntax-highlighted code
- * blocks and unique heading IDs.
+ * blocks, Mermaid diagram support, and unique heading IDs.
  *
  * @param {string} content - The raw Markdown source text.
  * @returns {string} Sanitized HTML string.
@@ -106,7 +120,8 @@ export function renderMarkdown(content) {
     return "";
   }
   const raw = marked.parse(content);
-  const sanitized = sanitizeHtml(raw, sanitizeOptions);
+  const withMermaid = convertMermaidBlocks(raw);
+  const sanitized = sanitizeHtml(withMermaid, sanitizeOptions);
   return addHeadingIds(sanitized);
 }
 

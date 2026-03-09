@@ -3,6 +3,8 @@
   if (!blocks.length) return;
 
   blocks.forEach(function (pre) {
+    if (pre.classList.contains("mermaid")) return;
+
     pre.style.position = "relative";
 
     var btn = document.createElement("button");

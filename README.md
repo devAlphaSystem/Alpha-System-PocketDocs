@@ -9,6 +9,7 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 - **Multi-project, multi-version** — manage many documentation projects, each with unlimited versions
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
 - **Markdown editor** — EasyMDE with syntax-highlighted live preview
+- **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
 - **Role-based access** — Owner, Admin, and Editor roles with granular permissions
 - **GitHub import** — import Markdown docs directly from GitHub repos (tags, branches, commits)
@@ -26,7 +27,7 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 | Framework | Express 5 |
 | Database | [PocketBase](https://pocketbase.io/) |
 | Templating | EJS + express-ejs-layouts |
-| Markdown | Marked + highlight.js + sanitize-html |
+| Markdown | Marked + highlight.js + sanitize-html + Mermaid |
 | Validation | Zod |
 | Logging | Winston + daily-rotate-file |
 | Auth | Cookie-based JWT via PocketBase |
