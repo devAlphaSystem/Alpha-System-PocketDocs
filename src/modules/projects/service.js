@@ -3,6 +3,14 @@ import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
+/**
+ * Retrieves a paginated list of projects sorted by creation date.
+ *
+ * @param {string} userId - The current user's ID.
+ * @param {string} userRole - The current user's role.
+ * @param {number} [page=1] - The 1-based page number.
+ * @returns {Promise<Object>} Paginated result containing project items.
+ */
 export async function listProjects(userId, userRole, page = PAGINATION.DEFAULT_PAGE) {
   const perPage = PAGINATION.DEFAULT_PER_PAGE;
   return pbList(COLLECTIONS.PROJECTS, {
@@ -13,6 +21,13 @@ export async function listProjects(userId, userRole, page = PAGINATION.DEFAULT_P
   });
 }
 
+/**
+ * Retrieves a single project by its ID with the owner relation expanded.
+ *
+ * @param {string} projectId - The project record ID.
+ * @returns {Promise<Object>} The project record.
+ * @throws {NotFoundError} If the project does not exist.
+ */
 export async function getProject(projectId) {
   const project = await pbGetOne(COLLECTIONS.PROJECTS, projectId, { expand: "owner" });
   if (!project) {
@@ -21,10 +36,30 @@ export async function getProject(projectId) {
   return project;
 }
 
+/**
+ * Retrieves a single project by its URL slug.
+ *
+ * @param {string} slug - The project slug.
+ * @returns {Promise<Object|null>} The project record, or `null` if not found.
+ */
 export async function getProjectBySlug(slug) {
   return pbGetFirstByFilter(COLLECTIONS.PROJECTS, `slug = "${pbFilterValue(slug)}"`, { expand: "owner" });
 }
 
+/**
+ * Creates a new project after validating slug uniqueness.
+ *
+ * @param {Object} data - Project creation data.
+ * @param {string} data.name - The project name.
+ * @param {string} data.slug - The URL slug.
+ * @param {string} [data.description] - An optional project description.
+ * @param {string} [data.visibility] - The visibility level (`public` or `private`).
+ * @param {string} userId - The owner's user ID.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The created project record.
+ * @throws {ConflictError} If a project with the same slug already exists.
+ * @throws {ValidationError} If the creation fails.
+ */
 export async function createProject(data, userId, requestId) {
   const existing = await getProjectBySlug(data.slug);
   if (existing) {
@@ -44,6 +79,16 @@ export async function createProject(data, userId, requestId) {
   return result.data;
 }
 
+/**
+ * Updates an existing project, validating slug uniqueness if the slug is changed.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {Object} data - The fields to update.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The updated project record.
+ * @throws {ConflictError} If the new slug collides with another project.
+ * @throws {ValidationError} If the update fails.
+ */
 export async function updateProject(projectId, data, requestId) {
   if (data.slug) {
     const existing = await getProjectBySlug(data.slug);
@@ -61,6 +106,14 @@ export async function updateProject(projectId, data, requestId) {
   return result.data;
 }
 
+/**
+ * Deletes a project by its ID.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<void>}
+ * @throws {NotFoundError} If the project does not exist.
+ */
 export async function deleteProject(projectId, requestId) {
   const result = await pbDelete(COLLECTIONS.PROJECTS, projectId);
   if (!result.ok) {

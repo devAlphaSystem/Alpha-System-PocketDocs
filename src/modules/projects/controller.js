@@ -1,3 +1,7 @@
+/**
+ * @module projects/controller
+ * @description Express routes for CRUD operations on documentation projects.
+ */
 import { Router } from "express";
 import { listProjects, getProject, createProject, updateProject, deleteProject } from "./service.js";
 import { listVersions } from "../versions/service.js";

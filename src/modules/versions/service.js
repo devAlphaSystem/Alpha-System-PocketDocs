@@ -11,6 +11,12 @@ function generateSlug(label) {
     .slice(0, 120);
 }
 
+/**
+ * Retrieves all versions belonging to a project, sorted by descending order.
+ *
+ * @param {string} projectId - The project record ID.
+ * @returns {Promise<Object>} Paginated result containing version items.
+ */
 export async function listVersions(projectId) {
   return pbList(COLLECTIONS.VERSIONS, {
     filter: `project = "${pbFilterValue(projectId)}"`,
@@ -19,6 +25,13 @@ export async function listVersions(projectId) {
   });
 }
 
+/**
+ * Retrieves a single version by its ID with the project relation expanded.
+ *
+ * @param {string} versionId - The version record ID.
+ * @returns {Promise<Object>} The version record with expanded project.
+ * @throws {NotFoundError} If the version does not exist.
+ */
 export async function getVersion(versionId) {
   const version = await pbGetOne(COLLECTIONS.VERSIONS, versionId, { expand: "project" });
   if (!version) {
@@ -27,10 +40,31 @@ export async function getVersion(versionId) {
   return version;
 }
 
+/**
+ * Retrieves a version by its slug within a project.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {string} slug - The version slug.
+ * @returns {Promise<Object|null>} The version record, or `null` if not found.
+ */
 export async function getVersionBySlug(projectId, slug) {
   return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project = "${pbFilterValue(projectId)}" && slug = "${pbFilterValue(slug)}"`);
 }
 
+/**
+ * Creates a new version under a project, optionally cloning content from
+ * an existing version.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {Object} data - Version creation data.
+ * @param {string} data.label - The version label.
+ * @param {boolean} [data.is_public] - Whether the version is publicly visible.
+ * @param {string} [data.clone_from] - An existing version ID to clone pages from.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The created version record.
+ * @throws {ConflictError} If a version with the same label already exists.
+ * @throws {ValidationError} If the creation fails.
+ */
 export async function createVersion(projectId, data, requestId) {
   const slug = generateSlug(data.label);
 
@@ -130,6 +164,16 @@ async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) 
   });
 }
 
+/**
+ * Updates an existing version, regenerating the slug if the label is changed.
+ *
+ * @param {string} versionId - The version record ID.
+ * @param {Object} data - The fields to update.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The updated version record.
+ * @throws {ConflictError} If the new label generates a slug that collides with another version.
+ * @throws {ValidationError} If the update fails.
+ */
 export async function updateVersion(versionId, data, requestId) {
   const updateData = { ...data };
 
@@ -152,6 +196,14 @@ export async function updateVersion(versionId, data, requestId) {
   return result.data;
 }
 
+/**
+ * Deletes a version by its ID.
+ *
+ * @param {string} versionId - The version record ID.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<void>}
+ * @throws {NotFoundError} If the version does not exist.
+ */
 export async function deleteVersion(versionId, requestId) {
   const result = await pbDelete(COLLECTIONS.VERSIONS, versionId);
   if (!result.ok) {

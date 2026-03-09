@@ -15,6 +15,13 @@ function splitForwardedHeader(value) {
     .filter(Boolean);
 }
 
+/**
+ * Normalizes an IP address by stripping ports, converting IPv6-mapped IPv4,
+ * and resolving loopback addresses.
+ *
+ * @param {string} ip - The raw IP address string.
+ * @returns {string} The normalized IP address, or an empty string if invalid.
+ */
 export function normalizeIp(ip) {
   const raw = String(ip || "").trim();
 
@@ -43,10 +50,23 @@ export function normalizeIp(ip) {
   return raw;
 }
 
+/**
+ * Extracts and normalizes the client IP address from an Express request.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @returns {string} The normalized client IP address.
+ */
 export function getClientIp(req) {
   return normalizeIp(req.ip || req.socket?.remoteAddress || "");
 }
 
+/**
+ * Returns a detailed breakdown of all IP-related data for debugging proxy
+ * and forwarding configurations.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @returns {{ clientIp: string, proxyIps: Array<string>, remoteAddress: string, xForwardedFor: Array<string>, xRealIp: string }} IP debug information.
+ */
 export function getClientIpDebug(req) {
   return {
     clientIp: getClientIp(req),

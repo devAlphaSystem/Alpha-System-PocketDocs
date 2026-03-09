@@ -18,12 +18,26 @@ function evictStaleEntries() {
 
 setInterval(evictStaleEntries, 60_000).unref();
 
+/**
+ * Removes a cached authentication entry for the given token.
+ *
+ * @param {string} [token] - The auth token to evict from cache.
+ * @returns {void}
+ */
 export function clearAuthCache(token) {
   if (token) {
     authCache.delete(token);
   }
 }
 
+/**
+ * Express middleware that rejects unauthenticated requests with a 401 error.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} _res - The Express response object.
+ * @param {import("express").NextFunction} next - The next middleware function.
+ * @returns {void}
+ */
 export function requireAuth(req, _res, next) {
   if (!req.user) {
     return next(new AuthenticationError());
@@ -31,6 +45,12 @@ export function requireAuth(req, _res, next) {
   next();
 }
 
+/**
+ * Creates middleware that restricts access to users with one of the specified roles.
+ *
+ * @param {...string} allowedRoles - The role strings permitted to access the route.
+ * @returns {import("express").RequestHandler} Express middleware function.
+ */
 export function requireRole(...allowedRoles) {
   return (req, _res, next) => {
     if (!req.user) {
@@ -43,6 +63,13 @@ export function requireRole(...allowedRoles) {
   };
 }
 
+/**
+ * Creates middleware that grants access to owners and admins unconditionally,
+ * and optionally restricts other roles to the specified list.
+ *
+ * @param {...string} allowedRoles - Additional roles permitted beyond owner and admin.
+ * @returns {import("express").RequestHandler} Express middleware function.
+ */
 export function requireProjectAccess(...allowedRoles) {
   return (req, _res, next) => {
     if (!req.user) {
@@ -61,6 +88,15 @@ export function requireProjectAccess(...allowedRoles) {
   };
 }
 
+/**
+ * Express middleware that loads and caches the authenticated user from the
+ * auth cookie, attaching `req.user` and `req.pbToken` when valid.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} _res - The Express response object.
+ * @param {import("express").NextFunction} next - The next middleware function.
+ * @returns {Promise<void>}
+ */
 export async function loadUserMiddleware(req, _res, next) {
   const token = req.cookies?.[COOKIE_NAMES.AUTH_TOKEN];
   if (!token) {

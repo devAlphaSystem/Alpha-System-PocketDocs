@@ -1,3 +1,8 @@
+/**
+ * @module logger
+ * @description Configures and exports a Winston logger with daily-rotating file
+ * transports, automatic sensitive-value masking, and structured JSON output.
+ */
 import winston from "winston";
 import DailyRotateFile from "winston-daily-rotate-file";
 import { env } from "../config/env.js";
@@ -68,6 +73,11 @@ transports.push(
   }),
 );
 
+/**
+ * Application-wide Winston logger instance with console and file transports.
+ *
+ * @type {import("winston").Logger}
+ */
 const logger = winston.createLogger({
   level: env.LOG_LEVEL,
   defaultMeta: { service: "pocketdocs" },

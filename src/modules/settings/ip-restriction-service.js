@@ -27,6 +27,12 @@ function normalizeAllowedIps(value) {
   return parseAllowedIps(value).join("\n");
 }
 
+/**
+ * Loads IP restriction settings from disk into the in-memory cache,
+ * creating defaults if the file does not exist.
+ *
+ * @returns {Promise<Object>} The loaded IP restriction configuration.
+ */
 export async function loadIpRestriction() {
   try {
     const raw = await readFile(IP_RESTRICTION_PATH, "utf-8");
@@ -49,10 +55,26 @@ export async function loadIpRestriction() {
   return cached;
 }
 
+/**
+ * Returns the current cached IP restriction settings.
+ *
+ * @returns {Object} The IP restriction configuration with `enabled` and `allowedIps` fields.
+ */
 export function getIpRestriction() {
   return cached || { ...DEFAULTS };
 }
 
+/**
+ * Updates IP restriction settings, automatically including the current request
+ * IP in the allow-list when enabling restrictions to prevent self-lockout.
+ *
+ * @param {Object} data - The update data.
+ * @param {string} [data.enabled] - Whether to enable or disable restrictions (`"enable"` or `"disable"`).
+ * @param {string} [data.allowedIps] - Newline-separated list of allowed IP addresses.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @param {string} [currentIp] - The current user's IP address for lockout prevention.
+ * @returns {Promise<Object>} The updated IP restriction configuration.
+ */
 export async function updateIpRestriction(data, requestId, currentIp) {
   let ips = normalizeAllowedIps(data.allowedIps ?? getIpRestriction().allowedIps);
 
@@ -78,6 +100,12 @@ export async function updateIpRestriction(data, requestId, currentIp) {
   return updated;
 }
 
+/**
+ * Checks whether a given IP address is allowed under the current restriction rules.
+ *
+ * @param {string} ip - The IP address to check.
+ * @returns {boolean} `true` if the IP is allowed or restrictions are disabled.
+ */
 export function isIpAllowed(ip) {
   const config = getIpRestriction();
   if (config.enabled !== "enable") return true;

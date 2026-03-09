@@ -3,6 +3,12 @@ import { COLLECTIONS } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
+/**
+ * Retrieves all pages belonging to a version, sorted by order and title.
+ *
+ * @param {string} versionId - The version ID to list pages for.
+ * @returns {Promise<Object>} Paginated result containing page items.
+ */
 export async function listPages(versionId) {
   return pbList(COLLECTIONS.PAGES, {
     filter: `version = "${pbFilterValue(versionId)}"`,
@@ -11,6 +17,13 @@ export async function listPages(versionId) {
   });
 }
 
+/**
+ * Transforms a flat array of pages into a nested tree structure based on
+ * parent-child relationships.
+ *
+ * @param {Array<Object>} pages - Flat array of page records.
+ * @returns {Array<Object>} Array of root page nodes, each with a `children` array.
+ */
 export function buildPageTree(pages) {
   const map = new Map();
   const roots = [];
@@ -31,6 +44,13 @@ export function buildPageTree(pages) {
   return roots;
 }
 
+/**
+ * Retrieves a single page by its ID with the version relation expanded.
+ *
+ * @param {string} pageId - The page record ID.
+ * @returns {Promise<Object>} The page record with expanded version.
+ * @throws {NotFoundError} If the page does not exist.
+ */
 export async function getPage(pageId) {
   const page = await pbGetOne(COLLECTIONS.PAGES, pageId, { expand: "version" });
   if (!page) {
@@ -39,10 +59,32 @@ export async function getPage(pageId) {
   return page;
 }
 
+/**
+ * Retrieves a single page by its slug within a version.
+ *
+ * @param {string} versionId - The version ID to search within.
+ * @param {string} slug - The page slug.
+ * @returns {Promise<Object|null>} The matching page record, or `null` if not found.
+ */
 export async function getPageBySlug(versionId, slug) {
   return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(slug)}"`);
 }
 
+/**
+ * Creates a new page in the specified version after validating slug uniqueness.
+ *
+ * @param {string} versionId - The version ID to create the page in.
+ * @param {Object} data - Page creation data.
+ * @param {string} data.title - The page title.
+ * @param {string} data.slug - The URL slug.
+ * @param {string} [data.content] - The Markdown content.
+ * @param {string} [data.parent] - The parent page ID.
+ * @param {string} [data.icon] - The page icon identifier.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The created page record.
+ * @throws {ConflictError} If a page with the same slug already exists.
+ * @throws {ValidationError} If the creation fails.
+ */
 export async function createPage(versionId, data, requestId) {
   const [existing, allPages] = await Promise.all([getPageBySlug(versionId, data.slug), listPages(versionId)]);
   if (existing) {
@@ -69,6 +111,16 @@ export async function createPage(versionId, data, requestId) {
   return result.data;
 }
 
+/**
+ * Updates an existing page, validating slug uniqueness if the slug is changed.
+ *
+ * @param {string} pageId - The page record ID to update.
+ * @param {Object} data - The fields to update.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The updated page record.
+ * @throws {ConflictError} If the new slug collides with another page.
+ * @throws {ValidationError} If the update fails.
+ */
 export async function updatePage(pageId, data, requestId) {
   if (data.slug) {
     const page = await getPage(pageId);
@@ -88,6 +140,14 @@ export async function updatePage(pageId, data, requestId) {
   return result.data;
 }
 
+/**
+ * Deletes a page and re-parents its children to the deleted page's parent.
+ *
+ * @param {string} pageId - The page record ID to delete.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<void>}
+ * @throws {NotFoundError} If the page does not exist.
+ */
 export async function deletePage(pageId, requestId) {
   const page = await getPage(pageId);
 
@@ -105,6 +165,13 @@ export async function deletePage(pageId, requestId) {
   logger.info("Page deleted", { requestId, pageId });
 }
 
+/**
+ * Batch-updates page ordering and parent assignments.
+ *
+ * @param {Array<{ id: string, order: number, parent: string }>} updates - The reorder instructions.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<void>}
+ */
 export async function reorderPages(updates, requestId) {
   const results = await Promise.all(updates.map((u) => pbUpdate(COLLECTIONS.PAGES, u.id, { order: u.order, parent: u.parent || "" })));
 

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+/** @type {import("zod").ZodEffects} Validates user creation data with password confirmation and role. */
 export const createUserSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters.").max(100),
@@ -13,6 +14,7 @@ export const createUserSchema = z
     path: ["passwordConfirm"],
   });
 
+/** @type {import("zod").ZodEffects} Validates user update data with optional password change. */
 export const updateUserSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters.").max(100),

@@ -1,3 +1,8 @@
+/**
+ * @module settings/controller
+ * @description Express routes for managing site settings and IP restriction
+ * configuration in the admin panel.
+ */
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";

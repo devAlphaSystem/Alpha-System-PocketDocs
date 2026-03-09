@@ -1,3 +1,7 @@
+/**
+ * @module versions/controller
+ * @description Express routes for CRUD operations on project versions.
+ */
 import { Router } from "express";
 import { listVersions, getVersion, createVersion, updateVersion, deleteVersion } from "./service.js";
 import { createVersionSchema, updateVersionSchema } from "./validation.js";

@@ -16,6 +16,12 @@ const DEFAULTS = Object.freeze({
 
 let cached = null;
 
+/**
+ * Loads site settings from disk into the in-memory cache, creating defaults
+ * if the file does not exist.
+ *
+ * @returns {Promise<Object>} The loaded settings object.
+ */
 export async function loadSettings() {
   try {
     const raw = await readFile(SETTINGS_PATH, "utf-8");
@@ -34,10 +40,22 @@ export async function loadSettings() {
   return cached;
 }
 
+/**
+ * Returns the current cached site settings.
+ *
+ * @returns {Object} The site settings object.
+ */
 export function getSettings() {
   return cached || { ...DEFAULTS };
 }
 
+/**
+ * Merges new data into the site settings, persists to disk, and updates the cache.
+ *
+ * @param {Object} data - The settings fields to update.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Object>} The updated settings object.
+ */
 export async function updateSettings(data, requestId) {
   const updated = { ...getSettings(), ...data };
   await mkdir(dirname(SETTINGS_PATH), { recursive: true });

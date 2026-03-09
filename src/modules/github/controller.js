@@ -1,3 +1,8 @@
+/**
+ * @module github/controller
+ * @description Express routes for GitHub integration, including repository
+ * browsing, tag/commit listing, and documentation import.
+ */
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";

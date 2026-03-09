@@ -1,3 +1,8 @@
+/**
+ * @module index
+ * @description Application entry point that configures Express middleware,
+ * mounts route modules, and starts the HTTP server.
+ */
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
@@ -189,6 +194,12 @@ app.get("/favicon.ico", (_req, res) => {
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
+/**
+ * Initializes the application by loading settings, verifying the PocketBase
+ * connection, checking owner setup state, and starting the HTTP server.
+ *
+ * @returns {Promise<void>}
+ */
 async function start() {
   const startTime = Date.now();
 

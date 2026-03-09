@@ -3,6 +3,15 @@ import { env } from "../config/env.js";
 import { logger } from "../lib/logger.js";
 import { getClientIp, getClientIpDebug } from "../lib/request-ip.js";
 
+/**
+ * Express middleware that blocks requests from IP addresses not present
+ * in the configured allow-list when IP restriction is enabled.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} res - The Express response object.
+ * @param {import("express").NextFunction} next - The next middleware function.
+ * @returns {void}
+ */
 export function ipRestrictionMiddleware(req, res, next) {
   const clientIp = getClientIp(req);
 

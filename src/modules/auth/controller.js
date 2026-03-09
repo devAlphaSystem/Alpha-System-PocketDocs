@@ -1,3 +1,7 @@
+/**
+ * @module auth/controller
+ * @description Express routes for user authentication, including login and logout.
+ */
 import { Router } from "express";
 import { loginUser } from "./service.js";
 import { loginSchema } from "./validation.js";

@@ -12,6 +12,15 @@ function signToken(token) {
   return createHmac("sha256", env.CSRF_SECRET).update(token).digest("hex");
 }
 
+/**
+ * Express middleware that generates CSRF tokens on safe methods and validates
+ * them on state-changing methods using HMAC-SHA256 with timing-safe comparison.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} res - The Express response object.
+ * @param {import("express").NextFunction} next - The next middleware function.
+ * @returns {void}
+ */
 export function csrfMiddleware(req, res, next) {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
     let token = req.cookies?.[COOKIE_NAMES.CSRF_TOKEN];

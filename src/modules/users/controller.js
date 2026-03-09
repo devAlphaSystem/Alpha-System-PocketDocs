@@ -1,3 +1,8 @@
+/**
+ * @module users/controller
+ * @description Express routes for owner-level user management, including
+ * creating, updating, and deleting user accounts.
+ */
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";

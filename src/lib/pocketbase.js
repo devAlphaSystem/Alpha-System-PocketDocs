@@ -3,6 +3,12 @@ import { env } from "../config/env.js";
 import { logger } from "./logger.js";
 import { ExternalServiceError, InfrastructureError } from "../errors/taxonomy.js";
 
+/**
+ * Escapes a value for safe use inside PocketBase filter expressions.
+ *
+ * @param {*} value - The value to escape.
+ * @returns {string} The escaped string safe for filter interpolation.
+ */
 export function pbFilterValue(value) {
   if (value === null || value === undefined) return "";
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
@@ -38,6 +44,12 @@ async function ensureAdminAuth() {
   }
 }
 
+/**
+ * Authenticates as the PocketBase superuser and caches the admin token.
+ *
+ * @returns {Promise<string>} Resolves with the admin auth token.
+ * @throws {ExternalServiceError} If the admin authentication fails.
+ */
 export async function authenticateAdmin() {
   try {
     const result = await pb.collection("_superusers").authWithPassword(env.POCKETBASE_ADMIN_EMAIL, env.POCKETBASE_ADMIN_PASSWORD);
@@ -48,6 +60,15 @@ export async function authenticateAdmin() {
   }
 }
 
+/**
+ * Authenticates a user with email and password against a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {string} identity - The user's email or username.
+ * @param {string} password - The user's password.
+ * @returns {Promise<{ ok: boolean, status: number, data: Object }>} Result envelope with token and record on success.
+ * @throws {InfrastructureError} If a network or connection error occurs.
+ */
 export async function pbAuthWithPassword(collection, identity, password) {
   const client = new PocketBase(env.POCKETBASE_URL);
   client.autoCancellation(false);
@@ -62,6 +83,20 @@ export async function pbAuthWithPassword(collection, identity, password) {
   }
 }
 
+/**
+ * Retrieves a paginated list of records from a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {Object} [params] - Query parameters.
+ * @param {number} [params.page=1] - The 1-based page number.
+ * @param {number} [params.perPage=30] - Number of records per page.
+ * @param {string} [params.sort] - Sort expression.
+ * @param {string} [params.filter] - Filter expression.
+ * @param {string} [params.expand] - Relations to expand.
+ * @param {string} [params.fields] - Fields to select.
+ * @returns {Promise<Object>} Paginated result with `items`, `page`, `totalPages`, and `totalItems`.
+ * @throws {InfrastructureError|ExternalServiceError} If the query fails.
+ */
 export async function pbList(collection, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -80,6 +115,17 @@ export async function pbList(collection, params = {}) {
   }
 }
 
+/**
+ * Retrieves a single record by ID from a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {string} id - The record ID.
+ * @param {Object} [params] - Query parameters.
+ * @param {string} [params.expand] - Relations to expand.
+ * @param {string} [params.fields] - Fields to select.
+ * @returns {Promise<Object|null>} The record object, or `null` if not found.
+ * @throws {InfrastructureError|ExternalServiceError} If the query fails for reasons other than 404.
+ */
 export async function pbGetOne(collection, id, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -97,6 +143,17 @@ export async function pbGetOne(collection, id, params = {}) {
   }
 }
 
+/**
+ * Retrieves the first record matching a filter from a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {string} filter - PocketBase filter expression.
+ * @param {Object} [params] - Query parameters.
+ * @param {string} [params.expand] - Relations to expand.
+ * @param {string} [params.fields] - Fields to select.
+ * @returns {Promise<Object|null>} The matching record, or `null` if none found.
+ * @throws {InfrastructureError|ExternalServiceError} If the query fails for reasons other than 404.
+ */
 export async function pbGetFirstByFilter(collection, filter, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -114,6 +171,14 @@ export async function pbGetFirstByFilter(collection, filter, params = {}) {
   }
 }
 
+/**
+ * Creates a new record in a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {Object} data - The record data to create.
+ * @returns {Promise<{ ok: boolean, status: number, data: Object }>} Result envelope with the created record on success.
+ * @throws {InfrastructureError} If a non-HTTP error occurs.
+ */
 export async function pbCreate(collection, data) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -130,6 +195,15 @@ export async function pbCreate(collection, data) {
   }
 }
 
+/**
+ * Updates an existing record in a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {string} id - The record ID to update.
+ * @param {Object} data - The fields to update.
+ * @returns {Promise<{ ok: boolean, status: number, data: Object }>} Result envelope with the updated record on success.
+ * @throws {InfrastructureError} If a non-HTTP error occurs.
+ */
 export async function pbUpdate(collection, id, data) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -146,6 +220,14 @@ export async function pbUpdate(collection, id, data) {
   }
 }
 
+/**
+ * Deletes a record from a PocketBase collection.
+ *
+ * @param {string} collection - The PocketBase collection name.
+ * @param {string} id - The record ID to delete.
+ * @returns {Promise<{ ok: boolean, status: number }>} Result envelope confirming deletion.
+ * @throws {InfrastructureError} If a non-HTTP error occurs.
+ */
 export async function pbDelete(collection, id) {
   await ensureAdminAuth();
   const start = Date.now();
@@ -162,6 +244,12 @@ export async function pbDelete(collection, id) {
   }
 }
 
+/**
+ * Refreshes a user authentication token via PocketBase.
+ *
+ * @param {string} token - The existing auth token to refresh.
+ * @returns {Promise<{ token: string, record: Object }|null>} Updated token and user record, or `null` if refresh fails.
+ */
 export async function pbAuthRefresh(token) {
   const client = new PocketBase(env.POCKETBASE_URL);
   client.autoCancellation(false);

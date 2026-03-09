@@ -1,3 +1,7 @@
+/**
+ * @module setup/controller
+ * @description Express routes for the initial owner account setup wizard.
+ */
 import { Router } from "express";
 import { registerOwner, isOwnerSetupComplete } from "./service.js";
 import { registerSchema } from "../auth/validation.js";

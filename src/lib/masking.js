@@ -77,6 +77,14 @@ function maskIp(ip) {
   return "[REDACTED]";
 }
 
+/**
+ * Masks a single value based on its key name using pattern-matched redaction
+ * rules for emails, phones, tokens, cards, sessions, IPs, and passwords.
+ *
+ * @param {string} key - The field or property name.
+ * @param {*} value - The value to potentially mask.
+ * @returns {*} The original value or a masked replacement string.
+ */
 export function maskSensitiveValue(key, value) {
   if (value === null || value === undefined) {
     return value;
@@ -116,6 +124,12 @@ export function maskSensitiveValue(key, value) {
   return value;
 }
 
+/**
+ * Recursively traverses an object and masks sensitive values by key name.
+ *
+ * @param {Object|Array|*} obj - The object, array, or primitive to mask.
+ * @returns {Object|Array|*} A deep copy with sensitive values redacted.
+ */
 export function maskObject(obj) {
   if (!obj || typeof obj !== "object") {
     return obj;

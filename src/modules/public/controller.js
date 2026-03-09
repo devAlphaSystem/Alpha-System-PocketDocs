@@ -1,3 +1,8 @@
+/**
+ * @module public/controller
+ * @description Express routes for the public-facing documentation site, including
+ * project listings, versioned docs, changelogs, and search.
+ */
 import { Router } from "express";
 import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, searchPages } from "./service.js";
 import { buildPageTree } from "../pages/service.js";

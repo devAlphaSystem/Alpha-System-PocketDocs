@@ -94,6 +94,13 @@ function addHeadingIds(html) {
   });
 }
 
+/**
+ * Renders a Markdown string to sanitized HTML with syntax-highlighted code
+ * blocks and unique heading IDs.
+ *
+ * @param {string} content - The raw Markdown source text.
+ * @returns {string} Sanitized HTML string.
+ */
 export function renderMarkdown(content) {
   if (!content) {
     return "";
@@ -103,6 +110,13 @@ export function renderMarkdown(content) {
   return addHeadingIds(sanitized);
 }
 
+/**
+ * Extracts a flat list of h2–h4 headings from an HTML string for use in
+ * table-of-contents generation.
+ *
+ * @param {string} html - The HTML string to extract headings from.
+ * @returns {Array<{ level: number, id: string, text: string }>} Ordered array of heading objects.
+ */
 export function extractHeadings(html) {
   const headingRegex = /<h([2-4])([^>]*)>([\s\S]*?)<\/h\1>/gi;
   const headings = [];

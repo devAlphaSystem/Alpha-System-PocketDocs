@@ -1,5 +1,12 @@
 import { ValidationError } from "../errors/taxonomy.js";
 
+/**
+ * Creates middleware that validates `req.body` against a Zod schema and
+ * attaches the parsed result to `req.validatedBody`.
+ *
+ * @param {import("zod").ZodSchema} schema - The Zod schema to validate against.
+ * @returns {import("express").RequestHandler} Express middleware function.
+ */
 export function validate(schema) {
   return (req, _res, next) => {
     const result = schema.safeParse(req.body);
@@ -16,6 +23,13 @@ export function validate(schema) {
   };
 }
 
+/**
+ * Creates middleware that validates `req.query` against a Zod schema and
+ * attaches the parsed result to `req.validatedQuery`.
+ *
+ * @param {import("zod").ZodSchema} schema - The Zod schema to validate against.
+ * @returns {import("express").RequestHandler} Express middleware function.
+ */
 export function validateQuery(schema) {
   return (req, _res, next) => {
     const result = schema.safeParse(req.query);
@@ -32,6 +46,13 @@ export function validateQuery(schema) {
   };
 }
 
+/**
+ * Creates middleware that validates `req.params` against a Zod schema and
+ * attaches the parsed result to `req.validatedParams`.
+ *
+ * @param {import("zod").ZodSchema} schema - The Zod schema to validate against.
+ * @returns {import("express").RequestHandler} Express middleware function.
+ */
 export function validateParams(schema) {
   return (req, _res, next) => {
     const result = schema.safeParse(req.params);

@@ -1,6 +1,13 @@
 import { AppError } from "./app-error.js";
 import { logger } from "../lib/logger.js";
 
+/**
+ * Builds a structured HTTP error response envelope from an error instance.
+ *
+ * @param {Error|AppError} err - The error to convert.
+ * @param {string} requestId - The unique request identifier for traceability.
+ * @returns {{ statusCode: number, body: Object }} The HTTP status code and JSON response body.
+ */
 export function buildErrorEnvelope(err, requestId) {
   if (err instanceof AppError) {
     const envelope = err.toJSON();
@@ -20,6 +27,14 @@ export function buildErrorEnvelope(err, requestId) {
   };
 }
 
+/**
+ * Logs an error with contextual metadata at the appropriate severity level.
+ *
+ * @param {Error|AppError} err - The error to log.
+ * @param {string} requestId - The unique request identifier.
+ * @param {string} [url] - The request URL where the error occurred.
+ * @returns {void}
+ */
 export function logError(err, requestId, url) {
   const meta = {
     requestId,

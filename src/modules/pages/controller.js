@@ -1,3 +1,8 @@
+/**
+ * @module pages/controller
+ * @description Express routes for CRUD operations on documentation pages
+ * within a project version.
+ */
 import { Router } from "express";
 import { listPages, buildPageTree, getPage, createPage, updatePage, deletePage, reorderPages } from "./service.js";
 import { createPageSchema, updatePageSchema, reorderPagesSchema } from "./validation.js";

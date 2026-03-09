@@ -3,6 +3,15 @@ import { COLLECTIONS, ROLES } from "../../config/constants.js";
 import { AuthenticationError, ValidationError, ConflictError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
+/**
+ * Authenticates a user with email and password and returns session data.
+ *
+ * @param {string} email - The user's email address.
+ * @param {string} password - The user's password.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<{ token: string, user: Object }>} The auth token and user profile.
+ * @throws {AuthenticationError} If the credentials are invalid.
+ */
 export async function loginUser(email, password, requestId) {
   const result = await pbAuthWithPassword(COLLECTIONS.USERS, email, password);
 
@@ -23,6 +32,19 @@ export async function loginUser(email, password, requestId) {
   };
 }
 
+/**
+ * Registers a new user account and automatically signs them in.
+ *
+ * @param {Object} data - Registration data.
+ * @param {string} data.email - The new user's email address.
+ * @param {string} data.password - The new user's password.
+ * @param {string} data.passwordConfirm - Password confirmation.
+ * @param {string} data.name - The new user's display name.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<{ token: string, user: Object }>} The auth token and user profile.
+ * @throws {ConflictError} If the email is already registered.
+ * @throws {ValidationError} If the registration data is invalid.
+ */
 export async function registerUser(data, requestId) {
   const createResult = await pbCreate(COLLECTIONS.USERS, {
     email: data.email,

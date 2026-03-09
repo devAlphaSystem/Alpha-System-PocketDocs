@@ -3,6 +3,16 @@ import { buildErrorEnvelope, logError } from "../errors/handler.js";
 import { AuthenticationError } from "../errors/taxonomy.js";
 import { env } from "../config/env.js";
 
+/**
+ * Global Express error-handling middleware that renders error pages for HTML
+ * requests and returns JSON envelopes for API or XHR requests.
+ *
+ * @param {Error} err - The error to handle.
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} res - The Express response object.
+ * @param {import("express").NextFunction} _next - The next middleware function.
+ * @returns {void}
+ */
 export function errorHandlerMiddleware(err, req, res, _next) {
   logError(err, req.requestId, req.originalUrl);
 
@@ -53,6 +63,14 @@ export function errorHandlerMiddleware(err, req, res, _next) {
   res.status(statusCode).json(body);
 }
 
+/**
+ * Express middleware that converts unmatched routes into a `NotFoundError`.
+ *
+ * @param {import("express").Request} req - The Express request object.
+ * @param {import("express").Response} _res - The Express response object.
+ * @param {import("express").NextFunction} next - The next middleware function.
+ * @returns {Promise<void>}
+ */
 export async function notFoundMiddleware(req, _res, next) {
   const { NotFoundError } = await import("../errors/taxonomy.js");
   const err = new NotFoundError("Page");

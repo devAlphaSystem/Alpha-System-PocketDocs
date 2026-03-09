@@ -61,5 +61,15 @@ if (!parsed.success) {
   throw new Error(`Environment validation failed:\n${formatted}`);
 }
 
+/**
+ * Validated and frozen environment configuration object.
+ *
+ * @type {Readonly<Object>}
+ */
 export const env = Object.freeze(parsed.data);
+/**
+ * Parsed trust-proxy setting derived from the `TRUST_PROXY` environment variable.
+ *
+ * @type {boolean|number|string|Array<string>}
+ */
 export const trustProxy = parseTrustProxy(parsed.data.TRUST_PROXY);

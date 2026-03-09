@@ -1,3 +1,7 @@
+/**
+ * @module changelogs/controller
+ * @description Express routes for managing version changelogs in the admin panel.
+ */
 import { Router } from "express";
 import { getChangelog, upsertChangelog } from "./service.js";
 import { updateChangelogSchema } from "./validation.js";
