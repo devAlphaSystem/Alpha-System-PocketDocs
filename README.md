@@ -17,6 +17,7 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 - **Public & private projects** — control visibility per project
 - **IP restriction** — restrict admin access to specific IP addresses
 - **Theming** — built-in light/dark mode toggle
+- **Keyboard shortcuts** — Ctrl+S / Cmd+S saves the current admin form from anywhere on the page
 - **Self-hosted** — runs on your infrastructure; data stays with you
 
 ## Tech Stack

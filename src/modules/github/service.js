@@ -262,8 +262,9 @@ export function extractPageInfo(filename, content) {
 export async function importDocsForRef(owner, repo, ref) {
   const tree = await getDocsTreeRecursive(owner, repo, ref);
   const pages = [];
+  const pendingDownloads = [];
 
-  async function processItems(items, parentSlug) {
+  function collectItems(items, parentSlug) {
     let order = 0;
     for (const item of items) {
       if (item.type === "dir") {
@@ -277,22 +278,50 @@ export async function importDocsForRef(owner, repo, ref) {
           order: order++,
         });
         if (item.children) {
-          await processItems(item.children, dirSlug);
+          collectItems(item.children, dirSlug);
         }
       } else {
-        const rawContent = await getFileContent(item.download_url);
-        const info = extractPageInfo(item.name, rawContent);
+        const pageIndex = pages.length;
         const isReadme = item.name.toLowerCase() === "readme.md";
         pages.push({
-          ...info,
+          title: filenameToTitle(item.name),
+          slug: filenameToSlug(item.name),
+          content: "",
           parent: parentSlug,
           order: isReadme ? -1 : order++,
+          _downloadUrl: item.download_url,
+          _filename: item.name,
+          _pageIndex: pageIndex,
         });
+        pendingDownloads.push(pageIndex);
       }
     }
   }
 
-  await processItems(tree, "");
+  collectItems(tree, "");
+
+  const CONCURRENCY = 5;
+  for (let i = 0; i < pendingDownloads.length; i += CONCURRENCY) {
+    const batch = pendingDownloads.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (idx) => {
+        const rawContent = await getFileContent(pages[idx]._downloadUrl);
+        return { idx, rawContent };
+      }),
+    );
+    for (const { idx, rawContent } of results) {
+      const info = extractPageInfo(pages[idx]._filename, rawContent);
+      pages[idx].title = info.title;
+      pages[idx].slug = info.slug;
+      pages[idx].content = info.content;
+    }
+  }
+
+  for (const page of pages) {
+    delete page._downloadUrl;
+    delete page._filename;
+    delete page._pageIndex;
+  }
 
   pages.sort((a, b) => a.order - b.order);
   pages.forEach((p, i) => {

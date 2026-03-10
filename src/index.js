@@ -41,25 +41,46 @@ const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 const { updated: assetVersion } = require("../package.json");
 
+const assetUrlFn = (path) => {
+  if (typeof path !== "string" || !path.startsWith("/")) {
+    return path;
+  }
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}v=${encodeURIComponent(assetVersion)}`;
+};
+
 const app = express();
 
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "../views"));
 app.set("x-powered-by", false);
 app.set("trust proxy", trustProxy);
+if (env.NODE_ENV === "production") {
+  app.set("view cache", true);
+}
 
 app.use(expressLayouts);
 app.set("layout", "layouts/public");
 
-app.use(compression());
 app.use(
-  express.static(join(__dirname, "../public"), {
-    maxAge: env.NODE_ENV === "production" ? "7d" : 0,
-    etag: true,
+  compression({
+    level: 6,
+    threshold: 1024,
+    filter: (req, res) => {
+      if (req.headers["x-no-compression"]) return false;
+      return compression.filter(req, res);
+    },
   }),
 );
-app.use(express.urlencoded({ extended: false, limit: "50mb" }));
-app.use(express.json({ limit: "50mb" }));
+app.use(
+  express.static(join(__dirname, "../public"), {
+    maxAge: env.NODE_ENV === "production" ? "30d" : 0,
+    etag: true,
+    immutable: env.NODE_ENV === "production",
+  }),
+);
+app.use(express.urlencoded({ extended: false, limit: "2mb" }));
+app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
 app.use(requestIdMiddleware);
@@ -128,13 +149,7 @@ app.use((req, res, next) => {
   res.locals.siteUrl = env.SITE_URL;
   res.locals.sitePbUrl = env.POCKETBASE_URL;
   res.locals.assetVersion = assetVersion;
-  res.locals.assetUrl = (path) => {
-    if (typeof path !== "string" || !path.startsWith("/")) {
-      return path;
-    }
-    const separator = path.includes("?") ? "&" : "?";
-    return `${path}${separator}v=${encodeURIComponent(assetVersion)}`;
-  };
+  res.locals.assetUrl = assetUrlFn;
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();

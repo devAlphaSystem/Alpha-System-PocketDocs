@@ -15,6 +15,7 @@ const DEFAULTS = Object.freeze({
 });
 
 let cached = null;
+let normalizedIpSet = null;
 
 function parseAllowedIps(value) {
   return String(value || "")
@@ -25,6 +26,20 @@ function parseAllowedIps(value) {
 
 function normalizeAllowedIps(value) {
   return parseAllowedIps(value).join("\n");
+}
+
+function rebuildIpSet() {
+  const config = cached || DEFAULTS;
+  if (config.enabled !== "enable" || !config.allowedIps || !config.allowedIps.trim()) {
+    normalizedIpSet = null;
+    return;
+  }
+  const list = parseAllowedIps(config.allowedIps);
+  if (list.length === 0) {
+    normalizedIpSet = null;
+    return;
+  }
+  normalizedIpSet = new Set(list.map((ip) => normalizeIp(ip)).filter(Boolean));
 }
 
 /**
@@ -41,15 +56,18 @@ export async function loadIpRestriction() {
       ...JSON.parse(raw),
     };
     cached.allowedIps = normalizeAllowedIps(cached.allowedIps);
+    rebuildIpSet();
   } catch (err) {
     if (err.code === "ENOENT") {
       await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
       await writeFile(IP_RESTRICTION_PATH, JSON.stringify(DEFAULTS, null, 2));
       cached = { ...DEFAULTS };
+      rebuildIpSet();
       logger.info("Created default IP restriction settings");
     } else {
       logger.error("Failed to load IP restriction settings", { error: err.message });
       cached = { ...DEFAULTS };
+      rebuildIpSet();
     }
   }
   return cached;
@@ -96,6 +114,7 @@ export async function updateIpRestriction(data, requestId, currentIp) {
   await mkdir(dirname(IP_RESTRICTION_PATH), { recursive: true });
   await writeFile(IP_RESTRICTION_PATH, JSON.stringify(updated, null, 2));
   cached = updated;
+  rebuildIpSet();
   logger.info("IP restriction settings updated", { requestId });
   return updated;
 }
@@ -107,19 +126,10 @@ export async function updateIpRestriction(data, requestId, currentIp) {
  * @returns {boolean} `true` if the IP is allowed or restrictions are disabled.
  */
 export function isIpAllowed(ip) {
-  const config = getIpRestriction();
-  if (config.enabled !== "enable") return true;
-  if (!config.allowedIps || !config.allowedIps.trim()) return true;
-
-  const allowedList = parseAllowedIps(config.allowedIps);
-
-  if (allowedList.length === 0) return true;
+  if (!normalizedIpSet) return true;
 
   const normalizedIp = normalizeIp(ip);
   if (!normalizedIp) return false;
 
-  return allowedList.some((allowed) => {
-    const normalizedAllowed = normalizeIp(allowed);
-    return normalizedIp === normalizedAllowed;
-  });
+  return normalizedIpSet.has(normalizedIp);
 }

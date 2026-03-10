@@ -10,6 +10,7 @@ import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
+import { createHash } from "node:crypto";
 
 const router = Router();
 
@@ -64,7 +65,7 @@ router.get("/docs/:projectSlug/:versionSlug", async (req, res, next) => {
       throw new NotFoundError("Project");
     }
 
-    const [versionsResult, pagesResult] = await Promise.all([getPublicVersions(project.id), getPublicPages(version.id)]);
+    const pagesResult = await getPublicPages(version.id);
 
     const pages = pagesResult.items || [];
     const pageTree = buildPageTree(pages);
@@ -134,6 +135,13 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
     const pageTree = buildPageTree(pages);
     const contentHtml = renderMarkdown(page.content);
     const headings = extractHeadings(contentHtml);
+
+    const etagSource = `${page.id}:${page.updated}`;
+    const etag = `"${createHash("md5").update(etagSource).digest("hex")}"`;
+    res.setHeader("ETag", etag);
+    if (req.headers["if-none-match"] === etag) {
+      return res.status(304).end();
+    }
 
     const pageIndex = pages.findIndex((p) => p.id === page.id);
     const prevPage = pageIndex > 0 ? pages[pageIndex - 1] : null;

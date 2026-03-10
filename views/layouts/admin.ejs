@@ -21,6 +21,7 @@
   <link rel="icon" type="image/png" href="/img/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
@@ -49,13 +50,13 @@
   </div>
   <%- include('../partials/toast') %>
   <%- include('../partials/admin-modal') %>
-  <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
-  <script src="<%= assetUrl('/js/custom-select.js') %>"></script>
-  <script src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
-  <script src="<%= assetUrl('/js/admin.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/custom-select.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/admin.js') %>"></script>
   <% if (typeof extraJs !== 'undefined' && extraJs) { %>
-    <% if (Array.isArray(extraJs)) { extraJs.forEach(function(src) { %><script src="<%= assetUrl(src) %>"></script>
-    <% }); } else { %><script src="<%= assetUrl(extraJs) %>"></script><% } %>
+    <% if (Array.isArray(extraJs)) { extraJs.forEach(function(src) { %><script defer src="<%= assetUrl(src) %>"></script>
+    <% }); } else { %><script defer src="<%= assetUrl(extraJs) %>"></script><% } %>
   <% } %>
 </body>
 </html>

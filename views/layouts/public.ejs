@@ -25,6 +25,8 @@
   <% } %>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.11.1/build/styles/github.min.css" media="(prefers-color-scheme: light)">
@@ -38,9 +40,9 @@
     <%- body %>
   </main>
   <%- include('../partials/public-footer', { siteName: siteName }) %>
-  <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
-  <script src="<%= assetUrl('/js/custom-select.js') %>"></script>
-  <script src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
-  <% if (typeof extraJs !== 'undefined' && extraJs) { %><script src="<%= assetUrl(extraJs) %>"></script><% } %>
+  <script defer src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/custom-select.js') %>"></script>
+  <script defer src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
+  <% if (typeof extraJs !== 'undefined' && extraJs) { %><script defer src="<%= assetUrl(extraJs) %>"></script><% } %>
 </body>
 </html>

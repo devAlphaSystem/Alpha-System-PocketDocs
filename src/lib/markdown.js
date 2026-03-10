@@ -2,6 +2,10 @@ import { Marked } from "marked";
 import { markedHighlight } from "marked-highlight";
 import hljs from "highlight.js";
 import sanitizeHtml from "sanitize-html";
+import { createHash } from "node:crypto";
+
+const RENDER_CACHE_MAX = 500;
+const renderCache = new Map();
 
 const marked = new Marked(
   markedHighlight({
@@ -119,10 +123,23 @@ export function renderMarkdown(content) {
   if (!content) {
     return "";
   }
+  const hash = createHash("md5").update(content).digest("hex");
+  const cached = renderCache.get(hash);
+  if (cached) {
+    renderCache.delete(hash);
+    renderCache.set(hash, cached);
+    return cached;
+  }
   const raw = marked.parse(content);
   const withMermaid = convertMermaidBlocks(raw);
   const sanitized = sanitizeHtml(withMermaid, sanitizeOptions);
-  return addHeadingIds(sanitized);
+  const result = addHeadingIds(sanitized);
+  renderCache.set(hash, result);
+  if (renderCache.size > RENDER_CACHE_MAX) {
+    const firstKey = renderCache.keys().next().value;
+    renderCache.delete(firstKey);
+  }
+  return result;
 }
 
 /**

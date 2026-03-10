@@ -21,6 +21,43 @@
     return div.innerHTML;
   }
 
+  var PENDING_TOAST_KEY = "pd_pending_toast";
+
+  function queueNextPageToast(message, type) {
+    try {
+      sessionStorage.setItem(
+        PENDING_TOAST_KEY,
+        JSON.stringify({
+          message: message,
+          type: type || "success",
+          expiresAt: Date.now() + 15000,
+        }),
+      );
+    } catch (_error) {}
+  }
+
+  function flushPendingToast() {
+    try {
+      var raw = sessionStorage.getItem(PENDING_TOAST_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(PENDING_TOAST_KEY);
+
+      var payload = JSON.parse(raw);
+      if (!payload || !payload.message) return;
+      if (payload.expiresAt && payload.expiresAt < Date.now()) return;
+
+      if (typeof window.showToast === "function") {
+        window.showToast(payload.message, payload.type || "success");
+      }
+    } catch (_error) {
+      try {
+        sessionStorage.removeItem(PENDING_TOAST_KEY);
+      } catch (_ignored) {}
+    }
+  }
+
+  flushPendingToast();
+
   var clickableRows = document.querySelectorAll("[data-row-link]");
   if (clickableRows.length) {
     clickableRows.forEach(function (row) {
@@ -210,4 +247,49 @@
     },
     true,
   );
+
+  function isSaveShortcut(event) {
+    if (event.defaultPrevented) return false;
+    if (!(event.ctrlKey || event.metaKey)) return false;
+    return event.key === "s" || event.key === "S" || event.code === "KeyS";
+  }
+
+  function isEligibleSaveForm(form) {
+    if (!form || form.tagName !== "FORM") return false;
+    if (form.classList.contains("inline-form")) return false;
+    if (form.classList.contains("auth-form")) return false;
+    if (form.hasAttribute("data-confirm-message")) return false;
+    if (form.getAttribute("data-save-shortcut") === "off") return false;
+
+    var method = (form.getAttribute("method") || "GET").toUpperCase();
+    return method === "POST";
+  }
+
+  function resolveSaveTargetForm() {
+    var activeElement = document.activeElement;
+    if (activeElement && typeof activeElement.closest === "function") {
+      var focusedForm = activeElement.closest("form");
+      if (isEligibleSaveForm(focusedForm)) {
+        return focusedForm;
+      }
+    }
+
+    var fallback = document.querySelector("main.admin-content form[method='POST']:not(.inline-form):not(.auth-form):not([data-confirm-message]):not([data-save-shortcut='off'])");
+    return fallback || null;
+  }
+
+  document.addEventListener("keydown", function (event) {
+    if (!isSaveShortcut(event)) return;
+
+    var form = resolveSaveTargetForm();
+    if (!form) return;
+
+    event.preventDefault();
+    queueNextPageToast("Saved changes", "success");
+    if (typeof form.requestSubmit === "function") {
+      form.requestSubmit();
+      return;
+    }
+    form.submit();
+  });
 })();

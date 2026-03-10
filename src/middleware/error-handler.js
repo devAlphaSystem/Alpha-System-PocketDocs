@@ -1,6 +1,6 @@
 import { AppError } from "../errors/app-error.js";
 import { buildErrorEnvelope, logError } from "../errors/handler.js";
-import { AuthenticationError } from "../errors/taxonomy.js";
+import { AuthenticationError, NotFoundError } from "../errors/taxonomy.js";
 import { env } from "../config/env.js";
 
 /**
@@ -71,8 +71,7 @@ export function errorHandlerMiddleware(err, req, res, _next) {
  * @param {import("express").NextFunction} next - The next middleware function.
  * @returns {Promise<void>}
  */
-export async function notFoundMiddleware(req, _res, next) {
-  const { NotFoundError } = await import("../errors/taxonomy.js");
+export function notFoundMiddleware(req, _res, next) {
   const err = new NotFoundError("Page");
   err.requestedUrl = `${req.method} ${req.originalUrl}`;
   next(err);

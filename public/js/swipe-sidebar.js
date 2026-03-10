@@ -13,9 +13,12 @@
 
     var toggle = options.toggleSelector ? document.querySelector(options.toggleSelector) : null;
     var overlayQuery = window.matchMedia(options.overlayMediaQuery || "(max-width: 768px)");
-    var edgeZone = options.edgeZone || 32;
-    var minDistance = options.minDistance || 72;
-    var maxVerticalDistance = options.maxVerticalDistance || 96;
+    var edgeZone = options.edgeZone || 52;
+    var minDistance = options.minDistance || 48;
+    var maxVerticalDistance = options.maxVerticalDistance || 140;
+    var lockInDistance = options.lockInDistance || 8;
+    var verticalCancelDistance = options.verticalCancelDistance || 20;
+    var reverseCancelDistance = options.reverseCancelDistance || 32;
     var gesture = null;
 
     function isOverlayMode() {
@@ -117,18 +120,18 @@
 
           if (!gesture.engaged) {
             if (absY > absX) {
-              if (absY > 12) {
+              if (absY > verticalCancelDistance) {
                 resetGesture();
               }
               return;
             }
 
-            if (absX < 12) {
+            if (absX < lockInDistance) {
               return;
             }
 
             if ((gesture.mode === "open" && deltaX <= 0) || (gesture.mode === "close" && deltaX >= 0)) {
-              if (absX > 24) {
+              if (absX > reverseCancelDistance) {
                 resetGesture();
               }
               return;
