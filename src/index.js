@@ -29,6 +29,7 @@ import pageRoutes from "./modules/pages/controller.js";
 import changelogRoutes from "./modules/changelogs/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
 import userRoutes from "./modules/users/controller.js";
+import auditLogRoutes from "./modules/audit-logs/controller.js";
 import publicRoutes from "./modules/public/controller.js";
 import githubRoutes from "./modules/github/controller.js";
 import { loadSettings, getSettings } from "./modules/settings/service.js";
@@ -194,6 +195,7 @@ const adminLayoutMiddleware = (req, res, next) => {
 app.use("/admin/github", ipRestrictionMiddleware, adminLayoutMiddleware, githubRoutes);
 app.use("/admin/settings", ipRestrictionMiddleware, adminLayoutMiddleware, settingsRoutes);
 app.use("/admin/users", ipRestrictionMiddleware, adminLayoutMiddleware, userRoutes);
+app.use("/admin/audit-logs", ipRestrictionMiddleware, adminLayoutMiddleware, auditLogRoutes);
 app.use("/admin/projects", ipRestrictionMiddleware, adminLayoutMiddleware, projectRoutes);
 app.use("/admin/projects/:projectId/versions", ipRestrictionMiddleware, adminLayoutMiddleware, versionRoutes);
 app.use("/admin/projects/:projectId/versions/:versionId/pages", ipRestrictionMiddleware, adminLayoutMiddleware, pageRoutes);

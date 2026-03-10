@@ -10,6 +10,8 @@ import { validate } from "../../middleware/validate.js";
 import { listUsers, getUser, createUser, updateUser, deleteUser } from "./service.js";
 import { createUserSchema, updateUserSchema } from "./validation.js";
 import { ROLES } from "../../config/constants.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router();
 
@@ -57,7 +59,8 @@ router.get("/:id/edit", async (req, res, next) => {
 
 router.post("/create", validate(createUserSchema), async (req, res, next) => {
   try {
-    await createUser(req.validatedBody, req.requestId);
+    const created = await createUser(req.validatedBody, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.USER_CREATED, userId: req.user.id, userEmail: req.user.email, targetType: "user", targetId: created.id, description: `Created user ${req.validatedBody.email} (${req.validatedBody.role})`, ipAddress: getClientIp(req) });
     res.redirect("/admin/users?success=User created successfully.");
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -70,6 +73,7 @@ router.post("/create", validate(createUserSchema), async (req, res, next) => {
 router.post("/:id/update", validate(updateUserSchema), async (req, res, next) => {
   try {
     await updateUser(req.params.id, req.validatedBody, req.user.id, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.USER_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "user", targetId: req.params.id, description: `Updated user ${req.validatedBody.email}`, ipAddress: getClientIp(req) });
     res.redirect("/admin/users?success=User updated successfully.");
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404 || err.statusCode === 409 || err.statusCode === 422) {
@@ -82,6 +86,7 @@ router.post("/:id/update", validate(updateUserSchema), async (req, res, next) =>
 router.post("/:id/delete", async (req, res, next) => {
   try {
     await deleteUser(req.params.id, req.user.id, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.USER_DELETED, userId: req.user.id, userEmail: req.user.email, targetType: "user", targetId: req.params.id, description: `Deleted user account`, ipAddress: getClientIp(req) });
     res.redirect("/admin/users?success=User deleted successfully.");
   } catch (err) {
     if (err.statusCode === 403 || err.statusCode === 404 || err.statusCode === 422) {

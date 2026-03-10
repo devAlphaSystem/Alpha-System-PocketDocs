@@ -13,6 +13,8 @@ import { getVersion } from "../versions/service.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { renderMarkdown } from "../../lib/markdown.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router({ mergeParams: true });
 
@@ -101,6 +103,7 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
     }
 
     const page = await createPage(req.params.versionId, parsed.data, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PAGE_CREATED, userId: req.user.id, userEmail: req.user.email, targetType: "page", targetId: page.id, description: `Created page "${parsed.data.title}"`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${page.id}?success=Page created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -182,6 +185,7 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
 router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), validate(updatePageSchema), async (req, res, next) => {
   try {
     await updatePage(req.params.pageId, req.validatedBody, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PAGE_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "page", targetId: req.params.pageId, description: `Updated page`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${req.params.pageId}?success=Page saved.`);
   } catch (err) {
     next(err);
@@ -191,6 +195,7 @@ router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
 router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     await deletePage(req.params.pageId, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PAGE_DELETED, userId: req.user.id, userEmail: req.user.email, targetType: "page", targetId: req.params.pageId, description: `Deleted page`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=Page deleted.`);
   } catch (err) {
     next(err);

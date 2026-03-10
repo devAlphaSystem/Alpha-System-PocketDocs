@@ -1,0 +1,89 @@
+<div class="form-page">
+  <div class="page-header">
+    <div>
+      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
+    </div>
+  </div>
+
+  <% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+  <% } %>
+
+  <% if (logs.length === 0) { %>
+  <div class="empty-state">
+    <div class="empty-icon"><i class="ph ph-scroll"></i></div>
+    <h2>No audit logs found</h2>
+    <% if (typeof search !== 'undefined' && search) { %>
+    <p>No logs found for "<%= search %>". <a href="/admin/audit-logs">Clear search</a></p>
+    <% } else { %>
+    <p>Actions will appear here as they happen.</p>
+    <% } %>
+  </div>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="data-table audit-table">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>User</th>
+          <th>Description</th>
+          <th>IP Address</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const log of logs) { %>
+        <tr>
+          <td>
+            <div class="audit-action-cell">
+              <%
+                const actionParts = log.action.split('.');
+                const actionCategory = actionParts[0];
+                const actionVerb = actionParts.slice(1).join('.');
+                let badgeClass = 'badge-info';
+                if (actionCategory === 'auth') { badgeClass = actionVerb === 'login_failed' ? 'badge-danger' : 'badge-info'; }
+                else if (actionCategory === 'user') { badgeClass = actionVerb === 'deleted' ? 'badge-danger' : 'badge-success'; }
+                else if (actionCategory === 'project') { badgeClass = actionVerb === 'deleted' ? 'badge-danger' : 'badge-success'; }
+                else if (actionCategory === 'version') { badgeClass = actionVerb === 'deleted' ? 'badge-danger' : 'badge-success'; }
+                else if (actionCategory === 'page') { badgeClass = actionVerb === 'deleted' ? 'badge-danger' : 'badge-success'; }
+                else if (actionCategory === 'changelog') { badgeClass = 'badge-success'; }
+                else if (actionCategory === 'settings') { badgeClass = 'badge-warning'; }
+                else if (actionCategory === 'github') { badgeClass = 'badge-info'; }
+              %>
+              <span class="badge audit-badge <%= badgeClass %>">
+                <%= log.action %>
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="audit-user-cell">
+              <% if (log.expand && log.expand.user) { %>
+              <div class="table-avatar-placeholder"><%= (log.expand.user.name || log.expand.user.email).charAt(0).toUpperCase() %></div>
+              <span><%= log.expand.user.name || log.expand.user.email %></span>
+              <% } else if (log.user_email) { %>
+              <div class="table-avatar-placeholder"><%= log.user_email.charAt(0).toUpperCase() %></div>
+              <span><%= log.user_email %></span>
+              <% } else { %>
+              <span class="text-muted">System</span>
+              <% } %>
+            </div>
+          </td>
+          <td>
+            <span class="audit-description"><%= log.description || '—' %></span>
+          </td>
+          <td>
+            <span class="text-muted audit-ip"><%= log.ip_address || '—' %></span>
+          </td>
+          <td>
+            <span class="audit-date" title="<%= new Date(log.created).toLocaleString() %>">
+              <%= new Date(log.created).toLocaleDateString() %> <span class="text-muted"><%= new Date(log.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) %></span>
+            </span>
+          </td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+  <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+  <% } %>
+</div>

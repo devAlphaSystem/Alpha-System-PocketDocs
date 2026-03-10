@@ -19,7 +19,6 @@ export async function getChangelog(versionId) {
  * @param {string} versionId - The version ID to associate the changelog with.
  * @param {Object} data - Changelog data.
  * @param {string} data.content - The Markdown changelog content.
- * @param {string} [data.published_at] - Optional publication timestamp.
  * @param {string} requestId - The unique request identifier for logging.
  * @returns {Promise<Object>} The created or updated changelog record.
  * @throws {ValidationError} If the create or update operation fails.
@@ -30,7 +29,6 @@ export async function upsertChangelog(versionId, data, requestId) {
   if (existing) {
     const result = await pbUpdate(COLLECTIONS.CHANGELOGS, existing.id, {
       content: data.content,
-      published_at: data.published_at || "",
     });
     if (!result.ok) {
       throw new ValidationError("Failed to update changelog.");
@@ -42,7 +40,6 @@ export async function upsertChangelog(versionId, data, requestId) {
   const result = await pbCreate(COLLECTIONS.CHANGELOGS, {
     version: versionId,
     content: data.content,
-    published_at: data.published_at || "",
   });
 
   if (!result.ok) {

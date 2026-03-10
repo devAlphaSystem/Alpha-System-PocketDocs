@@ -12,6 +12,7 @@ import { updateAllSettingsSchema, updateSettingsSchema } from "./validation.js";
 import { ROLES } from "../../config/constants.js";
 import { AuthorizationError, ValidationError } from "../../errors/taxonomy.js";
 import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router();
 
@@ -66,8 +67,10 @@ router.post("/", async (req, res, next) => {
       const { enabled, allowedIps } = validatedBody;
       const currentIp = getClientIp(req);
       await updateIpRestriction({ enabled, allowedIps }, req.requestId, currentIp);
+      recordAuditLog({ action: AUDIT_ACTIONS.IP_RESTRICTION_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "settings", description: `Updated IP restriction settings`, ipAddress: currentIp });
     }
 
+    recordAuditLog({ action: AUDIT_ACTIONS.SETTINGS_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "settings", description: `Updated site settings`, ipAddress: getClientIp(req) });
     res.redirect("/admin/settings?success=Settings saved successfully.");
   } catch (err) {
     next(err);

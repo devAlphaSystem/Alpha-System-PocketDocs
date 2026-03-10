@@ -13,6 +13,8 @@ import { createVersion } from "../versions/service.js";
 import { createPage } from "../pages/service.js";
 import { logger } from "../../lib/logger.js";
 import { ValidationError } from "../../errors/taxonomy.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router();
 
@@ -196,6 +198,8 @@ router.post("/import", csrfMiddleware, async (req, res, next) => {
       projectName: project.name,
       results,
     });
+
+    recordAuditLog({ action: AUDIT_ACTIONS.GITHUB_IMPORT, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: project.id, description: `Imported from GitHub: ${parsed.owner}/${parsed.repo} (${results.filter((r) => r.success).length} versions)`, ipAddress: getClientIp(req) });
   } catch (err) {
     next(err);
   }

@@ -12,6 +12,8 @@ import { getVersion } from "../versions/service.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { renderMarkdown } from "../../lib/markdown.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router({ mergeParams: true });
 
@@ -52,6 +54,7 @@ router.post("/preview", csrfMiddleware, requireProjectAccess(), async (req, res,
 router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(updateChangelogSchema), async (req, res, next) => {
   try {
     await upsertChangelog(req.params.versionId, req.validatedBody, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.CHANGELOG_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "changelog", targetId: req.params.versionId, description: `Updated changelog for version`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/changelog?success=Changelog saved.`);
   } catch (err) {
     next(err);

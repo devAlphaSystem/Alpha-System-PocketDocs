@@ -7,10 +7,10 @@
         <h1>Changelog &mdash; <%= version.label %></h1>
       </div>
       <% if (typeof changelog !== 'undefined' && changelog) { %>
-      <% if (changelog.published_at) { %>
+      <% if (changelog.created) { %>
       <p class="changelog-date">
         <i class="ph ph-calendar"></i>
-        <%= new Date(changelog.published_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
+        <%= new Date(changelog.created).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
       </p>
       <% } %>
       <div class="docs-content prose">

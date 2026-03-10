@@ -10,6 +10,8 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getProject } from "../projects/service.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router({ mergeParams: true });
 
@@ -56,6 +58,7 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, 
     }
 
     await createVersion(req.params.projectId, parsed.data, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.VERSION_CREATED, userId: req.user.id, userEmail: req.user.email, targetType: "version", targetId: req.params.projectId, description: `Created version "${parsed.data.label}" in project`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}?success=Version created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -116,6 +119,7 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
     }
 
     await updateVersion(req.params.versionId, parsed.data, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.VERSION_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "version", targetId: req.params.versionId, description: `Updated version`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/edit?success=Version updated.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -140,6 +144,7 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
 router.post("/:versionId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     await deleteVersion(req.params.versionId, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.VERSION_DELETED, userId: req.user.id, userEmail: req.user.email, targetType: "version", targetId: req.params.versionId, description: `Deleted version`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}`);
   } catch (err) {
     next(err);

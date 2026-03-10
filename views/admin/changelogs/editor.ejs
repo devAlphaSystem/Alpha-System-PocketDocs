@@ -23,13 +23,6 @@
   <form id="changelogForm" method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/changelog" class="editor-form" data-preview-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/changelog/preview" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-    <div class="editor-meta">
-      <div class="form-group">
-        <label for="published_at">Published date</label>
-        <input type="date" id="published_at" name="published_at" value="<%= typeof changelog !== 'undefined' && changelog && changelog.published_at ? new Date(changelog.published_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0] %>">
-      </div>
-    </div>
-
     <div class="editor-content">
       <textarea id="content" name="content"><%= typeof changelog !== 'undefined' && changelog ? changelog.content : '' %></textarea>
     </div>

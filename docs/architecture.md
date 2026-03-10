@@ -92,7 +92,7 @@ src/modules/{feature}/
 | `projects` | CRUD for documentation projects | Project (name, slug, visibility, owner) |
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
 | `pages` | CRUD for documentation pages, tree ordering | Page (title, slug, content, parent, order) |
-| `changelogs` | Per-version changelog management | Changelog (content, published_at) |
+| `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
 | `users` | User management (owner-only) | User (name, email, role) |
 | `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
@@ -152,7 +152,6 @@ erDiagram
         string id PK
         string version FK "unique"
         text content
-        datetime published_at
         datetime created
         datetime updated
     }

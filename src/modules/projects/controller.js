@@ -12,6 +12,8 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { isGitHubConfigured } from "../github/service.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router();
 
@@ -58,6 +60,7 @@ router.get("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), (re
 router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), validate(createProjectSchema), async (req, res, next) => {
   try {
     const project = await createProject(req.validatedBody, req.user.id, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_CREATED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: project.id, description: `Created project "${req.validatedBody.name}" (/${req.validatedBody.slug})`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${project.id}?success=Project created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -127,6 +130,7 @@ router.get("/:projectId/edit", csrfMiddleware, requireProjectAccess(ROLES.ADMIN)
 router.post("/:projectId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(updateProjectSchema), async (req, res, next) => {
   try {
     await updateProject(req.params.projectId, req.validatedBody, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: req.params.projectId, description: `Updated project`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}?success=Project updated successfully.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -148,6 +152,7 @@ router.post("/:projectId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), va
 router.post("/:projectId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     await deleteProject(req.params.projectId, req.requestId);
+    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_DELETED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: req.params.projectId, description: `Deleted project`, ipAddress: getClientIp(req) });
     res.redirect("/admin/projects?success=Project deleted.");
   } catch (err) {
     next(err);

@@ -440,7 +440,6 @@ Creates or updates the changelog for the version (upsert).
 | Field | Type | Required | Constraints |
 |-------|------|----------|-------------|
 | `content` | string | Yes | 1–500,000 characters |
-| `published_at` | string | No | Date string or empty |
 | `_csrf` | string | Yes | CSRF token |
 
 **Success:** Redirects to changelog editor

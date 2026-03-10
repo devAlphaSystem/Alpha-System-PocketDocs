@@ -30,6 +30,7 @@ export const COLLECTIONS = Object.freeze({
   VERSIONS: "versions",
   PAGES: "pages",
   CHANGELOGS: "changelogs",
+  AUDIT_LOGS: "audit_logs",
 });
 
 /**

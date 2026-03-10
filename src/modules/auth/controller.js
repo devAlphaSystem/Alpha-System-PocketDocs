@@ -11,6 +11,8 @@ import { env } from "../../config/env.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { clearAuthCache } from "../../middleware/auth.js";
 import { logger } from "../../lib/logger.js";
+import { getClientIp } from "../../lib/request-ip.js";
+import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router();
 
@@ -40,9 +42,11 @@ router.post("/login", csrfMiddleware, validate(loginSchema), async (req, res, ne
   try {
     const { token, user } = await loginUser(req.validatedBody.email, req.validatedBody.password, req.requestId);
     res.cookie(COOKIE_NAMES.AUTH_TOKEN, token, cookieOptions);
+    recordAuditLog({ action: AUDIT_ACTIONS.AUTH_LOGIN, userId: user.id, userEmail: user.email, description: `User logged in`, ipAddress: getClientIp(req) });
     res.redirect("/admin");
   } catch (err) {
     if (err.statusCode === 401) {
+      recordAuditLog({ action: AUDIT_ACTIONS.AUTH_LOGIN_FAILED, userEmail: req.validatedBody.email, description: `Failed login attempt for ${req.validatedBody.email}`, ipAddress: getClientIp(req) });
       return res.status(401).render("admin/login", {
         layout: false,
         title: "Sign In",
@@ -62,6 +66,7 @@ router.post("/logout", (req, res) => {
     clearAuthCache(token);
   }
   logger.info("User logged out", { requestId: req.requestId, userId: req.user?.id });
+  recordAuditLog({ action: AUDIT_ACTIONS.AUTH_LOGOUT, userId: req.user?.id, userEmail: req.user?.email, description: `User logged out`, ipAddress: getClientIp(req) });
   res.clearCookie(COOKIE_NAMES.AUTH_TOKEN, { path: "/" });
   res.redirect("/auth/login");
 });
