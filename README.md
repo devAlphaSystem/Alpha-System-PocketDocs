@@ -2,11 +2,11 @@
 
 Self-hosted documentation platform with versioning, powered by [PocketBase](https://pocketbase.io/).
 
-PocketDocs lets teams create, organize, and publish documentation for multiple projects—each with independent versions, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview, role-based access control, and optional GitHub import to bootstrap docs from existing repositories.
+PocketDocs lets teams create, organize, and publish documentation for multiple projects with either versioned or simple docs mode, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview, role-based access control, and optional GitHub import to bootstrap docs from existing repositories.
 
 ## Features
 
-- **Multi-project, multi-version** — manage many documentation projects, each with unlimited versions
+- **Flexible project modes** — choose versioned docs (release history) or simple docs (single stream)
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
 - **Markdown editor** — EasyMDE with syntax-highlighted live preview
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
@@ -19,6 +19,12 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 - **Theming** — built-in light/dark mode toggle
 - **Keyboard shortcuts** — Ctrl+S / Cmd+S saves the current admin form from anywhere on the page
 - **Self-hosted** — runs on your infrastructure; data stays with you
+
+## Project Modes
+
+- **Versioned mode** — classic release-based docs with multiple versions, version switcher, and per-version changelog
+- **Simple mode** — single-stream docs without versioned public URLs; optimized for internal/team knowledge bases
+- Simple-mode projects still store one internal default version for data consistency, but public links use `/docs/:projectSlug/:pageSlug`
 
 ## Tech Stack
 

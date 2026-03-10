@@ -190,6 +190,7 @@ Creates a new project.
 | `slug` | string | Yes | 1–120 characters, slug pattern |
 | `description` | string | No | Max 500 characters |
 | `visibility` | string | No | `public` or `private` (default: `private`) |
+| `mode` | string | No | `versioned` or `simple` (default: `versioned`) |
 | `_csrf` | string | Yes | CSRF token |
 
 **Success:** Redirects to `/admin/projects/:projectId`
@@ -199,6 +200,8 @@ Creates a new project.
 ### `GET /admin/projects/:projectId`
 
 Shows project details and its versions.
+
+For simple-mode projects, this route redirects to the pages list of the internal default version.
 
 **Auth:** Required  
 **Roles:** Owner, Admin, Editor (with project access)
@@ -219,6 +222,8 @@ Updates project metadata.
 **CSRF:** Yes
 
 **Body:** Same fields as create (all optional — partial update).
+
+Note: `mode` is immutable after creation and is not accepted in update payloads.
 
 **Success:** Redirects to `/admin/projects/:projectId`
 
@@ -697,7 +702,18 @@ Home page showing all public projects.
 
 ### `GET /docs/:projectSlug`
 
-Project landing page. Redirects to the first public version's first page.
+Project landing page.
+
+- Versioned project: redirects to the first public version's first page.
+- Simple project: redirects to the first page using a simple URL format.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/:segment`
+
+Simple-mode page route. Renders a documentation page directly without version slug.
+
+If the project is versioned, routing falls through to versioned routes.
 
 **Auth:** None
 
@@ -747,7 +763,8 @@ Full-text search across public documentation pages.
       "title": "Getting Started",
       "slug": "getting-started",
       "versionLabel": "v1.0",
-      "versionSlug": "v1-0"
+      "versionSlug": "v1-0",
+      "simpleMode": false
     }
   ]
 }

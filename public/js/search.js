@@ -46,7 +46,8 @@
             .map(function (r) {
               var safeTitle = escapeHtml(r.title);
               var safeSlug = escapeHtml(r.slug);
-              return '<a href="/docs/' + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>/" + safeSlug + "</span></a>";
+              var href = r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
+              return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>/" + safeSlug + "</span></a>";
             })
             .join("");
         }

@@ -1086,6 +1086,20 @@
       },
       {
         "hidden": false,
+        "id": "select_proj_mode",
+        "maxSelect": 1,
+        "name": "mode",
+        "presentable": false,
+        "required": true,
+        "system": false,
+        "type": "select",
+        "values": [
+          "versioned",
+          "simple"
+        ]
+      },
+      {
+        "hidden": false,
         "id": "file_proj_logo",
         "maxSelect": 1,
         "maxSize": 2097152,

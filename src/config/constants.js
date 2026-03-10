@@ -20,6 +20,16 @@ export const VISIBILITY = Object.freeze({
 });
 
 /**
+ * Defines the project mode: versioned (with version history) or simple (docs only).
+ *
+ * @enum {string}
+ */
+export const PROJECT_MODE = Object.freeze({
+  VERSIONED: "versioned",
+  SIMPLE: "simple",
+});
+
+/**
  * Maps logical collection names to their PocketBase collection identifiers.
  *
  * @enum {string}

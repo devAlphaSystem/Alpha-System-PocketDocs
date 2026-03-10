@@ -89,7 +89,7 @@ src/modules/{feature}/
 |--------|---------|-------------|
 | `auth` | Login, logout, session management | User credentials, auth cookies |
 | `setup` | First-run owner account creation | Owner registration |
-| `projects` | CRUD for documentation projects | Project (name, slug, visibility, owner) |
+| `projects` | CRUD for documentation projects and mode-specific flow | Project (name, slug, visibility, mode, owner) |
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
 | `pages` | CRUD for documentation pages, tree ordering | Page (title, slug, content, parent, order) |
 | `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
@@ -118,6 +118,7 @@ erDiagram
         string slug UK
         string description
         string visibility "public | private"
+        string mode "versioned | simple"
         file logo
         string owner FK
         datetime created

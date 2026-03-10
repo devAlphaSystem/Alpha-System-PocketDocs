@@ -10,7 +10,7 @@ import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
-import { ROLES } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { renderMarkdown } from "../../lib/markdown.js";
 import { getClientIp } from "../../lib/request-ip.js";
@@ -26,12 +26,13 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
     const search = (req.query.search || "").trim();
     const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPagesPaginated(req.params.versionId, page, search)]);
     const project = version.expand?.project;
+    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
 
     const pageTree = search ? [] : buildPageTree(pagesResult.items || []);
     const totalPages = pagesResult.totalItems ?? (pagesResult.items || []).length;
 
     res.render("admin/pages/index", {
-      title: `${project.name} - ${version.label} - Pages`,
+      title: simpleMode ? `${project.name} - Pages` : `${project.name} - ${version.label} - Pages`,
       headerSubtitle: `${totalPages} page${totalPages !== 1 ? "s" : ""}`,
       headerSearch: {
         action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
@@ -40,6 +41,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       },
       project,
       version,
+      simpleMode,
       pages: pagesResult.items || [],
       pageTree,
       pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
@@ -59,11 +61,13 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req
   try {
     const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
     const project = version.expand?.project;
+    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
 
     res.render("admin/pages/editor", {
       title: "New Page",
       project,
       version,
+      simpleMode,
       page: null,
       pages: pagesResult.items || [],
       user: req.user,
@@ -86,10 +90,12 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
       const firstIssue = parsed.error.issues[0];
       const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
       const project = version.expand?.project;
+      const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
       return res.status(422).render("admin/pages/editor", {
         title: "New Page",
         project,
         version,
+        simpleMode,
         page: null,
         pages: pagesResult.items || [],
         user: req.user,
@@ -109,10 +115,12 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
     if (err.statusCode === 409 || err.statusCode === 422) {
       const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
       const project = version.expand?.project;
+      const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
       return res.status(err.statusCode).render("admin/pages/editor", {
         title: "New Page",
         project,
         version,
+        simpleMode,
         page: null,
         pages: pagesResult.items || [],
         user: req.user,
@@ -132,11 +140,13 @@ router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, 
   try {
     const [version, page, pagesResult] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId), listPages(req.params.versionId)]);
     const project = version.expand?.project;
+    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
 
     res.render("admin/pages/editor", {
       title: `Edit - ${page.title}`,
       project,
       version,
+      simpleMode,
       page,
       pages: pagesResult.items || [],
       user: req.user,

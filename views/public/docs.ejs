@@ -1,5 +1,5 @@
 <div class="docs-layout">
-  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page }) %>
+  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page, simpleMode: typeof simpleMode !== 'undefined' ? simpleMode : false }) %>
 
   <main class="docs-main">
     <article class="docs-article">
@@ -10,10 +10,11 @@
       <div class="docs-content prose">
         <%- contentHtml %>
       </div>
+      <% const _simple = typeof simpleMode !== 'undefined' && simpleMode; %>
       <% if (typeof prevPage !== 'undefined' || typeof nextPage !== 'undefined') { %>
       <nav class="docs-pagination">
         <% if (typeof prevPage !== 'undefined' && prevPage) { %>
-        <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %>" class="docs-pagination-link prev">
+        <a href="<% if (_simple) { %>/docs/<%= project.slug %>/<%= prevPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %><% } %>" class="docs-pagination-link prev">
           <i class="ph ph-arrow-left"></i>
           <div>
             <span class="docs-pagination-label">Previous</span>
@@ -22,7 +23,7 @@
         </a>
         <% } else { %><div></div><% } %>
         <% if (typeof nextPage !== 'undefined' && nextPage) { %>
-        <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %>" class="docs-pagination-link next">
+        <a href="<% if (_simple) { %>/docs/<%= project.slug %>/<%= nextPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %><% } %>" class="docs-pagination-link next">
           <div>
             <span class="docs-pagination-label">Next</span>
             <span class="docs-pagination-title"><%= nextPage.title %></span>

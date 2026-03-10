@@ -1,4 +1,6 @@
 <div class="project-detail">
+  <% const _projectMode = project.mode || 'versioned'; %>
+
   <div class="page-header">
     <div>
       <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
@@ -7,9 +9,17 @@
       <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
       <% if (user.role === 'owner' || user.role === 'admin') { %>
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+      <% if (_projectMode === 'simple') { %>
+      <% if (typeof defaultVersion !== 'undefined' && defaultVersion) { %>
+      <a href="/admin/projects/<%= project.id %>/versions/<%= defaultVersion.id %>/pages/new" class="btn btn-primary">
+        <i class="ph ph-plus"></i> New Page
+      </a>
+      <% } %>
+      <% } else { %>
       <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
         <i class="ph ph-plus"></i> New Version
       </a>
+      <% } %>
       <% } %>
     </div>
   </div>
@@ -18,7 +28,51 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
-  <% if (versions.length === 0) { %>
+  <% if (_projectMode === 'simple') { %>
+  <% const _pages = typeof pages !== 'undefined' ? pages : []; %>
+  <% const _defaultVersion = typeof defaultVersion !== 'undefined' ? defaultVersion : null; %>
+
+  <% if (!_defaultVersion) { %>
+  <div class="empty-state small">
+    <div class="empty-icon"><i class="ph ph-warning-circle"></i></div>
+    <h3>Setup incomplete</h3>
+    <p>No default version found for this project. Please delete and recreate it.</p>
+  </div>
+  <% } else if (_pages.length === 0) { %>
+  <div class="empty-state small">
+    <div class="empty-icon"><i class="ph ph-file-text"></i></div>
+    <% if (typeof search !== 'undefined' && search) { %>
+    <h3>No matching pages</h3>
+    <p>No pages found for "<%= search %>". <a href="/admin/projects/<%= project.id %>">Clear search</a></p>
+    <% } else { %>
+    <h3>No pages yet</h3>
+    <p>Create your first page to start writing docs.</p>
+    <% } %>
+  </div>
+  <% } else { %>
+  <div class="versions-list">
+    <% for (const pg of _pages) { %>
+    <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Edit page <%= pg.title %>">
+      <div class="version-card-main">
+        <div class="version-info">
+          <h3><% if (pg.icon) { %><i class="ph ph-<%= pg.icon %>"></i> <% } %><%= pg.title %></h3>
+          <span class="version-slug">/<%= pg.slug %></span>
+        </div>
+        <div class="version-actions">
+          <a href="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+  <% } %>
+
+  <% } else { %>
+  <% const _versions = typeof versions !== 'undefined' ? versions : []; %>
+
+  <% if (_versions.length === 0) { %>
   <div class="empty-state small">
     <div class="empty-icon"><i class="ph ph-git-branch"></i></div>
     <% if (typeof search !== 'undefined' && search) { %>
@@ -31,7 +85,7 @@
   </div>
   <% } else { %>
   <div class="versions-list">
-    <% for (const ver of versions) { %>
+    <% for (const ver of _versions) { %>
     <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" tabindex="0" aria-label="Open version <%= ver.label %>">
       <div class="version-card-main">
         <div class="version-info">
@@ -54,5 +108,6 @@
   </div>
 
   <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+  <% } %>
   <% } %>
 </div>

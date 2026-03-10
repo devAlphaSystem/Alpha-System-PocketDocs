@@ -131,7 +131,7 @@ The PocketBase schema is defined in `pb_schema.json`. Import it through the Pock
 | Collection | Type | Purpose |
 |------------|------|---------|
 | `users` | Auth | Application users with roles (owner, admin, editor) |
-| `projects` | Base | Documentation projects |
+| `projects` | Base | Documentation projects (visibility + mode) |
 | `versions` | Base | Project versions with ordering |
 | `pages` | Base | Documentation pages with nested hierarchy |
 | `changelogs` | Base | Per-version changelogs |
@@ -163,5 +163,7 @@ Defined in `src/config/constants.js`. These are compile-time values and cannot b
 | `MAX_DESCRIPTION_LENGTH` | 500 | Maximum description characters |
 | `MAX_CONTENT_LENGTH` | 500,000 | Maximum page/changelog content characters |
 | `MAX_LABEL_LENGTH` | 100 | Maximum version label characters |
+| `PROJECT_MODE.VERSIONED` | `versioned` | Project uses versioned public routes and release history |
+| `PROJECT_MODE.SIMPLE` | `simple` | Project uses simple public routes without version slug |
 | `PAGINATION.DEFAULT_PER_PAGE` | 30 | Items per page |
 | `PAGINATION.MAX_PER_PAGE` | 100 | Maximum items per page |

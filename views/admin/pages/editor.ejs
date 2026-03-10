@@ -5,7 +5,11 @@
     </div>
     <div class="header-actions">
       <% if (typeof page !== 'undefined' && page) { %>
+      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <a href="/docs/<%= project.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+      <% } else { %>
       <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+      <% } %>
       <% } %>
       <button type="submit" form="pageForm" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save</button>
     </div>

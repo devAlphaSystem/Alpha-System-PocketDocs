@@ -4,11 +4,11 @@
  * project listings, versioned docs, changelogs, and search.
  */
 import { Router } from "express";
-import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, searchPages } from "./service.js";
+import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, searchPages, getSimpleProjectVersion, getSimpleProjectPage } from "./service.js";
 import { buildPageTree } from "../pages/service.js";
 import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
-import { ROLES } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
 import { createHash } from "node:crypto";
@@ -17,6 +17,10 @@ const router = Router();
 
 function isAdminUser(req) {
   return req.user?.role === ROLES.OWNER || req.user?.role === ROLES.ADMIN;
+}
+
+function isSimple(project) {
+  return (project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
 }
 
 router.get("/", async (req, res, next) => {
@@ -39,6 +43,38 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
   try {
     const admin = isAdminUser(req);
     const project = await getPublicProject(req.params.projectSlug, admin);
+
+    if (isSimple(project)) {
+      const version = await getSimpleProjectVersion(project.id, admin);
+      if (!version) {
+        return res.render("public/project", {
+          title: project.name,
+          project,
+          versions: [],
+          defaultVersion: null,
+          siteName: env.SITE_NAME,
+          siteUrl: env.SITE_URL,
+          user: req.user || null,
+        });
+      }
+      const pagesResult = await getPublicPages(version.id);
+      const pages = pagesResult.items || [];
+      const pageTree = buildPageTree(pages);
+      const firstPage = pageTree[0] || pages[0];
+      if (firstPage) {
+        return res.redirect(`/docs/${project.slug}/${firstPage.slug}`);
+      }
+      return res.render("public/project", {
+        title: project.name,
+        project,
+        versions: [],
+        defaultVersion: null,
+        siteName: env.SITE_NAME,
+        siteUrl: env.SITE_URL,
+        user: req.user || null,
+      });
+    }
+
     const versionsResult = await getPublicVersions(project.id, admin);
     const versions = versionsResult.items || [];
     const defaultVersion = versions.length > 0 ? versions[0] : null;
@@ -56,6 +92,64 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
     }
 
     res.redirect(`/docs/${project.slug}/${defaultVersion.slug}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
+  try {
+    const admin = isAdminUser(req);
+    const project = await getPublicProject(req.params.projectSlug, admin);
+
+    if (!isSimple(project)) {
+      return next("route");
+    }
+
+    const version = await getSimpleProjectVersion(project.id, admin);
+    if (!version) {
+      throw new NotFoundError("Page");
+    }
+
+    const [pagesResult, page] = await Promise.all([getPublicPages(version.id), getSimpleProjectPage(project.id, req.params.segment, version.id)]);
+
+    if (!page) {
+      throw new NotFoundError("Page");
+    }
+
+    const pages = pagesResult.items || [];
+    const pageTree = buildPageTree(pages);
+    const contentHtml = renderMarkdown(page.content);
+    const headings = extractHeadings(contentHtml);
+
+    const etagSource = `${page.id}:${page.updated}`;
+    const etag = `"${createHash("md5").update(etagSource).digest("hex")}"`;
+    res.setHeader("ETag", etag);
+    if (req.headers["if-none-match"] === etag) {
+      return res.status(304).end();
+    }
+
+    const pageIndex = pages.findIndex((p) => p.id === page.id);
+    const prevPage = pageIndex > 0 ? pages[pageIndex - 1] : null;
+    const nextPage = pageIndex < pages.length - 1 ? pages[pageIndex + 1] : null;
+
+    res.render("public/docs", {
+      title: `${page.title} - ${project.name}`,
+      project,
+      version,
+      versions: [],
+      page,
+      pages,
+      pageTree,
+      contentHtml,
+      headings,
+      prevPage,
+      nextPage,
+      simpleMode: true,
+      siteName: env.SITE_NAME,
+      siteUrl: env.SITE_URL,
+      user: req.user || null,
+    });
   } catch (err) {
     next(err);
   }
@@ -169,6 +263,7 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       headings,
       prevPage,
       nextPage,
+      simpleMode: false,
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
       user: req.user || null,
@@ -196,10 +291,11 @@ router.get("/api/search", async (req, res, next) => {
         slug: p.slug,
         versionLabel: p.expand?.version?.label || "",
         versionSlug: p.expand?.version?.slug || "",
+        simpleMode: isSimple(project),
       })),
     });
   } catch (err) {
-    logger.warn("Search query failed", { requestId: req.requestId, query: q, error: err.message });
+    logger.warn("Search query failed", { requestId: req.requestId, query: req.query.q, error: err.message });
     res.json({ results: [] });
   }
 });

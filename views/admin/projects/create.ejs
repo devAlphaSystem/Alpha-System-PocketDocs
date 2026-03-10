@@ -59,6 +59,15 @@
         <option value="private"<%= typeof body !== 'undefined' && body.visibility === 'private' ? ' selected' : '' %>>Private</option>
       </select>
     </div>
+
+    <div class="form-group">
+      <label for="mode">Project type</label>
+      <select id="mode" name="mode">
+        <option value="versioned"<%= (typeof body !== 'undefined' && body.mode === 'versioned') || typeof body === 'undefined' ? ' selected' : '' %>>Versioned (with version history)</option>
+        <option value="simple"<%= typeof body !== 'undefined' && body.mode === 'simple' ? ' selected' : '' %>>Simple (docs only)</option>
+      </select>
+      <p class="form-hint">Simple mode is best for internal projects without release versioning.</p>
+    </div>
   </form>
 
   <% if (typeof githubConfigured !== 'undefined' && githubConfigured) { %>

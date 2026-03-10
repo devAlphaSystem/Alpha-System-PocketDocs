@@ -3,6 +3,31 @@ import { COLLECTIONS, VISIBILITY } from "../../config/constants.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
 /**
+ * Retrieves the single internal version for a simple-mode project.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
+ * @returns {Promise<Object|null>} The version record, or `null` if not found.
+ */
+export async function getSimpleProjectVersion(projectId, isAdmin = false) {
+  const filter = isAdmin ? `project = "${pbFilterValue(projectId)}"` : `project = "${pbFilterValue(projectId)}" && is_public = true`;
+  const result = await pbList(COLLECTIONS.VERSIONS, { filter, sort: "order", perPage: 1 });
+  return result.items?.[0] || null;
+}
+
+/**
+ * Retrieves a single public page directly by project slug and page slug for simple-mode projects.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {string} pageSlug - The page slug.
+ * @param {string} versionId - The internal default version ID.
+ * @returns {Promise<Object|null>} The page record, or `null` if not found.
+ */
+export async function getSimpleProjectPage(projectId, pageSlug, versionId) {
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(pageSlug)}"`);
+}
+
+/**
  * Retrieves all publicly visible projects sorted by name.
  * When isAdmin is true, returns all projects regardless of visibility.
  *

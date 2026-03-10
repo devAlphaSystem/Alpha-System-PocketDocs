@@ -1,6 +1,6 @@
 <nav class="docs-sidebar" id="docsSidebar">
   <div class="docs-sidebar-header">
-    <% if (typeof version !== 'undefined' && version) { %>
+    <% if (typeof version !== 'undefined' && version && !(typeof simpleMode !== 'undefined' && simpleMode)) { %>
     <%- include('./version-switcher', { project: project, version: version, versions: versions }) %>
     <% } %>
   </div>
@@ -15,7 +15,8 @@
     <% function renderTree(nodes, depth) { %>
       <% for (const node of nodes) { %>
         <li class="docs-nav-item<%= (typeof page !== 'undefined' && page && page.id === node.id) ? ' active' : '' %><%= node.children && node.children.length > 0 ? ' has-children' : '' %>" data-depth="<%= depth %>">
-          <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %>" class="docs-nav-link">
+          <% const _simple = typeof simpleMode !== 'undefined' && simpleMode; %>
+          <a href="<% if (_simple) { %>/docs/<%= project.slug %>/<%= node.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %><% } %>" class="docs-nav-link">
             <% if (node.icon) { %><i class="ph ph-<%= node.icon %>"></i><% } else { %><i class="ph ph-file-text"></i><% } %>
             <span><%= node.title %></span>
           </a>
@@ -29,7 +30,7 @@
     <% } %>
     <% if (typeof pageTree !== 'undefined') { renderTree(pageTree, 0); } %>
   </ul>
-  <% if (typeof version !== 'undefined' && version) { %>
+  <% if (typeof version !== 'undefined' && version && !(typeof simpleMode !== 'undefined' && simpleMode)) { %>
   <div class="docs-sidebar-footer">
     <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="docs-nav-link changelog-link">
       <i class="ph ph-clock-counter-clockwise"></i>

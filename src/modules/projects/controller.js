@@ -4,12 +4,12 @@
  */
 import { Router } from "express";
 import { listProjects, getProject, createProject, updateProject, deleteProject } from "./service.js";
-import { listVersionsPaginated } from "../versions/service.js";
+import { listVersionsPaginated, listVersions } from "../versions/service.js";
 import { createProjectSchema, updateProjectSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireRole, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
-import { ROLES } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { isGitHubConfigured } from "../github/service.js";
 import { getClientIp } from "../../lib/request-ip.js";
@@ -80,9 +80,45 @@ router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), va
 
 router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
-    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const search = (req.query.search || "").trim();
-    const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersionsPaginated(req.params.projectId, page, search)]);
+    const project = await getProject(req.params.projectId);
+
+    if ((project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE) {
+      const versionsResult = await listVersions(project.id);
+      const defaultVersion = versionsResult.items?.[0];
+      if (!defaultVersion) {
+        return res.render("admin/projects/show", {
+          title: project.name,
+          headerSubtitle: `/${project.slug}`,
+          headerBadge: { text: project.visibility, variant: project.visibility },
+          project,
+          defaultVersion: null,
+          pages: [],
+          pageTree: [],
+          pagination: { page: 1, totalPages: 1, totalItems: 0 },
+          search,
+          user: req.user,
+          csrfToken: res.locals.csrfToken,
+          success: req.query.success || null,
+          siteName: env.SITE_NAME,
+          sitePbUrl: env.POCKETBASE_URL,
+        });
+      }
+
+      const query = new URLSearchParams();
+      if (req.query.success) {
+        query.set("success", String(req.query.success));
+      }
+      if (search) {
+        query.set("search", search);
+      }
+
+      const suffix = query.toString() ? `?${query.toString()}` : "";
+      return res.redirect(`/admin/projects/${project.id}/versions/${defaultVersion.id}/pages${suffix}`);
+    }
+
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const versionsResult = await listVersionsPaginated(project.id, page, search);
     res.render("admin/projects/show", {
       title: project.name,
       headerSubtitle: `/${project.slug}`,

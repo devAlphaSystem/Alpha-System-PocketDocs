@@ -1,5 +1,5 @@
 import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
+import { COLLECTIONS, PAGINATION, PROJECT_MODE } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
@@ -78,8 +78,21 @@ export async function createProject(data, userId, requestId) {
     throw new ValidationError("Failed to create project.", formatPbErrors(result.data));
   }
 
-  logger.info("Project created", { requestId, projectId: result.data.id, slug: data.slug });
-  return result.data;
+  const project = result.data;
+  logger.info("Project created", { requestId, projectId: project.id, slug: data.slug });
+
+  if (data.mode === PROJECT_MODE.SIMPLE) {
+    await pbCreate(COLLECTIONS.VERSIONS, {
+      project: project.id,
+      label: "Default",
+      slug: "default",
+      is_public: true,
+      order: 1,
+    });
+    logger.info("Default version created for simple project", { requestId, projectId: project.id });
+  }
+
+  return project;
 }
 
 /**

@@ -1,13 +1,25 @@
 <div class="pages-page">
   <div class="page-header">
     <div>
-      <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= project.name %> / <%= version.label %></a>
+      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
+      <% } else { %>
+      <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> Versions</a>
+      <% } %>
     </div>
-    <% if (user.role === 'owner' || user.role === 'admin') { %>
+    <% if ((typeof simpleMode !== 'undefined' && simpleMode) || user.role === 'owner' || user.role === 'admin') { %>
     <div class="header-actions">
+      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
+      <% } %>
+      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof simpleMode !== 'undefined' && simpleMode)) { %>
+      <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+      <% } %>
+      <% if (user.role === 'owner' || user.role === 'admin') { %>
       <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary">
         <i class="ph ph-plus"></i> New Page
       </a>
+      <% } %>
     </div>
     <% } %>
   </div>
