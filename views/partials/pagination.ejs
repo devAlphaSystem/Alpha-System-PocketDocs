@@ -1,0 +1,48 @@
+<% if (typeof pagination !== 'undefined' && pagination && pagination.totalPages > 1) { %>
+<nav class="pagination" aria-label="Pagination">
+  <% const searchParam = (typeof search !== 'undefined' && search) ? '&search=' + encodeURIComponent(search) : ''; %>
+
+  <% if (pagination.page > 1) { %>
+  <a href="?page=<%= pagination.page - 1 %><%= searchParam %>" class="btn btn-outline btn-sm">
+    <i class="ph ph-caret-left"></i> Previous
+  </a>
+  <% } else { %>
+  <button class="btn btn-outline btn-sm" disabled>
+    <i class="ph ph-caret-left"></i> Previous
+  </button>
+  <% } %>
+
+  <div class="pagination-pages">
+    <% const totalPages = pagination.totalPages; %>
+    <% const currentPage = pagination.page; %>
+    <% const delta = 1; %>
+    <% const pages = []; %>
+    <% for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+        pages.push(i);
+      } else if (pages.length > 0 && pages[pages.length - 1] !== '...') {
+        pages.push('...');
+      }
+    } %>
+    <% for (const p of pages) { %>
+      <% if (p === '...') { %>
+        <span class="pagination-ellipsis">&hellip;</span>
+      <% } else if (p === currentPage) { %>
+        <span class="pagination-page active"><%= p %></span>
+      <% } else { %>
+        <a href="?page=<%= p %><%= searchParam %>" class="pagination-page"><%= p %></a>
+      <% } %>
+    <% } %>
+  </div>
+
+  <% if (pagination.page < pagination.totalPages) { %>
+  <a href="?page=<%= pagination.page + 1 %><%= searchParam %>" class="btn btn-outline btn-sm">
+    Next <i class="ph ph-caret-right"></i>
+  </a>
+  <% } else { %>
+  <button class="btn btn-outline btn-sm" disabled>
+    Next <i class="ph ph-caret-right"></i>
+  </button>
+  <% } %>
+</nav>
+<% } %>

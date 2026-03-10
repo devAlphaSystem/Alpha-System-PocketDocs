@@ -4,7 +4,7 @@
  * within a project version.
  */
 import { Router } from "express";
-import { listPages, buildPageTree, getPage, createPage, updatePage, deletePage, reorderPages } from "./service.js";
+import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, updatePage, deletePage, reorderPages } from "./service.js";
 import { createPageSchema, updatePageSchema, reorderPagesSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
@@ -20,19 +20,28 @@ router.use(requireAuth);
 
 router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
-    const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const search = (req.query.search || "").trim();
+    const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPagesPaginated(req.params.versionId, page, search)]);
     const project = version.expand?.project;
 
-    const pageTree = buildPageTree(pagesResult.items || []);
-    const totalPages = (pagesResult.items || []).length;
+    const pageTree = search ? [] : buildPageTree(pagesResult.items || []);
+    const totalPages = pagesResult.totalItems ?? (pagesResult.items || []).length;
 
     res.render("admin/pages/index", {
       title: `${project.name} - ${version.label} - Pages`,
       headerSubtitle: `${totalPages} page${totalPages !== 1 ? "s" : ""}`,
+      headerSearch: {
+        action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
+        placeholder: "Search pages...",
+        value: search,
+      },
       project,
       version,
       pages: pagesResult.items || [],
       pageTree,
+      pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
+      search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
       error: null,

@@ -11,8 +11,13 @@
   <% if (projects.length === 0) { %>
   <div class="empty-state">
     <div class="empty-icon"><i class="ph ph-folders"></i></div>
+    <% if (typeof search !== 'undefined' && search) { %>
+    <h2>No matching projects</h2>
+    <p>No projects found for "<%= search %>". <a href="/admin/projects">Clear search</a></p>
+    <% } else { %>
     <h2>No projects yet</h2>
     <p>Create your first documentation project.</p>
+    <% } %>
   </div>
   <% } else { %>
   <div class="table-wrap">
@@ -46,5 +51,7 @@
       </tbody>
     </table>
   </div>
+
+  <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
   <% } %>
 </div>

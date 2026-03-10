@@ -292,4 +292,25 @@
     }
     form.submit();
   });
+
+  var insertIpLink = document.getElementById("insert-my-ip");
+  if (insertIpLink) {
+    insertIpLink.addEventListener("click", function (event) {
+      event.preventDefault();
+      var ip = insertIpLink.getAttribute("data-ip");
+      var textarea = document.getElementById("allowedIps");
+      if (!ip || !textarea) return;
+
+      var current = textarea.value.trim();
+      var lines = current
+        ? current.split(/\r?\n/).map(function (l) {
+            return l.trim();
+          })
+        : [];
+      if (lines.indexOf(ip) !== -1) return;
+
+      textarea.value = current ? current + "\n" + ip : ip;
+      textarea.focus();
+    });
+  }
 })();

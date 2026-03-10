@@ -4,7 +4,7 @@
  */
 import { Router } from "express";
 import { listProjects, getProject, createProject, updateProject, deleteProject } from "./service.js";
-import { listVersions } from "../versions/service.js";
+import { listVersionsPaginated } from "../versions/service.js";
 import { createProjectSchema, updateProjectSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireRole, requireProjectAccess } from "../../middleware/auth.js";
@@ -20,13 +20,20 @@ router.use(requireAuth);
 router.get("/", csrfMiddleware, async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const result = await listProjects(req.user.id, req.user.role, page);
+    const search = (req.query.search || "").trim();
+    const result = await listProjects(page, search);
     const totalProjects = result.totalItems ?? (result.items || []).length;
     res.render("admin/projects/index", {
       title: "Projects",
       headerSubtitle: `${totalProjects} project${totalProjects !== 1 ? "s" : ""}`,
+      headerSearch: {
+        action: "/admin/projects",
+        placeholder: "Search projects...",
+        value: search,
+      },
       projects: result.items || [],
       pagination: { page: result.page, totalPages: result.totalPages, totalItems: result.totalItems },
+      search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
       siteName: env.SITE_NAME,
@@ -70,7 +77,9 @@ router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), va
 
 router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
-    const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const search = (req.query.search || "").trim();
+    const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersionsPaginated(req.params.projectId, page, search)]);
     res.render("admin/projects/show", {
       title: project.name,
       headerSubtitle: `/${project.slug}`,
@@ -78,8 +87,15 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
         text: project.visibility,
         variant: project.visibility,
       },
+      headerSearch: {
+        action: `/admin/projects/${project.id}`,
+        placeholder: "Search versions...",
+        value: search,
+      },
       project,
       versions: versionsResult.items || [],
+      pagination: { page: versionsResult.page, totalPages: versionsResult.totalPages, totalItems: versionsResult.totalItems },
+      search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
       success: req.query.success || null,

@@ -1,5 +1,5 @@
 import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS } from "../../config/constants.js";
+import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
@@ -22,6 +22,27 @@ export async function listVersions(projectId) {
     filter: `project = "${pbFilterValue(projectId)}"`,
     sort: "-order,-created",
     perPage: 200,
+  });
+}
+
+/**
+ * Retrieves a paginated list of versions for a project with optional search.
+ *
+ * @param {string} projectId - The project record ID.
+ * @param {number} [page=1] - The 1-based page number.
+ * @param {string} [search=""] - Optional search term to filter by label or slug.
+ * @returns {Promise<Object>} Paginated result containing version items.
+ */
+export async function listVersionsPaginated(projectId, page = PAGINATION.DEFAULT_PAGE, search = "") {
+  let filter = `project = "${pbFilterValue(projectId)}"`;
+  if (search) {
+    filter += ` && (label ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}")`;
+  }
+  return pbList(COLLECTIONS.VERSIONS, {
+    filter,
+    sort: "-order,-created",
+    page,
+    perPage: PAGINATION.DEFAULT_PER_PAGE,
   });
 }
 

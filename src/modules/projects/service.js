@@ -6,19 +6,22 @@ import { logger } from "../../lib/logger.js";
 /**
  * Retrieves a paginated list of projects sorted by creation date.
  *
- * @param {string} userId - The current user's ID.
- * @param {string} userRole - The current user's role.
  * @param {number} [page=1] - The 1-based page number.
+ * @param {string} [search=""] - Optional search term to filter by name or slug.
  * @returns {Promise<Object>} Paginated result containing project items.
  */
-export async function listProjects(userId, userRole, page = PAGINATION.DEFAULT_PAGE) {
+export async function listProjects(page = PAGINATION.DEFAULT_PAGE, search = "") {
   const perPage = PAGINATION.DEFAULT_PER_PAGE;
-  return pbList(COLLECTIONS.PROJECTS, {
+  const options = {
     page,
     perPage,
     sort: "-created",
     expand: "owner",
-  });
+  };
+  if (search) {
+    options.filter = `name ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}"`;
+  }
+  return pbList(COLLECTIONS.PROJECTS, options);
 }
 
 /**

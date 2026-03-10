@@ -3,16 +3,12 @@
     <div>
       <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= project.name %> / <%= version.label %></a>
     </div>
-  </div>
-
-  <div class="page-header sub-header">
-    <div>
-      <h2>Pages</h2>
-    </div>
     <% if (user.role === 'owner' || user.role === 'admin') { %>
-    <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary">
-      <i class="ph ph-plus"></i> New Page
-    </a>
+    <div class="header-actions">
+      <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary">
+        <i class="ph ph-plus"></i> New Page
+      </a>
+    </div>
     <% } %>
   </div>
 
@@ -20,12 +16,44 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
+  <% const isSearching = typeof search !== 'undefined' && search; %>
+
   <% if (pages.length === 0) { %>
   <div class="empty-state small">
     <div class="empty-icon"><i class="ph ph-file-text"></i></div>
+    <% if (isSearching) { %>
+    <h3>No matching pages</h3>
+    <p>No pages found for "<%= search %>". <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages">Clear search</a></p>
+    <% } else { %>
     <h3>No pages yet</h3>
     <p>Create the first page for this version.</p>
+    <% } %>
   </div>
+  <% } else if (isSearching) { %>
+  <div class="versions-list">
+    <% for (const pg of pages) { %>
+    <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open page <%= pg.title %>">
+      <div class="version-card-main">
+        <div class="version-info">
+          <% if (pg.icon) { %><i class="ph ph-<%= pg.icon %> page-icon"></i><% } else { %><i class="ph ph-file-text page-icon"></i><% } %>
+          <h3 class="page-title"><%= pg.title %></h3>
+          <span class="page-slug text-muted">/<%= pg.slug %></span>
+        </div>
+        <div class="version-actions page-tree-actions">
+          <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
+          <% if (user.role === 'owner' || user.role === 'admin') { %>
+          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>/delete" class="inline-form" data-confirm-title="Delete page?" data-confirm-message="Delete this page?" data-confirm-button="Delete" data-confirm-variant="danger">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
+          </form>
+          <% } %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+  </div>
+
+  <%- include('../../partials/pagination', { pagination, search }) %>
   <% } else { %>
   <div class="versions-list pages-tree" id="pagesTree" data-project="<%= project.id %>" data-version="<%= version.id %>" data-csrf="<%= csrfToken %>">
     <% function renderAdminTree(nodes, depth) { %>
@@ -54,7 +82,11 @@
     <% } %>
     <% renderAdminTree(pageTree, 0); %>
   </div>
+
+  <%- include('../../partials/pagination', { pagination, search: '' }) %>
   <% } %>
 </div>
 
+<% if (!(typeof search !== 'undefined' && search)) { %>
 <script src="<%= assetUrl('/js/sidebar-sort.js') %>"></script>
+<% } %>

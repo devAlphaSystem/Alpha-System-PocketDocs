@@ -1,5 +1,5 @@
 import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS } from "../../config/constants.js";
+import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
@@ -14,6 +14,27 @@ export async function listPages(versionId) {
     filter: `version = "${pbFilterValue(versionId)}"`,
     sort: "order,title",
     perPage: 500,
+  });
+}
+
+/**
+ * Retrieves a paginated list of pages for a version with optional search.
+ *
+ * @param {string} versionId - The version record ID.
+ * @param {number} [page=1] - The 1-based page number.
+ * @param {string} [search=""] - Optional search term to filter by title or slug.
+ * @returns {Promise<Object>} Paginated result containing page items.
+ */
+export async function listPagesPaginated(versionId, page = PAGINATION.DEFAULT_PAGE, search = "") {
+  let filter = `version = "${pbFilterValue(versionId)}"`;
+  if (search) {
+    filter += ` && (title ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}")`;
+  }
+  return pbList(COLLECTIONS.PAGES, {
+    filter,
+    sort: "order,title",
+    page,
+    perPage: PAGINATION.DEFAULT_PER_PAGE,
   });
 }
 

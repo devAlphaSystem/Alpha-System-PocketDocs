@@ -1,6 +1,6 @@
-import { pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
+import { pbGetFirstByFilter, pbCreate, pbUpdate, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS } from "../../config/constants.js";
-import { NotFoundError, ValidationError } from "../../errors/taxonomy.js";
+import { ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
 /**
@@ -51,26 +51,4 @@ export async function upsertChangelog(versionId, data, requestId) {
 
   logger.info("Changelog created", { requestId, changelogId: result.data.id, versionId });
   return result.data;
-}
-
-/**
- * Deletes the changelog associated with a version.
- *
- * @param {string} versionId - The version ID whose changelog to delete.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<void>}
- * @throws {NotFoundError} If no changelog exists for the version.
- */
-export async function deleteChangelog(versionId, requestId) {
-  const existing = await getChangelog(versionId);
-  if (!existing) {
-    throw new NotFoundError("Changelog");
-  }
-
-  const result = await pbDelete(COLLECTIONS.CHANGELOGS, existing.id);
-  if (!result.ok) {
-    throw new NotFoundError("Changelog");
-  }
-
-  logger.info("Changelog deleted", { requestId, versionId });
 }

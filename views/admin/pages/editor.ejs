@@ -11,10 +11,6 @@
     </div>
   </div>
 
-  <div class="page-header sub-header">
-    <h2><%= typeof page !== 'undefined' && page ? 'Edit: ' + page.title : 'New Page' %></h2>
-  </div>
-
   <% if (typeof error !== 'undefined' && error) { %>
   <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>

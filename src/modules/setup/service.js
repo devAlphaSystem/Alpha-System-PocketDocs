@@ -26,15 +26,6 @@ export function isOwnerSetupComplete() {
 }
 
 /**
- * Marks the owner setup as complete in the in-memory flag.
- *
- * @returns {void}
- */
-export function markOwnerSetupComplete() {
-  ownerExists = true;
-}
-
-/**
  * Registers the initial owner account and automatically signs them in.
  *
  * @param {Object} data - Registration data.

@@ -26,7 +26,6 @@ export const VISIBILITY = Object.freeze({
  */
 export const COLLECTIONS = Object.freeze({
   USERS: "users",
-  SUPERUSERS: "_superusers",
   PROJECTS: "projects",
   VERSIONS: "versions",
   PAGES: "pages",
@@ -40,8 +39,7 @@ export const COLLECTIONS = Object.freeze({
  */
 export const PAGINATION = Object.freeze({
   DEFAULT_PAGE: 1,
-  DEFAULT_PER_PAGE: 30,
-  MAX_PER_PAGE: 100,
+  DEFAULT_PER_PAGE: 25,
 });
 
 /**
@@ -52,7 +50,6 @@ export const PAGINATION = Object.freeze({
 export const COOKIE_NAMES = Object.freeze({
   AUTH_TOKEN: "pd_auth",
   CSRF_TOKEN: "pd_csrf",
-  THEME: "pd_theme",
 });
 
 /** @type {RegExp} Matches valid URL-safe slug strings (lowercase alphanumeric with hyphens). */

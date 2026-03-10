@@ -4,12 +4,14 @@ import { NotFoundError } from "../../errors/taxonomy.js";
 
 /**
  * Retrieves all publicly visible projects sorted by name.
+ * When isAdmin is true, returns all projects regardless of visibility.
  *
- * @returns {Promise<Object>} Paginated result containing public project items.
+ * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
+ * @returns {Promise<Object>} Paginated result containing project items.
  */
-export async function listPublicProjects() {
+export async function listPublicProjects(isAdmin = false) {
   return pbList(COLLECTIONS.PROJECTS, {
-    filter: `visibility = "${VISIBILITY.PUBLIC}"`,
+    filter: isAdmin ? "" : `visibility = "${VISIBILITY.PUBLIC}"`,
     sort: "name",
     perPage: 100,
   });
@@ -17,13 +19,16 @@ export async function listPublicProjects() {
 
 /**
  * Retrieves a public project by its slug.
+ * When isAdmin is true, returns the project regardless of visibility.
  *
  * @param {string} projectSlug - The project slug.
- * @returns {Promise<Object>} The public project record.
- * @throws {NotFoundError} If no public project matches the slug.
+ * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
+ * @returns {Promise<Object>} The project record.
+ * @throws {NotFoundError} If no project matches the slug.
  */
-export async function getPublicProject(projectSlug) {
-  const project = await pbGetFirstByFilter(COLLECTIONS.PROJECTS, `slug = "${pbFilterValue(projectSlug)}" && visibility = "${VISIBILITY.PUBLIC}"`);
+export async function getPublicProject(projectSlug, isAdmin = false) {
+  const filter = isAdmin ? `slug = "${pbFilterValue(projectSlug)}"` : `slug = "${pbFilterValue(projectSlug)}" && visibility = "${VISIBILITY.PUBLIC}"`;
+  const project = await pbGetFirstByFilter(COLLECTIONS.PROJECTS, filter);
   if (!project) {
     throw new NotFoundError("Project");
   }
@@ -32,52 +37,33 @@ export async function getPublicProject(projectSlug) {
 
 /**
  * Retrieves all public versions for a project, sorted by descending order.
+ * When isAdmin is true, returns all versions regardless of public status.
  *
  * @param {string} projectId - The project record ID.
- * @returns {Promise<Object>} Paginated result containing public version items.
+ * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
+ * @returns {Promise<Object>} Paginated result containing version items.
  */
-export async function getPublicVersions(projectId) {
+export async function getPublicVersions(projectId, isAdmin = false) {
+  const filter = isAdmin ? `project = "${pbFilterValue(projectId)}"` : `project = "${pbFilterValue(projectId)}" && is_public = true`;
   return pbList(COLLECTIONS.VERSIONS, {
-    filter: `project = "${pbFilterValue(projectId)}" && is_public = true`,
+    filter,
     sort: "-order,-created",
     perPage: 100,
   });
 }
 
 /**
- * Retrieves the default (first) public version for a project.
- *
- * @param {string} projectId - The project record ID.
- * @returns {Promise<Object|null>} The default version record, or `null` if none exist.
- */
-export async function getDefaultVersion(projectId) {
-  const versions = await getPublicVersions(projectId);
-  if (!versions.items || versions.items.length === 0) {
-    return null;
-  }
-  return versions.items[0];
-}
-
-/**
- * Retrieves a specific public version by project ID and version slug.
- *
- * @param {string} projectId - The project record ID.
- * @param {string} versionSlug - The version slug.
- * @returns {Promise<Object|null>} The version record, or `null` if not found.
- */
-export async function getPublicVersion(projectId, versionSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project = "${pbFilterValue(projectId)}" && slug = "${pbFilterValue(versionSlug)}" && is_public = true`);
-}
-
-/**
  * Retrieves a public version by project slug and version slug, expanding the project relation.
+ * When isAdmin is true, returns the version regardless of visibility.
  *
  * @param {string} projectSlug - The project slug.
  * @param {string} versionSlug - The version slug.
+ * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
  * @returns {Promise<Object|null>} The version record with expanded project, or `null` if not found.
  */
-export async function getPublicVersionByProjectSlug(projectSlug, versionSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project.slug = "${pbFilterValue(projectSlug)}" && project.visibility = "public" && slug = "${pbFilterValue(versionSlug)}" && is_public = true`, { expand: "project" });
+export async function getPublicVersionByProjectSlug(projectSlug, versionSlug, isAdmin = false) {
+  const filter = isAdmin ? `project.slug = "${pbFilterValue(projectSlug)}" && slug = "${pbFilterValue(versionSlug)}"` : `project.slug = "${pbFilterValue(projectSlug)}" && project.visibility = "public" && slug = "${pbFilterValue(versionSlug)}" && is_public = true`;
+  return pbGetFirstByFilter(COLLECTIONS.VERSIONS, filter, { expand: "project" });
 }
 
 /**
@@ -124,13 +110,13 @@ export async function getPublicChangelog(versionId) {
  * @param {string|null} [versionId=null] - Optional version ID to narrow the search.
  * @returns {Promise<Array<Object>>} Array of matching page records with expanded version data.
  */
-export async function searchPages(projectId, query, versionId = null) {
+export async function searchPages(projectId, query, versionId = null, isAdmin = false) {
   const safeQuery = query.replace(/['"\\]/g, "");
   if (!safeQuery || safeQuery.length < 2) {
     return [];
   }
 
-  let filter = `version.project = "${pbFilterValue(projectId)}" && version.is_public = true`;
+  let filter = isAdmin ? `version.project = "${pbFilterValue(projectId)}"` : `version.project = "${pbFilterValue(projectId)}" && version.is_public = true`;
   if (versionId) {
     filter += ` && version = "${pbFilterValue(versionId)}"`;
   }

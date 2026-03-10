@@ -7,17 +7,11 @@
       <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
       <% if (user.role === 'owner' || user.role === 'admin') { %>
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
+      <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
+        <i class="ph ph-plus"></i> New Version
+      </a>
       <% } %>
     </div>
-  </div>
-
-  <div class="page-header sub-header">
-    <h2>Versions</h2>
-    <% if (user.role === 'owner' || user.role === 'admin') { %>
-    <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
-      <i class="ph ph-plus"></i> New Version
-    </a>
-    <% } %>
   </div>
 
   <% if (typeof success !== 'undefined' && success) { %>
@@ -27,8 +21,13 @@
   <% if (versions.length === 0) { %>
   <div class="empty-state small">
     <div class="empty-icon"><i class="ph ph-git-branch"></i></div>
+    <% if (typeof search !== 'undefined' && search) { %>
+    <h3>No matching versions</h3>
+    <p>No versions found for "<%= search %>". <a href="/admin/projects/<%= project.id %>">Clear search</a></p>
+    <% } else { %>
     <h3>No versions yet</h3>
     <p>Create your first version to start writing docs.</p>
+    <% } %>
   </div>
   <% } else { %>
   <div class="versions-list">
@@ -53,5 +52,7 @@
     </div>
     <% } %>
   </div>
+
+  <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
   <% } %>
 </div>

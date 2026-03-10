@@ -8,15 +8,21 @@ import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersi
 import { buildPageTree } from "../pages/service.js";
 import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
+import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
 import { createHash } from "node:crypto";
 
 const router = Router();
 
+function isAdminUser(req) {
+  return req.user?.role === ROLES.OWNER || req.user?.role === ROLES.ADMIN;
+}
+
 router.get("/", async (req, res, next) => {
   try {
-    const result = await listPublicProjects();
+    const admin = isAdminUser(req);
+    const result = await listPublicProjects(admin);
     res.render("public/home", {
       title: env.SITE_NAME,
       projects: result.items || [],
@@ -31,8 +37,9 @@ router.get("/", async (req, res, next) => {
 
 router.get("/docs/:projectSlug", async (req, res, next) => {
   try {
-    const project = await getPublicProject(req.params.projectSlug);
-    const versionsResult = await getPublicVersions(project.id);
+    const admin = isAdminUser(req);
+    const project = await getPublicProject(req.params.projectSlug, admin);
+    const versionsResult = await getPublicVersions(project.id, admin);
     const versions = versionsResult.items || [];
     const defaultVersion = versions.length > 0 ? versions[0] : null;
 
@@ -56,7 +63,8 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
 
 router.get("/docs/:projectSlug/:versionSlug", async (req, res, next) => {
   try {
-    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug);
+    const admin = isAdminUser(req);
+    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug, admin);
     if (!version) {
       throw new NotFoundError("Version");
     }
@@ -83,7 +91,8 @@ router.get("/docs/:projectSlug/:versionSlug", async (req, res, next) => {
 
 router.get("/docs/:projectSlug/:versionSlug/changelog", async (req, res, next) => {
   try {
-    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug);
+    const admin = isAdminUser(req);
+    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug, admin);
     if (!version) {
       throw new NotFoundError("Version");
     }
@@ -92,7 +101,7 @@ router.get("/docs/:projectSlug/:versionSlug/changelog", async (req, res, next) =
       throw new NotFoundError("Project");
     }
 
-    const [versionsResult, pagesResult, changelog] = await Promise.all([getPublicVersions(project.id), getPublicPages(version.id), getPublicChangelog(version.id)]);
+    const [versionsResult, pagesResult, changelog] = await Promise.all([getPublicVersions(project.id, admin), getPublicPages(version.id), getPublicChangelog(version.id)]);
 
     const contentHtml = changelog ? renderMarkdown(changelog.content) : "";
     const pageTree = buildPageTree(pagesResult.items || []);
@@ -116,7 +125,8 @@ router.get("/docs/:projectSlug/:versionSlug/changelog", async (req, res, next) =
 
 router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) => {
   try {
-    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug);
+    const admin = isAdminUser(req);
+    const version = await getPublicVersionByProjectSlug(req.params.projectSlug, req.params.versionSlug, admin);
     if (!version) {
       throw new NotFoundError("Version");
     }
@@ -125,7 +135,7 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       throw new NotFoundError("Project");
     }
 
-    const [versionsResult, pagesResult, page] = await Promise.all([getPublicVersions(project.id), getPublicPages(version.id), getPublicPage(version.id, req.params.pageSlug)]);
+    const [versionsResult, pagesResult, page] = await Promise.all([getPublicVersions(project.id, admin), getPublicPages(version.id), getPublicPage(version.id, req.params.pageSlug)]);
 
     if (!page) {
       throw new NotFoundError("Page");
@@ -175,8 +185,9 @@ router.get("/api/search", async (req, res, next) => {
       return res.json({ results: [] });
     }
 
-    const project = await getPublicProject(projectSlug);
-    const results = await searchPages(project.id, q, versionId);
+    const admin = isAdminUser(req);
+    const project = await getPublicProject(projectSlug, admin);
+    const results = await searchPages(project.id, q, versionId, admin);
 
     res.json({
       results: results.map((p) => ({

@@ -133,7 +133,6 @@ const authLimiter = rateLimit({
 });
 
 app.use(loadUserMiddleware);
-app.use(generalLimiter);
 
 const setupRedirectMiddleware = (req, res, next) => {
   if (!isOwnerSetupComplete() && !req.path.startsWith("/setup") && !req.path.startsWith("/css") && !req.path.startsWith("/js") && !req.path.startsWith("/img") && req.path !== "/favicon.ico") {
@@ -200,7 +199,7 @@ app.use("/admin/projects/:projectId/versions", ipRestrictionMiddleware, adminLay
 app.use("/admin/projects/:projectId/versions/:versionId/pages", ipRestrictionMiddleware, adminLayoutMiddleware, pageRoutes);
 app.use("/admin/projects/:projectId/versions/:versionId/changelog", ipRestrictionMiddleware, adminLayoutMiddleware, changelogRoutes);
 
-app.use("/", publicRoutes);
+app.use("/", generalLimiter, publicRoutes);
 
 app.get("/favicon.ico", (_req, res) => {
   res.sendFile(join(__dirname, "../public/img/logo.png"));
