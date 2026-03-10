@@ -14,7 +14,7 @@ import expressLayouts from "express-ejs-layouts";
 
 import { env, trustProxy } from "./config/env.js";
 import { logger } from "./lib/logger.js";
-import { authenticateAdmin } from "./lib/pocketbase.js";
+import { authenticateAdmin, pbClient } from "./lib/pocketbase.js";
 import { getClientIp } from "./lib/request-ip.js";
 import { requestIdMiddleware, requestLoggerMiddleware } from "./middleware/request-id.js";
 import { securityHeadersMiddleware } from "./middleware/security-headers.js";
@@ -36,6 +36,7 @@ import { loadSettings, getSettings } from "./modules/settings/service.js";
 import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
 import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
 import { checkOwnerExists, isOwnerSetupComplete } from "./modules/setup/service.js";
+import { boot as bootEmbeddedPb, stop as stopEmbeddedPb, applySchema, buildSafeSchema } from "./lib/pb-embedded.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -216,8 +217,23 @@ app.use(errorHandlerMiddleware);
  *
  * @returns {Promise<void>}
  */
+let embeddedRunning = false;
+
 async function start() {
   const startTime = Date.now();
+
+  if (env.POCKETBASE_MODE === "embedded") {
+    await bootEmbeddedPb({
+      url: env.POCKETBASE_URL,
+      adminEmail: env.POCKETBASE_ADMIN_EMAIL,
+      adminPassword: env.POCKETBASE_ADMIN_PASSWORD,
+      version: env.POCKETBASE_VERSION || "",
+      log: (msg) => logger.info(msg),
+      warn: (msg) => logger.warn(msg),
+      error: (msg) => logger.error(msg),
+    });
+    embeddedRunning = true;
+  }
 
   await loadSettings();
   logger.info("Site settings loaded");
@@ -236,6 +252,30 @@ async function start() {
     process.exit(1);
   }
 
+  if (env.POCKETBASE_MODE !== "embedded") {
+    try {
+      await buildSafeSchema({
+        log: (msg) => logger.info(msg),
+        warn: (msg) => logger.warn(msg),
+        error: (msg) => logger.error(msg),
+      });
+    } catch (err) {
+      logger.warn("Could not build safe schema (pb_schema.json may be missing)", { error: err.message });
+    }
+
+    try {
+      await applySchema({
+        pb: pbClient(),
+        log: (msg) => logger.info(msg),
+        warn: (msg) => logger.warn(msg),
+        error: (msg) => logger.error(msg),
+      });
+    } catch (err) {
+      logger.error("Failed to apply database schema", { error: err.message });
+      process.exit(1);
+    }
+  }
+
   const ownerReady = await checkOwnerExists();
   logger.info(ownerReady ? "Owner account found" : "No owner account — setup required");
 
@@ -244,6 +284,7 @@ async function start() {
 
     function shutdown(signal) {
       logger.info(`${signal} received, shutting down gracefully`);
+      if (embeddedRunning) stopEmbeddedPb();
       server.close(() => {
         process.exit(0);
       });

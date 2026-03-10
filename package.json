@@ -1,7 +1,7 @@
 {
   "name": "pocketdocs",
-  "version": "0.11.0",
-  "updated": "2026.03.10.1730",
+  "version": "0.12.0",
+  "updated": "2026.03.10.2340",
   "description": "Self-hosted documentation platform with versioning, powered by PocketBase",
   "type": "module",
   "main": "src/index.js",

@@ -4,6 +4,10 @@ Self-hosted documentation platform with versioning, powered by [PocketBase](http
 
 PocketDocs lets teams create, organize, and publish documentation for multiple projects with either versioned or simple docs mode, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview, role-based access control, and optional GitHub import to bootstrap docs from existing repositories.
 
+PocketDocs supports two database modes:
+- External mode: connect to your own PocketBase instance.
+- Embedded mode: PocketDocs downloads and manages PocketBase automatically.
+
 ## Features
 
 - **Flexible project modes** — choose versioned docs (release history) or simple docs (single stream)
@@ -32,7 +36,7 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 |-------|------------|
 | Runtime | Node.js ≥ 20 |
 | Framework | Express 5 |
-| Database | [PocketBase](https://pocketbase.io/) |
+| Database | [PocketBase](https://pocketbase.io/) (external or embedded mode) |
 | Templating | EJS + express-ejs-layouts |
 | Markdown | Marked + highlight.js + sanitize-html + Mermaid |
 | Validation | Zod |
@@ -41,26 +45,36 @@ PocketDocs lets teams create, organize, and publish documentation for multiple p
 
 ## Quick Start
 
+### Embedded Mode (Automatic)
+
 ```bash
 # 1. Clone and install
 git clone "https://github.com/devAlphaSystem/Alpha-System-PocketDocs.git" pocketdocs && cd pocketdocs
 npm install
 
-# 2. Start PocketBase (separate terminal)
-./pocketbase serve
-
-# 3. Configure environment
+# 2. Configure environment
 cp .env.example .env
-# Edit .env — set POCKETBASE_URL, admin credentials, and secrets
+# Edit .env — set POCKETBASE_MODE=embedded, admin credentials, and secrets
 
-# 4. Import the database schema
-# In the PocketBase admin UI, import pb_schema.json
-
-# 5. Start PocketDocs
+# 3. Start PocketDocs (PocketBase auto-installs and starts)
 npm run dev
 ```
 
 Open `http://localhost:3000` — you will be redirected to the owner setup page on first launch.
+
+### External Mode (Manual PocketBase)
+
+```bash
+# 1. Start PocketBase in a separate terminal
+./pocketbase serve
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env — set POCKETBASE_MODE=external, POCKETBASE_URL, admin credentials, and secrets
+
+# 3. Start PocketDocs (schema is applied automatically on startup)
+npm run dev
+```
 
 ## Project Structure
 
@@ -86,7 +100,7 @@ pocketdocs/
 ├── views/                    # EJS templates (admin + public layouts)
 ├── public/                   # Static assets (CSS, JS, images)
 ├── data/                     # Runtime configuration files (site settings, IP rules)
-├── pb_schema.json            # PocketBase collection schema (import on first setup)
+├── db_schema.json            # Safe PocketBase schema (applied automatically on startup)
 └── .env.example              # Environment variable template
 ```
 

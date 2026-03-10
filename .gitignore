@@ -1,6 +1,9 @@
 # Environment variables
 .env
 
+# Database schema
+pb_schema.json
+
 # Build output
 dist/
 data/
@@ -12,6 +15,9 @@ node_modules/
 logs/
 *.log
 npm-debug.log*
+
+# Scripts
+scripts/
 
 # Test artifacts
 test-out.txt

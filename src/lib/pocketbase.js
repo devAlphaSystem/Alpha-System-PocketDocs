@@ -14,8 +14,32 @@ export function pbFilterValue(value) {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
-const pb = new PocketBase(env.POCKETBASE_URL);
-pb.autoCancellation(false);
+function resolvePocketBaseUrl() {
+  const runtimeUrl = process.env.POCKETBASE_URL && process.env.POCKETBASE_URL.trim() !== "" ? process.env.POCKETBASE_URL.trim() : "";
+  return runtimeUrl || env.POCKETBASE_URL || "http://127.0.0.1:8090";
+}
+
+let pb = null;
+let pbUrl = "";
+
+function getPb() {
+  const url = resolvePocketBaseUrl();
+  if (!pb || pbUrl !== url) {
+    pb = new PocketBase(url);
+    pb.autoCancellation(false);
+    pbUrl = url;
+  }
+  return pb;
+}
+
+/**
+ * Returns the shared admin PocketBase client instance.
+ *
+ * @returns {import("pocketbase").default}
+ */
+export function pbClient() {
+  return getPb();
+}
 
 function wrapPbError(err, operation) {
   if (err.status) {
@@ -39,7 +63,8 @@ function wrapPbError(err, operation) {
 }
 
 async function ensureAdminAuth() {
-  if (!pb.authStore.isValid) {
+  const client = getPb();
+  if (!client.authStore.isValid) {
     await authenticateAdmin();
   }
 }
@@ -52,7 +77,7 @@ async function ensureAdminAuth() {
  */
 export async function authenticateAdmin() {
   try {
-    const result = await pb.collection("_superusers").authWithPassword(env.POCKETBASE_ADMIN_EMAIL, env.POCKETBASE_ADMIN_PASSWORD);
+    const result = await getPb().collection("_superusers").authWithPassword(env.POCKETBASE_ADMIN_EMAIL, env.POCKETBASE_ADMIN_PASSWORD);
     logger.info("PocketBase admin authentication successful");
     return result.token;
   } catch (err) {
@@ -70,7 +95,7 @@ export async function authenticateAdmin() {
  * @throws {InfrastructureError} If a network or connection error occurs.
  */
 export async function pbAuthWithPassword(collection, identity, password) {
-  const client = new PocketBase(env.POCKETBASE_URL);
+  const client = new PocketBase(resolvePocketBaseUrl());
   client.autoCancellation(false);
   try {
     const result = await client.collection(collection).authWithPassword(identity, password);
@@ -101,12 +126,14 @@ export async function pbList(collection, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const result = await pb.collection(collection).getList(params.page || 1, params.perPage || 30, {
-      sort: params.sort,
-      filter: params.filter,
-      expand: params.expand,
-      fields: params.fields,
-    });
+    const result = await getPb()
+      .collection(collection)
+      .getList(params.page || 1, params.perPage || 30, {
+        sort: params.sort,
+        filter: params.filter,
+        expand: params.expand,
+        fields: params.fields,
+      });
     logger.debug("PocketBase query completed", { operation: "list", collection, duration_ms: Date.now() - start });
     return result;
   } catch (err) {
@@ -130,7 +157,7 @@ export async function pbGetOne(collection, id, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const result = await pb.collection(collection).getOne(id, {
+    const result = await getPb().collection(collection).getOne(id, {
       expand: params.expand,
       fields: params.fields,
     });
@@ -158,7 +185,7 @@ export async function pbGetFirstByFilter(collection, filter, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const result = await pb.collection(collection).getFirstListItem(filter, {
+    const result = await getPb().collection(collection).getFirstListItem(filter, {
       expand: params.expand,
       fields: params.fields,
     });
@@ -183,7 +210,7 @@ export async function pbCreate(collection, data) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const record = await pb.collection(collection).create(data);
+    const record = await getPb().collection(collection).create(data);
     logger.debug("PocketBase write completed", { operation: "create", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 200, data: record };
   } catch (err) {
@@ -208,7 +235,7 @@ export async function pbUpdate(collection, id, data) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const record = await pb.collection(collection).update(id, data);
+    const record = await getPb().collection(collection).update(id, data);
     logger.debug("PocketBase write completed", { operation: "update", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 200, data: record };
   } catch (err) {
@@ -232,7 +259,7 @@ export async function pbDelete(collection, id) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    await pb.collection(collection).delete(id);
+    await getPb().collection(collection).delete(id);
     logger.debug("PocketBase write completed", { operation: "delete", collection, duration_ms: Date.now() - start });
     return { ok: true, status: 204 };
   } catch (err) {
@@ -251,7 +278,7 @@ export async function pbDelete(collection, id) {
  * @returns {Promise<{ token: string, record: Object }|null>} Updated token and user record, or `null` if refresh fails.
  */
 export async function pbAuthRefresh(token) {
-  const client = new PocketBase(env.POCKETBASE_URL);
+  const client = new PocketBase(resolvePocketBaseUrl());
   client.autoCancellation(false);
   client.authStore.save(token);
   try {

@@ -9,6 +9,7 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { ROLES } from "../../config/constants.js";
 import { isGitHubConfigured, parseRepoUrl, listUserRepos, getRepoInfo, listTags, listCommits, getDocsTree, importDocsForRef } from "./service.js";
 import { createProject } from "../projects/service.js";
+import { createProjectSchema } from "../projects/validation.js";
 import { createVersion } from "../versions/service.js";
 import { createPage } from "../pages/service.js";
 import { logger } from "../../lib/logger.js";
@@ -140,16 +141,30 @@ router.post("/import", csrfMiddleware, async (req, res, next) => {
       throw new ValidationError("Invalid GitHub repository URL.");
     }
 
-    const project = await createProject(
-      {
-        name: projectName,
-        slug: projectSlug,
-        description: `Imported from github.com/${parsed.owner}/${parsed.repo}`,
-        visibility: visibility || "private",
-      },
-      req.user.id,
-      req.requestId,
-    );
+    const normalizedSlug = String(projectSlug || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    const projectInput = createProjectSchema.safeParse({
+      name: projectName,
+      slug: normalizedSlug,
+      description: `Imported from github.com/${parsed.owner}/${parsed.repo}`,
+      visibility: visibility || "private",
+      mode: "versioned",
+    });
+
+    if (!projectInput.success) {
+      const details = projectInput.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        code: issue.code.toUpperCase(),
+        message: issue.message,
+      }));
+      throw new ValidationError("One or more fields are invalid.", details);
+    }
+
+    const project = await createProject(projectInput.data, req.user.id, req.requestId);
 
     const results = [];
 

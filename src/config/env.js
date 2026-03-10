@@ -32,9 +32,11 @@ const envSchema = z.object({
   HOST: z.string().min(1).default("0.0.0.0"),
   TRUST_PROXY: z.string().default("1"),
 
-  POCKETBASE_URL: z.string().url(),
+  POCKETBASE_MODE: z.enum(["external", "embedded"]).default("external"),
+  POCKETBASE_URL: z.preprocess((val) => (val != null && String(val).trim() !== "" ? String(val).trim() : undefined), z.string().url().optional()),
   POCKETBASE_ADMIN_EMAIL: z.string().email(),
   POCKETBASE_ADMIN_PASSWORD: z.string().min(8),
+  POCKETBASE_VERSION: z.string().optional().default(""),
 
   SESSION_SECRET: z.string().min(32),
   CSRF_SECRET: z.string().min(32),
@@ -61,15 +63,21 @@ if (!parsed.success) {
   throw new Error(`Environment validation failed:\n${formatted}`);
 }
 
+const envData = { ...parsed.data };
+
+if (envData.POCKETBASE_MODE !== "embedded" && !envData.POCKETBASE_URL) {
+  throw new Error('Environment validation failed:\n  POCKETBASE_URL: Required when POCKETBASE_MODE is "external"');
+}
+
 /**
  * Validated and frozen environment configuration object.
  *
  * @type {Readonly<Object>}
  */
-export const env = Object.freeze(parsed.data);
+export const env = Object.freeze(envData);
 /**
  * Parsed trust-proxy setting derived from the `TRUST_PROXY` environment variable.
  *
  * @type {boolean|number|string|Array<string>}
  */
-export const trustProxy = parseTrustProxy(parsed.data.TRUST_PROXY);
+export const trustProxy = parseTrustProxy(envData.TRUST_PROXY);

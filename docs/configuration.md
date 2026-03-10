@@ -17,9 +17,11 @@ All environment variables are validated at startup via Zod. Invalid values cause
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `POCKETBASE_URL` | URL | — | **Yes** | PocketBase server URL (e.g. `http://127.0.0.1:8090`). |
-| `POCKETBASE_ADMIN_EMAIL` | email | — | **Yes** | PocketBase superuser email for admin API access. |
-| `POCKETBASE_ADMIN_PASSWORD` | string (min 8) | — | **Yes** | PocketBase superuser password. |
+| `POCKETBASE_MODE` | `external` \| `embedded` | `external` | No | `external`: you manage PocketBase yourself. `embedded`: PocketDocs downloads, starts, and manages PocketBase automatically. |
+| `POCKETBASE_URL` | URL | `http://127.0.0.1:8090` (embedded) | **Yes** (external) | PocketBase server URL. Required in external mode. Defaults to `http://127.0.0.1:8090` in embedded mode. |
+| `POCKETBASE_ADMIN_EMAIL` | email | — | **Yes** | PocketBase superuser email. In embedded mode, used to create the superuser. |
+| `POCKETBASE_ADMIN_PASSWORD` | string (min 8) | — | **Yes** | PocketBase superuser password. In embedded mode, used to create the superuser. |
+| `POCKETBASE_VERSION` | string | — | No | (Embedded only) Pin a specific PocketBase version (e.g. `0.26.6`). Leave empty to download the latest release. |
 
 ### Security
 
@@ -124,7 +126,7 @@ When enabled, only listed IPs can access `/auth/*` and `/admin/*` routes. All ot
 
 ## Database Schema
 
-The PocketBase schema is defined in `pb_schema.json`. Import it through the PocketBase admin UI on first setup.
+The PocketBase schema is defined in `db_schema.json` and applied automatically every time PocketDocs starts. Missing collections are created and existing ones are verified — no manual steps are needed.
 
 ### Collections
 

@@ -7,7 +7,7 @@ All endpoints are served by the Express application. Admin endpoints require aut
 - **Content-Type**: `application/x-www-form-urlencoded` for form submissions, `application/json` for API responses
 - **Authentication**: Cookie `pd_auth` containing a PocketBase JWT token
 - **CSRF**: State-changing requests (POST/PUT/DELETE) require a `_csrf` field in the body or `x-csrf-token` header, matching the signed `pd_csrf` cookie
-- **Validation errors** return HTTP 400 with field-level details
+- **Validation errors** return HTTP 422 with field-level details
 - **Slugs** must match `^[a-z0-9]+(?:-[a-z0-9]+)*$` (lowercase alphanumeric with hyphens)
 
 ## Error Response Format
@@ -17,7 +17,7 @@ All errors follow a consistent envelope:
 ```json
 {
   "error": {
-    "code": "VALIDATION_ERROR",
+    "code": "VALIDATION_FAILED",
     "message": "Human-readable description",
     "details": [
       { "field": "slug", "code": "INVALID_FORMAT", "message": "Invalid slug format" }
@@ -29,12 +29,12 @@ All errors follow a consistent envelope:
 
 | HTTP Status | Error Code | Meaning |
 |-------------|-----------|---------|
-| 400 | `VALIDATION_ERROR` | Invalid input |
-| 401 | `AUTHENTICATION_ERROR` | Not logged in or token expired |
-| 403 | `AUTHORIZATION_ERROR` | Insufficient role/permissions |
-| 403 | `CSRF_ERROR` | CSRF token mismatch |
+| 422 | `VALIDATION_FAILED` | Invalid input |
+| 401 | `UNAUTHORIZED` | Not logged in or token expired |
+| 403 | `FORBIDDEN` | Insufficient role/permissions |
+| 403 | `CSRF_INVALID` | CSRF token mismatch |
 | 403 | `IP_RESTRICTED` | Client IP not in allowlist |
-| 404 | `NOT_FOUND` | Resource does not exist |
+| 404 | `RESOURCE_NOT_FOUND` | Resource does not exist |
 | 409 | `CONFLICT` | Duplicate resource (e.g. slug already taken) |
 | 422 | `DOMAIN_ERROR` | Business rule violation |
 | 429 | `RATE_LIMITED` | Too many requests |

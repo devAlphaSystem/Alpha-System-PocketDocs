@@ -1,0 +1,461 @@
+{
+  "formatVersion": 1,
+  "source": "pb_schema.json",
+  "generatedAt": "2026-03-11T02:41:35.510Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "listRule": "id = @request.auth.id",
+      "viewRule": "id = @request.auth.id",
+      "createRule": "",
+      "updateRule": "id = @request.auth.id",
+      "deleteRule": "id = @request.auth.id",
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 255,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": true,
+          "maxSelect": 1,
+          "values": [
+            "owner",
+            "admin",
+            "editor"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ],
+      "authRule": "",
+      "manageRule": null
+    },
+    {
+      "name": "audit_logs",
+      "type": "base",
+      "listRule": null,
+      "viewRule": null,
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null,
+      "indexes": [
+        "CREATE INDEX `idx_al_action` ON `audit_logs` (`action`)",
+        "CREATE INDEX `idx_al_category` ON `audit_logs` (`category`)",
+        "CREATE INDEX `idx_al_user` ON `audit_logs` (`user`)",
+        "CREATE INDEX `idx_al_created` ON `audit_logs` (`created`)"
+      ],
+      "fields": [
+        {
+          "name": "action",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 100,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "category",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 50,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "user",
+          "type": "relation",
+          "required": false,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": false,
+          "relationTo": "users"
+        },
+        {
+          "name": "user_email",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 255,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "target_type",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 50,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "target_id",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 50,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 1000,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "ip_address",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 45,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
+    },
+    {
+      "name": "projects",
+      "type": "base",
+      "listRule": "",
+      "viewRule": "",
+      "createRule": "@request.auth.id != ''",
+      "updateRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_proj_slug` ON `projects` (`slug`)",
+        "CREATE INDEX `idx_proj_owner` ON `projects` (`owner`)",
+        "CREATE INDEX `idx_proj_visibility` ON `projects` (`visibility`)"
+      ],
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 200,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 120,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 500,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "owner",
+          "type": "relation",
+          "required": true,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": false,
+          "relationTo": "users"
+        },
+        {
+          "name": "visibility",
+          "type": "select",
+          "required": true,
+          "maxSelect": 1,
+          "values": [
+            "public",
+            "private"
+          ]
+        },
+        {
+          "name": "mode",
+          "type": "select",
+          "required": true,
+          "maxSelect": 1,
+          "values": [
+            "versioned",
+            "simple"
+          ]
+        },
+        {
+          "name": "logo",
+          "type": "file",
+          "required": false,
+          "maxSelect": 1,
+          "maxSize": 2097152,
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/svg+xml",
+            "image/webp"
+          ],
+          "protected": false,
+          "thumbs": [
+            "64x64",
+            "128x128"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
+    },
+    {
+      "name": "versions",
+      "type": "base",
+      "listRule": "",
+      "viewRule": "",
+      "createRule": "@request.auth.id != ''",
+      "updateRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_ver_project_slug` ON `versions` (`project`, `slug`)",
+        "CREATE INDEX `idx_ver_project_order` ON `versions` (`project`, `order`)",
+        "CREATE INDEX `idx_ver_public` ON `versions` (`is_public`)"
+      ],
+      "fields": [
+        {
+          "name": "project",
+          "type": "relation",
+          "required": true,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": true,
+          "relationTo": "projects"
+        },
+        {
+          "name": "label",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 100,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 120,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "is_public",
+          "type": "bool",
+          "required": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": null,
+          "onlyInt": true
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
+    },
+    {
+      "name": "changelogs",
+      "type": "base",
+      "listRule": "",
+      "viewRule": "",
+      "createRule": "@request.auth.id != ''",
+      "updateRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_cl_version` ON `changelogs` (`version`)"
+      ],
+      "fields": [
+        {
+          "name": "version",
+          "type": "relation",
+          "required": true,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": true,
+          "relationTo": "versions"
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 50000000,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
+    },
+    {
+      "name": "pages",
+      "type": "base",
+      "listRule": "",
+      "viewRule": "",
+      "createRule": "@request.auth.id != ''",
+      "updateRule": "@request.auth.id != ''",
+      "deleteRule": "@request.auth.id != ''",
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_page_version_slug` ON `pages` (`version`, `slug`)",
+        "CREATE INDEX `idx_page_version_order` ON `pages` (`version`, `order`)",
+        "CREATE INDEX `idx_page_parent` ON `pages` (`parent`)"
+      ],
+      "fields": [
+        {
+          "name": "version",
+          "type": "relation",
+          "required": true,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": true,
+          "relationTo": "versions"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 200,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "slug",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 120,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 50000000,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "parent",
+          "type": "relation",
+          "required": false,
+          "maxSelect": 1,
+          "minSelect": 0,
+          "cascadeDelete": false,
+          "relationTo": "pages"
+        },
+        {
+          "name": "icon",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 50,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "min": 0,
+          "max": null,
+          "onlyInt": true
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
+    }
+  ]
+}
