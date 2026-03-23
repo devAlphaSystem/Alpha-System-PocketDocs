@@ -399,6 +399,44 @@ Returns rendered Markdown as HTML (for live editor preview).
 }
 ```
 
+### `POST /admin/projects/:projectId/versions/:versionId/pages/validate-links`
+
+Checks all Markdown links in the provided content for validity. Validates internal page slugs and anchors against the current version, and probes external HTTP(S) URLs.
+
+**Auth:** Required  
+**Roles:** All (with project access)  
+**CSRF:** Yes
+
+**Body:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `content` | string | Yes | Raw Markdown content to scan |
+| `currentPageSlug` | string | No | Slug of the page being edited (used to resolve same-page anchor links) |
+| `_csrf` | string | Yes | CSRF token |
+
+**Response (JSON):**
+```json
+{
+  "totalChecked": 5,
+  "brokenLinks": [
+    {
+      "text": "Old guide",
+      "href": "old-guide.md",
+      "reason": "GitHub-style .md links do not resolve in PocketDocs routes",
+      "suggestedFix": "old-guide"
+    },
+    {
+      "text": "Missing page",
+      "href": "nonexistent-slug",
+      "reason": "Page \"nonexistent-slug\" not found in this version"
+    }
+  ]
+}
+```
+
+`brokenLinks` is an empty array when all links are valid. External URLs are limited to 15 per request with a 6-second per-URL timeout. `.md`-suffixed internal links include a `suggestedFix` field with the corrected slug.
+
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/reorder`
 
 Reorders pages and updates parent relationships.

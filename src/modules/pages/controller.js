@@ -12,7 +12,7 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
 import { ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
-import { renderMarkdown } from "../../lib/markdown.js";
+import { renderMarkdown, extractAllHeadingIds } from "../../lib/markdown.js";
 import { getClientIp } from "../../lib/request-ip.js";
 import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
@@ -166,6 +166,208 @@ router.post("/preview", csrfMiddleware, requireProjectAccess(), async (req, res,
   try {
     const html = renderMarkdown(req.body?.content || "");
     res.json({ html });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/validate-links", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
+  try {
+    const content = req.body?.content || "";
+    const versionId = req.params.versionId;
+
+    const linkRegex = /\[([^\]]*)\]\(([^)]+)\)/g;
+    const links = [];
+    let match;
+    while ((match = linkRegex.exec(content)) !== null) {
+      links.push({ text: match[1], href: match[2].trim() });
+    }
+
+    if (links.length === 0) {
+      return res.json({ brokenLinks: [], totalChecked: 0 });
+    }
+
+    const isWebUrl = (href) => /^https?:\/\//i.test(href);
+    const isExternal = (href) => /^(https?:\/\/|mailto:|tel:)/i.test(href);
+    const isAbsolute = (href) => href.startsWith("/");
+
+    const externalWebLinks = links.filter((l) => isWebUrl(l.href));
+    const internalLinks = links.filter((l) => !isExternal(l.href) && !isAbsolute(l.href));
+
+    const brokenLinks = [];
+
+    if (externalWebLinks.length > 0) {
+      const EXT_TIMEOUT = 6000;
+      const MAX_EXTERNAL = 15;
+      const batch = externalWebLinks.slice(0, MAX_EXTERNAL);
+
+      const checkUrl = async (url) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), EXT_TIMEOUT);
+        try {
+          let res = await fetch(url, {
+            method: "HEAD",
+            signal: controller.signal,
+            redirect: "follow",
+            headers: { "User-Agent": "PocketDocs-LinkChecker/1.0" },
+          });
+          if (res.status === 405 || res.status === 403) {
+            res = await fetch(url, {
+              method: "GET",
+              signal: controller.signal,
+              redirect: "follow",
+              headers: { "User-Agent": "PocketDocs-LinkChecker/1.0" },
+            });
+          }
+          return res.status;
+        } catch (_err) {
+          return 0;
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      const results = await Promise.allSettled(
+        batch.map(async (link) => {
+          const status = await checkUrl(link.href);
+          return { link, status };
+        }),
+      );
+
+      for (const result of results) {
+        if (result.status !== "fulfilled") continue;
+        const { link, status } = result.value;
+        if (status === 0) {
+          brokenLinks.push({
+            text: link.text,
+            href: link.href,
+            reason: `Could not reach this URL (connection failed or timed out)`,
+          });
+        } else if (status >= 400) {
+          brokenLinks.push({
+            text: link.text,
+            href: link.href,
+            reason: `URL returned HTTP ${status}`,
+          });
+        }
+      }
+    }
+
+    if (internalLinks.length === 0 && brokenLinks.length === 0) {
+      return res.json({ brokenLinks: [], totalChecked: externalWebLinks.length });
+    }
+
+    const pagesResult = await listPages(versionId);
+    const pages = pagesResult.items || [];
+    const pagesBySlug = new Map();
+    for (const page of pages) {
+      pagesBySlug.set(page.slug, page);
+    }
+
+    const renderedCache = new Map();
+    const currentHtml = renderMarkdown(content);
+    const currentHeadingIds = extractAllHeadingIds(currentHtml);
+
+    const normalizeHref = (value) => {
+      const trimmed = String(value || "").trim();
+      const withoutTitle = trimmed.match(/^<([^>]+)>$/)?.[1] || trimmed;
+      const noQuery = withoutTitle.split("?")[0];
+      return noQuery;
+    };
+
+    const decodeFragment = (fragment) => {
+      try {
+        return decodeURIComponent(fragment);
+      } catch (_err) {
+        return fragment;
+      }
+    };
+
+    const hasAnchor = (idSet, fragment) => {
+      if (!fragment) return true;
+      const raw = fragment;
+      const decoded = decodeFragment(fragment);
+      return idSet.has(raw) || idSet.has(decoded);
+    };
+
+    for (const link of internalLinks) {
+      const href = normalizeHref(link.href);
+      let pageSlug = "";
+      let anchor = "";
+
+      const hashIdx = href.indexOf("#");
+      if (hashIdx === 0) {
+        anchor = href.substring(1);
+        if (!anchor) continue;
+
+        if (!hasAnchor(currentHeadingIds, anchor)) {
+          brokenLinks.push({
+            text: link.text,
+            href: link.href,
+            reason: `Anchor "#${anchor}" not found in current page`,
+          });
+        }
+        continue;
+      }
+
+      if (hashIdx > 0) {
+        pageSlug = href.substring(0, hashIdx);
+        anchor = href.substring(hashIdx + 1);
+      } else {
+        pageSlug = href;
+      }
+
+      pageSlug = pageSlug.replace(/^\.\//, "");
+
+      if (/\.md$/i.test(pageSlug)) {
+        const suggestedSlug = pageSlug.replace(/\.md$/i, "");
+        const suggestion = anchor ? `${suggestedSlug}#${anchor}` : suggestedSlug;
+        brokenLinks.push({
+          text: link.text,
+          href: link.href,
+          reason: `GitHub-style .md links do not resolve in PocketDocs routes`,
+          suggestedFix: suggestion,
+        });
+        continue;
+      }
+
+      if (pageSlug.includes("/")) {
+        brokenLinks.push({
+          text: link.text,
+          href: link.href,
+          reason: `Nested path links are not supported; use the target page slug`,
+        });
+        continue;
+      }
+
+      const targetPage = pagesBySlug.get(pageSlug);
+      if (!targetPage) {
+        brokenLinks.push({
+          text: link.text,
+          href: link.href,
+          reason: `Page "${pageSlug}" not found in this version`,
+        });
+        continue;
+      }
+
+      if (anchor) {
+        let renderedHtml = renderedCache.get(pageSlug);
+        if (!renderedHtml) {
+          renderedHtml = renderMarkdown(targetPage.content || "");
+          renderedCache.set(pageSlug, renderedHtml);
+        }
+        const headingIds = extractAllHeadingIds(renderedHtml);
+        if (!hasAnchor(headingIds, anchor)) {
+          brokenLinks.push({
+            text: link.text,
+            href: link.href,
+            reason: `Page "${pageSlug}" exists but anchor "#${anchor}" not found`,
+          });
+        }
+      }
+    }
+
+    res.json({ brokenLinks, totalChecked: internalLinks.length + externalWebLinks.length });
   } catch (err) {
     next(err);
   }

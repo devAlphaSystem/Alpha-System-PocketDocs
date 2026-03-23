@@ -22,7 +22,7 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
-  <form id="pageForm" method="POST" action="<%= typeof page !== 'undefined' && page ? '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/' + page.id : '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/new' %>" class="editor-form" data-preview-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/preview" novalidate>
+  <form id="pageForm" method="POST" action="<%= typeof page !== 'undefined' && page ? '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/' + page.id : '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/new' %>" class="editor-form" data-preview-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/preview" data-validate-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/validate-links" data-page-slug="<%= typeof page !== 'undefined' && page ? page.slug : '' %>" novalidate>
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <div class="editor-meta">
@@ -55,6 +55,17 @@
           </select>
         </div>
       </div>
+    </div>
+
+    <div class="link-checker-panel" id="linkCheckerPanel" style="display: none;">
+      <div class="link-checker-header">
+        <div class="link-checker-title">
+          <i class="ph ph-link-break"></i>
+          <span id="linkCheckerTitle">Checking links...</span>
+        </div>
+        <button type="button" class="link-checker-close" id="linkCheckerClose" title="Dismiss"><i class="ph ph-x"></i></button>
+      </div>
+      <div class="link-checker-results" id="linkCheckerResults"></div>
     </div>
 
     <div class="editor-content">

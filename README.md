@@ -12,7 +12,7 @@ PocketDocs supports two database modes:
 
 - **Flexible project modes** — choose versioned docs (release history) or simple docs (single stream)
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
-- **Markdown editor** — EasyMDE with syntax-highlighted live preview
+- **Markdown editor** — EasyMDE with syntax-highlighted live preview, link checker, and Markdown download
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
 - **Role-based access** — Owner, Admin, and Editor roles with granular permissions

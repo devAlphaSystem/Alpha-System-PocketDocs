@@ -662,6 +662,7 @@ input[type="color"] {
 
 .required {
   color: var(--color-error);
+  margin-left: var(--space-1);
 }
 
 .input-wrap {

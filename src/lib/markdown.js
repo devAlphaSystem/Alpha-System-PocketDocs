@@ -143,6 +143,22 @@ export function renderMarkdown(content) {
 }
 
 /**
+ * Extracts all heading IDs (h1–h6) from rendered HTML.
+ *
+ * @param {string} html - The rendered HTML string.
+ * @returns {Set<string>} Set of heading ID strings found in the HTML.
+ */
+export function extractAllHeadingIds(html) {
+  const headingIdRegex = /<h[1-6][^>]*\sid=["']([^"']+)["'][^>]*>/gi;
+  const ids = new Set();
+  let m;
+  while ((m = headingIdRegex.exec(html)) !== null) {
+    ids.add(m[1]);
+  }
+  return ids;
+}
+
+/**
  * Extracts a flat list of h2–h4 headings from an HTML string for use in
  * table-of-contents generation.
  *
