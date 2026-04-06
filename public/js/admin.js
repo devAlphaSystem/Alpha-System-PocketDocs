@@ -129,7 +129,9 @@
 
   var modal = document.getElementById("adminModal");
   var modalDialog = modal ? modal.querySelector(".admin-modal-dialog") : null;
+  var modalBody = modal ? modal.querySelector(".admin-modal-body") : null;
   var modalTitle = document.getElementById("adminModalTitle");
+  var modalLoading = document.getElementById("adminModalLoading");
   var modalMessage = document.getElementById("adminModalMessage");
   var modalCancel = document.getElementById("adminModalCancel");
   var modalConfirm = document.getElementById("adminModalConfirm");
@@ -137,10 +139,29 @@
   var modalState = null;
   var lastFocus = null;
 
+  function resetModal() {
+    if (!modal || !modalDialog || !modalBody || !modalMessage || !modalCancel || !modalConfirm) return;
+
+    modal.dataset.mode = "confirm";
+    if (modalLoading) {
+      modalLoading.setAttribute("hidden", "");
+      modalLoading.setAttribute("aria-hidden", "true");
+    }
+    modalMessage.removeAttribute("hidden");
+    modalBody.classList.remove("admin-modal-body-loading");
+    modalCancel.removeAttribute("hidden");
+    modalConfirm.removeAttribute("hidden");
+  }
+
+  function canDismissModal() {
+    return Boolean(modalState && modalState.dismissible !== false);
+  }
+
   function closeModal(result) {
     if (!modal || !modalState) return;
     var resolver = modalState.resolve;
     modalState = null;
+    resetModal();
     modal.setAttribute("hidden", "");
     document.body.style.overflow = "";
     if (lastFocus && typeof lastFocus.focus === "function") {
@@ -152,15 +173,24 @@
   }
 
   function openModal(options) {
+    options = options || {};
+    var isLoading = options.mode === "loading";
+
     if (!modal || !modalDialog || !modalTitle || !modalMessage || !modalConfirm || !modalCancel) {
+      if (isLoading) {
+        return Promise.resolve(false);
+      }
       return Promise.resolve(window.confirm(options.message || "Are you sure?"));
     }
 
     if (modalState) {
-      modalState.resolve(false);
+      if (typeof modalState.resolve === "function") {
+        modalState.resolve(false);
+      }
       modalState = null;
     }
 
+    resetModal();
     lastFocus = document.activeElement;
     modalTitle.textContent = options.title || "Confirm Action";
     modalMessage.textContent = options.message || "Are you sure you want to continue?";
@@ -168,11 +198,24 @@
     modalCancel.textContent = options.cancelText || "Cancel";
     modalConfirm.className = "btn " + (options.confirmVariant === "primary" ? "btn-primary" : "btn-danger");
 
+    if (isLoading) {
+      modal.dataset.mode = "loading";
+      if (modalLoading) {
+        modalLoading.removeAttribute("hidden");
+        modalLoading.setAttribute("aria-hidden", "false");
+      }
+      modalCancel.setAttribute("hidden", "");
+      modalConfirm.setAttribute("hidden", "");
+    }
+
     modal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
 
     return new Promise(function (resolve) {
-      modalState = { resolve: resolve };
+      modalState = {
+        resolve: resolve,
+        dismissible: options.dismissible !== false && !isLoading,
+      };
       setTimeout(function () {
         modalDialog.focus();
       }, 0);
@@ -194,21 +237,38 @@
     });
   };
 
+  window.showLoadingModal = function (options) {
+    options = options || {};
+    return openModal({
+      title: options.title || "Working",
+      message: options.message || "Please wait while we prepare your request.",
+      mode: "loading",
+      dismissible: false,
+    });
+  };
+
+  window.hideModal = function () {
+    closeModal(false);
+  };
+
   if (modal) {
     if (modalCancel) {
       modalCancel.addEventListener("click", function () {
+        if (!canDismissModal()) return;
         closeModal(false);
       });
     }
 
     if (modalConfirm) {
       modalConfirm.addEventListener("click", function () {
+        if (!canDismissModal()) return;
         closeModal(true);
       });
     }
 
     modalCloseEls.forEach(function (el) {
       el.addEventListener("click", function () {
+        if (!canDismissModal()) return;
         closeModal(false);
       });
     });
@@ -216,6 +276,7 @@
     document.addEventListener("keydown", function (event) {
       if (!modalState) return;
       if (event.key === "Escape") {
+        if (!canDismissModal()) return;
         event.preventDefault();
         closeModal(false);
       }
@@ -247,6 +308,148 @@
     },
     true,
   );
+
+  var activeDownload = null;
+
+  function createDownloadToken() {
+    return "dl" + Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+  }
+
+  function getCookieValue(name) {
+    var escaped = name.replace(/([.$?*|{}()\[\]\\/+^])/g, "\\$1");
+    var match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
+  function clearCookie(name) {
+    document.cookie = name + "=; Max-Age=0; path=/; SameSite=Strict";
+  }
+
+  function getDownloadFrame() {
+    var frame = document.getElementById("adminDownloadFrame");
+    if (frame) return frame;
+
+    frame = document.createElement("iframe");
+    frame.id = "adminDownloadFrame";
+    frame.name = "adminDownloadFrame";
+    frame.hidden = true;
+    frame.tabIndex = -1;
+    document.body.appendChild(frame);
+    return frame;
+  }
+
+  function handleDownloadLink(link) {
+    if (activeDownload) {
+      if (typeof window.showToast === "function") {
+        window.showToast("A download is already being prepared.", "info");
+      }
+      return;
+    }
+
+    var token = createDownloadToken();
+    var downloadUrl = new URL(link.href, window.location.origin);
+    downloadUrl.searchParams.set("downloadToken", token);
+
+    if (typeof window.showLoadingModal === "function") {
+      window.showLoadingModal({
+        title: link.getAttribute("data-download-title") || "Preparing download",
+        message: link.getAttribute("data-download-message") || "Please wait while your file is being prepared.",
+      });
+    }
+
+    var frame = getDownloadFrame();
+    var state = {
+      token: token,
+      frame: frame,
+      completed: false,
+      pollId: null,
+      timeoutId: null,
+      loadHandler: null,
+    };
+
+    function cleanup() {
+      if (state.pollId) {
+        window.clearInterval(state.pollId);
+      }
+      if (state.timeoutId) {
+        window.clearTimeout(state.timeoutId);
+      }
+      if (state.loadHandler) {
+        state.frame.removeEventListener("load", state.loadHandler);
+      }
+      activeDownload = null;
+    }
+
+    state.loadHandler = function () {
+      if (state.completed) return;
+
+      try {
+        var doc = state.frame.contentDocument;
+        var text = doc && doc.body ? doc.body.textContent.trim() : "";
+        if (!text) return;
+      } catch (_error) {
+        return;
+      }
+
+      cleanup();
+      if (typeof window.hideModal === "function") {
+        window.hideModal();
+      }
+      if (typeof window.showAlert === "function") {
+        window.showAlert({
+          title: "Download failed",
+          message: "We couldn't start the ZIP export. Please try again.",
+          confirmText: "Close",
+        });
+      }
+    };
+
+    state.pollId = window.setInterval(function () {
+      if (getCookieValue("pd_download") !== token) return;
+
+      state.completed = true;
+      clearCookie("pd_download");
+      cleanup();
+
+      if (typeof window.hideModal === "function") {
+        window.hideModal();
+      }
+      if (typeof window.showToast === "function") {
+        window.showToast("Download started.", "success");
+      }
+    }, 250);
+
+    state.timeoutId = window.setTimeout(function () {
+      if (state.completed) return;
+      cleanup();
+
+      if (typeof window.hideModal === "function") {
+        window.hideModal();
+      }
+      if (typeof window.showAlert === "function") {
+        window.showAlert({
+          title: "Still preparing export",
+          message: "The ZIP export is taking longer than expected. Please wait a moment and try again if the download does not start.",
+          confirmText: "Close",
+        });
+      }
+    }, 45000);
+
+    activeDownload = state;
+    state.frame.addEventListener("load", state.loadHandler);
+    state.frame.src = downloadUrl.toString();
+  }
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    var link = event.target.closest ? event.target.closest("a[data-download-link]") : null;
+    if (!link) return;
+
+    event.preventDefault();
+    handleDownloadLink(link);
+  });
 
   function isSaveShortcut(event) {
     if (event.defaultPrevented) return false;

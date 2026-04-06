@@ -1,35 +1,31 @@
-# Environment variables
-.env
-
-# Database schema
-pb_schema.json
-
-# Build output
-dist/
-data/
-
-# Dependencies
+# Dependências
 node_modules/
+package-*
+
+# Variáveis de ambiente
+.env
 
 # Logs
 logs/
 *.log
 npm-debug.log*
 
-# Scripts
-scripts/
-
-# Test artifacts
-test-out.txt
-test-result.txt
-test-results.txt
-test-summary.txt
-test/integration/server/server-out.txt
-test/integration/server/server-err.txt
-
-# TypeScript
-*.tsbuildinfo
-
 # OS
 .DS_Store
 Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Arquivos de upload temporários
+uploads/
+
+# PocketBase
+pb_schema.json
+pb_data/
+data/
+
+# Desenvolvimento
+.github/
+AGENTS.md

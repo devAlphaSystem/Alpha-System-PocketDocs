@@ -2,6 +2,9 @@ import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbF
 import { COLLECTIONS, PAGINATION, PROJECT_MODE } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
+import { listVersions } from "../versions/service.js";
+import { listPages } from "../pages/service.js";
+import { getChangelog } from "../changelogs/service.js";
 
 /**
  * Retrieves a paginated list of projects sorted by creation date.
@@ -148,4 +151,29 @@ function formatPbErrors(data) {
     code: (err.code || "INVALID").toUpperCase(),
     message: err.message || "Invalid value.",
   }));
+}
+
+/**
+ * Aggregates all versions, pages, and changelogs for a project export.
+ *
+ * @param {string} projectId - The project record ID.
+ * @returns {Promise<Object>} The project with nested version data.
+ */
+export async function exportProject(projectId) {
+  const project = await getProject(projectId);
+  const versionsResult = await listVersions(projectId);
+  const versions = versionsResult.items || [];
+
+  const versionData = await Promise.all(
+    versions.map(async (version) => {
+      const [pagesResult, changelog] = await Promise.all([listPages(version.id), getChangelog(version.id)]);
+      return {
+        version,
+        pages: pagesResult.items || [],
+        changelog,
+      };
+    }),
+  );
+
+  return { project, versions: versionData };
 }

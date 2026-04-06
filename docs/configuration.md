@@ -36,7 +36,6 @@ All environment variables are validated at startup via Zod. Invalid values cause
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
 | `LOG_LEVEL` | `error` \| `warn` \| `info` \| `http` \| `debug` | `info` | No | Minimum log level. `debug` is verbose; `error` is minimal. |
-| `LOG_DIR` | string | `logs` | No | Directory for log file output. Created automatically if it does not exist. |
 
 ### Rate Limiting
 
@@ -148,7 +147,8 @@ See [Architecture Overview](architecture.md#database-schema-er-diagram) for the 
 | Cookie | Purpose | Options |
 |--------|---------|---------|
 | `pd_auth` | JWT authentication token from PocketBase | httpOnly, secure (production), sameSite: strict, 7-day expiry |
-| `pd_csrf` | CSRF double-submit token | httpOnly, secure (production), sameSite: strict |
+| `pd_csrf` | CSRF double-submit token | httpOnly: false, secure (production), sameSite: strict |
+| `pd_download` | Short-lived download handshake token for ZIP exports | httpOnly: false, secure (production), sameSite: strict, 60-second expiry |
 | `pd_theme` | User theme preference (light/dark) | Client-accessible |
 
 ---

@@ -3,17 +3,18 @@
  * @description Express routes for CRUD operations on documentation projects.
  */
 import { Router } from "express";
-import { listProjects, getProject, createProject, updateProject, deleteProject } from "./service.js";
+import { listProjects, getProject, createProject, updateProject, deleteProject, exportProject } from "./service.js";
 import { listVersionsPaginated, listVersions } from "../versions/service.js";
 import { createProjectSchema, updateProjectSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireRole, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
-import { ROLES, PROJECT_MODE } from "../../config/constants.js";
+import { COOKIE_NAMES, ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { isGitHubConfigured } from "../github/service.js";
 import { getClientIp } from "../../lib/request-ip.js";
 import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
+import archiver from "archiver";
 
 const router = Router();
 
@@ -158,6 +159,46 @@ router.get("/:projectId/edit", csrfMiddleware, requireProjectAccess(ROLES.ADMIN)
       success: req.query.success || null,
       siteName: env.SITE_NAME,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/:projectId/export", requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
+  try {
+    const data = await exportProject(req.params.projectId);
+    const downloadToken = String(req.query.downloadToken || "")
+      .trim()
+      .slice(0, 80);
+
+    if (downloadToken) {
+      res.cookie(COOKIE_NAMES.DOWNLOAD_TOKEN, downloadToken, {
+        httpOnly: false,
+        secure: env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+        maxAge: 60 * 1000,
+      });
+    }
+
+    res.setHeader("Content-Type", "application/zip");
+    res.setHeader("Content-Disposition", `attachment; filename="${data.project.slug}.zip"`);
+
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.on("error", (err) => next(err));
+    archive.pipe(res);
+
+    for (const { version, pages, changelog } of data.versions) {
+      const folder = `${version.slug}/`;
+
+      archive.append(changelog?.content || "", { name: `${folder}_CHANGELOG.md` });
+
+      for (const page of pages) {
+        archive.append(page.content || "", { name: `${folder}${page.slug}.md` });
+      }
+    }
+
+    await archive.finalize();
   } catch (err) {
     next(err);
   }

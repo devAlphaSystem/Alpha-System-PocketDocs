@@ -61,6 +61,7 @@ export const PAGINATION = Object.freeze({
 export const COOKIE_NAMES = Object.freeze({
   AUTH_TOKEN: "pd_auth",
   CSRF_TOKEN: "pd_csrf",
+  DOWNLOAD_TOKEN: "pd_download",
 });
 
 /** @type {RegExp} Matches valid URL-safe slug strings (lowercase alphanumeric with hyphens). */

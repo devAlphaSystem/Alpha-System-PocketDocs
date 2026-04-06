@@ -5,6 +5,7 @@
     </div>
     <div class="header-actions">
       <a href="/admin/projects/<%= project.id %>" class="btn btn-outline">Cancel</a>
+      <a href="/admin/projects/<%= project.id %>/export" class="btn btn-outline" data-download-link data-download-title="Preparing ZIP export" data-download-message="We are packaging all versions, pages, and changelogs. Your download will begin shortly."><i class="ph ph-download-simple"></i> Download ZIP</a>
       <button type="submit" form="project-edit-form" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Changes</button>
       <form method="POST" action="/admin/projects/<%= project.id %>/delete" class="inline-form" data-confirm-title="Delete project?" data-confirm-message="Delete this project and all its content? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">

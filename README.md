@@ -21,6 +21,7 @@ PocketDocs supports two database modes:
 - **Public & private projects** — control visibility per project
 - **IP restriction** — restrict admin access to specific IP addresses
 - **Theming** — built-in light/dark mode toggle
+- **ZIP export** — download all versions, pages, and changelogs for a project as a single ZIP archive
 - **Keyboard shortcuts** — Ctrl+S / Cmd+S saves the current admin form from anywhere on the page
 - **Self-hosted** — runs on your infrastructure; data stays with you
 
@@ -40,7 +41,7 @@ PocketDocs supports two database modes:
 | Templating | EJS + express-ejs-layouts |
 | Markdown | Marked + highlight.js + sanitize-html + Mermaid |
 | Validation | Zod |
-| Logging | Winston + daily-rotate-file |
+| Logging | Winston (console transport) |
 | Auth | Cookie-based JWT via PocketBase |
 
 ## Quick Start

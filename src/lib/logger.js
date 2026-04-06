@@ -1,14 +1,13 @@
 /**
  * @module logger
- * @description Configures and exports a Winston logger with daily-rotating file
- * transports, automatic sensitive-value masking, and structured JSON output.
+ * @description Configures and exports a Winston logger with console transport
+ * and automatic sensitive-value masking.
  */
 import winston from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
 import { env } from "../config/env.js";
 import { maskObject, maskSensitiveValue } from "./masking.js";
 
-const { combine, timestamp, json, colorize, printf, errors } = winston.format;
+const { combine, timestamp, colorize, printf, errors } = winston.format;
 
 const SAFE_INFO_KEYS = new Set(["level", "message", "timestamp", "service", "stack"]);
 
@@ -28,6 +27,7 @@ const maskFormat = winston.format((info) => {
 const consoleFormat = combine(
   colorize({ all: true }),
   timestamp({ format: "HH:mm:ss.SSS" }),
+  errors({ stack: true }),
   maskFormat(),
   printf(({ timestamp: ts, level, message, requestId, service, ...rest }) => {
     const reqPart = requestId ? ` [${requestId}]` : "";
@@ -37,72 +37,16 @@ const consoleFormat = combine(
   }),
 );
 
-const fileFormat = combine(timestamp({ format: "YYYY-MM-DDTHH:mm:ss.SSSZ" }), errors({ stack: true }), maskFormat(), json());
-
-const transports = [];
-
-if (env.NODE_ENV === "development") {
-  transports.push(
-    new winston.transports.Console({
-      format: consoleFormat,
-    }),
-  );
-}
-
-transports.push(
-  new DailyRotateFile({
-    dirname: env.LOG_DIR,
-    filename: "pocketdocs-%DATE%.log",
-    datePattern: "YYYY-MM-DD",
-    maxSize: "20m",
-    maxFiles: "14d",
-    format: fileFormat,
-    level: env.LOG_LEVEL,
-  }),
-);
-
-transports.push(
-  new DailyRotateFile({
-    dirname: env.LOG_DIR,
-    filename: "pocketdocs-error-%DATE%.log",
-    datePattern: "YYYY-MM-DD",
-    maxSize: "20m",
-    maxFiles: "14d",
-    format: fileFormat,
-    level: "error",
-  }),
-);
-
 /**
- * Application-wide Winston logger instance with console and file transports.
+ * Application-wide Winston logger instance with console transport.
  *
  * @type {import("winston").Logger}
  */
 const logger = winston.createLogger({
   level: env.LOG_LEVEL,
   defaultMeta: { service: "pocketdocs" },
-  transports,
+  transports: [new winston.transports.Console({ format: consoleFormat })],
   exitOnError: false,
-  exceptionHandlers: [
-    new DailyRotateFile({
-      dirname: env.LOG_DIR,
-      filename: "pocketdocs-exceptions-%DATE%.log",
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
-      format: fileFormat,
-    }),
-  ],
-  rejectionHandlers: [
-    new DailyRotateFile({
-      dirname: env.LOG_DIR,
-      filename: "pocketdocs-rejections-%DATE%.log",
-      datePattern: "YYYY-MM-DD",
-      maxSize: "20m",
-      maxFiles: "14d",
-      format: fileFormat,
-    }),
-  ],
 });
 
 export { logger };

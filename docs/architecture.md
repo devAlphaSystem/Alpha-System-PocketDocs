@@ -266,7 +266,6 @@ The `renderMarkdown` function in `src/lib/markdown.js` produces sanitized HTML w
 ## Logging
 
 Winston logger with:
-- **Console transport** — colorized output for development
-- **Daily rotate file** — `logs/app-YYYY-MM-DD.log`, 14-day retention, 20 MB max per file
-- **Structured JSON** — each log entry includes `timestamp`, `level`, `message`, and `requestId` for tracing
+- **Console transport** — colorized output (all environments)
+- **Structured format** — each log entry includes `timestamp`, `level`, `message`, and `requestId` for tracing
 - **Sensitive data masking** — passwords, tokens, and secrets are masked in log output via `src/lib/masking.js`

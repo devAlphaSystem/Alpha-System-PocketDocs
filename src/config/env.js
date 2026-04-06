@@ -43,7 +43,6 @@ const envSchema = z.object({
   COOKIE_DOMAIN: z.string().optional().default(""),
 
   LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info"),
-  LOG_DIR: z.string().min(1).default("logs"),
 
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(900000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(100),

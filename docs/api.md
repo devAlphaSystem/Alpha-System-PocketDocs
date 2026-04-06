@@ -213,6 +213,23 @@ Renders the project edit form.
 **Auth:** Required  
 **Roles:** Admin, Owner
 
+### `GET /admin/projects/:projectId/export`
+
+Streams all versions, pages, and changelogs for a project as a ZIP archive. Each version becomes a folder named by its slug, containing one Markdown file per page (`{slug}.md`) and a `_CHANGELOG.md`.
+
+**Auth:** Required  
+**Roles:** Admin, Owner
+
+**Query:**
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `downloadToken` | string | No | Client-generated opaque token (≤ 80 chars). When provided, the server sets a short-lived `pd_download` cookie so the browser know the download has started. |
+
+**Response:** `Content-Type: application/zip`, `Content-Disposition: attachment; filename="{slug}.zip"`
+
+**Errors:** 403 (insufficient role), 404 (project not found)
+
 ### `POST /admin/projects/:projectId`
 
 Updates project metadata.
