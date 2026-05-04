@@ -1,6 +1,4 @@
 const EMAIL_PATTERN = /^[^@]+@[^@]+$/;
-const PHONE_PATTERN = /\d{4,}/;
-const TOKEN_PATTERN = /^(sk-|pk-|key-|tok-|bearer\s+)/i;
 const CARD_PATTERN = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{1,4}\b/;
 const SESSION_PATTERN = /^sess[-_]/i;
 

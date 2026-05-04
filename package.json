@@ -1,7 +1,7 @@
 {
   "name": "pocketdocs",
-  "version": "0.14.0",
-  "updated": "2026.04.06.0102",
+  "version": "0.14.1",
+  "updated": "2026.05.04.1405",
   "description": "Self-hosted documentation platform with versioning, powered by PocketBase",
   "type": "module",
   "main": "src/index.js",
@@ -19,22 +19,22 @@
     "archiver": "^7.0.1",
     "compression": "^1.8.1",
     "cookie-parser": "1.4.7",
-    "dotenv": "17.4.1",
-    "ejs": "5.0.1",
+    "dotenv": "17.4.2",
+    "ejs": "5.0.2",
     "express": "^5.2.1",
     "express-ejs-layouts": "2.5.1",
-    "express-rate-limit": "8.3.2",
+    "express-rate-limit": "8.4.1",
     "highlight.js": "11.11.1",
-    "marked": "17.0.6",
-    "marked-highlight": "2.2.3",
+    "marked": "18.0.3",
+    "marked-highlight": "2.2.4",
     "pocketbase": "^0.26.8",
-    "sanitize-html": "2.17.2",
+    "sanitize-html": "2.17.3",
     "winston": "3.19.0",
-    "zod": "4.3.6"
+    "zod": "4.4.3"
   },
   "devDependencies": {
-    "eslint": "^10.2.0",
+    "eslint": "^10.3.0",
     "nodemon": "3.1.14",
-    "prettier": "3.8.1"
+    "prettier": "3.8.3"
   }
 }

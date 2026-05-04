@@ -187,9 +187,7 @@ textarea,
 pre,
 pre *,
 code,
-code *,
-.CodeMirror,
-.CodeMirror * {
+code * {
   -webkit-user-select: text;
   user-select: text;
 }
@@ -199,10 +197,7 @@ textarea::selection,
 pre::selection,
 pre *::selection,
 code::selection,
-code *::selection,
-.CodeMirror-line::selection,
-.CodeMirror-line > span::selection,
-.CodeMirror-line > span > span::selection {
+code *::selection {
   background: var(--selection-bg);
   color: var(--selection-text);
 }
@@ -212,10 +207,7 @@ textarea::-moz-selection,
 pre::-moz-selection,
 pre *::-moz-selection,
 code::-moz-selection,
-code *::-moz-selection,
-.CodeMirror-line::-moz-selection,
-.CodeMirror-line > span::-moz-selection,
-.CodeMirror-line > span > span::-moz-selection {
+code *::-moz-selection {
   background: var(--selection-bg);
   color: var(--selection-text);
 }
