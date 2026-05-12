@@ -16,6 +16,8 @@ import { getClientIp } from "../../lib/request-ip.js";
 import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router({ mergeParams: true });
+const EDITOR_EXTRA_CSS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css", "/css/easymde.css"];
+const EDITOR_EXTRA_JS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js", "/js/editor.js"];
 
 router.use(requireAuth);
 
@@ -34,8 +36,8 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       error: null,
       success: req.query.success || null,
       siteName: env.SITE_NAME,
-      extraCss: "/css/easymde.css",
-      extraJs: ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js", "/js/editor.js"],
+      extraCss: EDITOR_EXTRA_CSS,
+      extraJs: EDITOR_EXTRA_JS,
     });
   } catch (err) {
     next(err);
