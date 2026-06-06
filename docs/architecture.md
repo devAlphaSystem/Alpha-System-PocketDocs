@@ -89,6 +89,7 @@ src/modules/{feature}/
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
 | `pages` | CRUD for documentation pages, tree ordering | Page (title, slug, content, parent, order) |
 | `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
+| `knowledge-base` | Frequently Asked Questions and Troubleshooting article management | Knowledge Base page (section, title, slug, content, parent, order) |
 | `users` | User management (owner-only) | User (name, email, role) |
 | `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
@@ -113,7 +114,7 @@ erDiagram
         string slug UK
         string description
         string visibility "public | private"
-        string mode "versioned | simple"
+        string mode "versioned | documentation | knowledge_base"
         file logo
         string owner FK
         datetime created
@@ -152,11 +153,27 @@ erDiagram
         datetime updated
     }
 
+    knowledge_base_pages {
+        string id PK
+        string version FK
+        string section "faq | troubleshooting"
+        string title
+        string slug
+        text content
+        string parent FK "self-referencing"
+        string icon
+        int order
+        datetime created
+        datetime updated
+    }
+
     users ||--o{ projects : "owns"
     projects ||--o{ versions : "has"
     versions ||--o{ pages : "contains"
     versions ||--o| changelogs : "has"
+    versions ||--o{ knowledge_base_pages : "contains"
     pages ||--o{ pages : "parent-child"
+    knowledge_base_pages ||--o{ knowledge_base_pages : "parent-child"
 ```
 
 ### Key Constraints
@@ -165,7 +182,8 @@ erDiagram
 - **(versions.project, versions.slug)** — unique per project
 - **(pages.version, pages.slug)** — unique per version
 - **changelogs.version** — one changelog per version
-- **Cascade deletes** — deleting a project removes all its versions, pages, and changelogs
+- **(knowledge_base_pages.version, knowledge_base_pages.section, knowledge_base_pages.slug)** — unique per Knowledge Base section
+- **Cascade deletes** — deleting a project removes all its versions, pages, changelogs, and Knowledge Base pages
 
 ## Authentication & Authorization
 

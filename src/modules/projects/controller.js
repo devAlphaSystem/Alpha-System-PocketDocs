@@ -78,7 +78,7 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
     const search = (req.query.search || "").trim();
     const project = await getProject(req.params.projectId);
 
-    if ((project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE) {
+    if ((project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.DOCUMENTATION || (project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.KNOWLEDGE_BASE) {
       const versionsResult = await listVersions(project.id);
       const defaultVersion = versionsResult.items?.[0];
       if (!defaultVersion) {
@@ -87,6 +87,7 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
           headerSubtitle: `/${project.slug}`,
           headerBadge: { text: project.visibility, variant: project.visibility },
           project,
+          projectMode: project.mode,
           defaultVersion: null,
           pages: [],
           pageTree: [],
@@ -109,6 +110,9 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
       }
 
       const suffix = query.toString() ? `?${query.toString()}` : "";
+      if ((project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.KNOWLEDGE_BASE) {
+        return res.redirect(`/admin/projects/${project.id}/versions/${defaultVersion.id}/knowledge-base${suffix}`);
+      }
       return res.redirect(`/admin/projects/${project.id}/versions/${defaultVersion.id}/pages${suffix}`);
     }
 
@@ -182,13 +186,30 @@ router.get("/:projectId/export", requireProjectAccess(ROLES.ADMIN), async (req, 
     archive.on("error", (err) => next(err));
     archive.pipe(res);
 
-    for (const { version, pages, changelog } of data.versions) {
+    const mode = data.project.mode || PROJECT_MODE.VERSIONED;
+    const shouldExportDocs = mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.DOCUMENTATION;
+    const shouldExportChangelog = mode === PROJECT_MODE.VERSIONED;
+    const shouldExportKnowledgeBase = mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.KNOWLEDGE_BASE;
+
+    for (const { version, pages, changelog, knowledgeBasePages } of data.versions) {
       const folder = `${version.slug}/`;
 
-      archive.append(changelog?.content || "", { name: `${folder}_CHANGELOG.md` });
+      if (shouldExportChangelog) {
+        archive.append(changelog?.content || "", { name: `${folder}_CHANGELOG.md` });
+      }
 
-      for (const page of pages) {
-        archive.append(page.content || "", { name: `${folder}${page.slug}.md` });
+      if (shouldExportDocs) {
+        for (const page of pages) {
+          archive.append(page.content || "", { name: `${folder}${page.slug}.md` });
+        }
+      }
+
+      if (shouldExportKnowledgeBase) {
+        for (const knowledgeBasePage of knowledgeBasePages || []) {
+          archive.append(knowledgeBasePage.content || "", {
+            name: `${folder}knowledge-base/${knowledgeBasePage.section}/${knowledgeBasePage.slug}.md`,
+          });
+        }
       }
     }
 

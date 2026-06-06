@@ -20,13 +20,34 @@ export const VISIBILITY = Object.freeze({
 });
 
 /**
- * Defines the project mode: versioned (with version history) or simple (docs only).
+ * Defines the project mode.
  *
  * @enum {string}
  */
 export const PROJECT_MODE = Object.freeze({
   VERSIONED: "versioned",
-  SIMPLE: "simple",
+  DOCUMENTATION: "documentation",
+  KNOWLEDGE_BASE: "knowledge_base",
+});
+
+/**
+ * Defines the fixed Knowledge Base sections.
+ *
+ * @enum {string}
+ */
+export const KNOWLEDGE_BASE_SECTIONS = Object.freeze({
+  FAQ: "faq",
+  TROUBLESHOOTING: "troubleshooting",
+});
+
+/**
+ * Maps Knowledge Base section values to their public labels.
+ *
+ * @enum {string}
+ */
+export const KNOWLEDGE_BASE_SECTION_LABELS = Object.freeze({
+  [KNOWLEDGE_BASE_SECTIONS.FAQ]: "Frequently Asked Questions",
+  [KNOWLEDGE_BASE_SECTIONS.TROUBLESHOOTING]: "Troubleshooting",
 });
 
 /**
@@ -40,6 +61,7 @@ export const COLLECTIONS = Object.freeze({
   VERSIONS: "versions",
   PAGES: "pages",
   CHANGELOGS: "changelogs",
+  KNOWLEDGE_BASE_PAGES: "knowledge_base_pages",
 });
 
 /**

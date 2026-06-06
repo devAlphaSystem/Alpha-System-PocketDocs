@@ -1,10 +1,13 @@
 (function () {
-  var tree = document.getElementById("pagesTree");
+  var tree = document.querySelector("[data-sortable-tree]") || document.getElementById("pagesTree");
   if (!tree) return;
 
   var projectId = tree.dataset.project;
   var versionId = tree.dataset.version;
   var csrfToken = tree.dataset.csrf;
+  var reorderUrl = tree.dataset.reorderUrl || (projectId && versionId ? "/admin/projects/" + encodeURIComponent(projectId) + "/versions/" + encodeURIComponent(versionId) + "/pages/reorder" : "");
+  var successMessage = tree.dataset.sortSuccess || "Pages reordered";
+  var errorMessage = tree.dataset.sortError || "Failed to reorder pages";
   var dragItem = null;
 
   tree.addEventListener("dragstart", function (e) {
@@ -52,10 +55,12 @@
     var items = tree.querySelectorAll(".page-tree-item");
     var pages = [];
     items.forEach(function (el, index) {
-      pages.push({ id: el.dataset.id, order: index });
+      pages.push({ id: el.dataset.id, order: index, parent: el.dataset.parent || "" });
     });
 
-    fetch("/admin/projects/" + encodeURIComponent(projectId) + "/versions/" + encodeURIComponent(versionId) + "/pages/reorder", {
+    if (!reorderUrl) return;
+
+    fetch(reorderUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -66,12 +71,12 @@
       .then(function (res) {
         if (!res.ok) throw new Error("Reorder failed");
         if (typeof window.showToast === "function") {
-          window.showToast("Pages reordered", "success");
+          window.showToast(successMessage, "success");
         }
       })
       .catch(function () {
         if (typeof window.showToast === "function") {
-          window.showToast("Failed to reorder pages", "error");
+          window.showToast(errorMessage, "error");
         }
         window.location.reload();
       });

@@ -1,5 +1,15 @@
 <div class="docs-layout">
-  <%- include('../partials/docs-sidebar', { project, version, versions, pageTree, page: null }) %>
+  <%- include('../partials/docs-sidebar', {
+    project,
+    version,
+    versions,
+    pageTree,
+    page: null,
+    docsOnlyMode: typeof docsOnlyMode !== 'undefined' ? docsOnlyMode : false,
+    supportsKnowledgeBase: typeof supportsKnowledgeBase !== 'undefined' ? supportsKnowledgeBase : false,
+    kbBaseUrl: typeof kbBaseUrl !== 'undefined' ? kbBaseUrl : '',
+    knowledgeBaseSectionCounts: typeof knowledgeBaseSectionCounts !== 'undefined' ? knowledgeBaseSectionCounts : {}
+  }) %>
 
   <main class="docs-main">
     <article class="docs-article">

@@ -12,6 +12,7 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
 import { ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
+import { NotFoundError } from "../../errors/taxonomy.js";
 
 const router = Router({ mergeParams: true });
 const EDITOR_EXTRA_CSS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css", "/css/easymde.css"];
@@ -19,19 +20,37 @@ const EDITOR_EXTRA_JS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easym
 
 router.use(requireAuth);
 
+function supportsDocs(project) {
+  const mode = project?.mode || PROJECT_MODE.VERSIONED;
+  return mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.DOCUMENTATION;
+}
+
+function isDocsOnly(project) {
+  return (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.DOCUMENTATION;
+}
+
+function assertPageBelongsToVersion(page, versionId) {
+  if (page.version !== versionId) {
+    throw new NotFoundError("Page");
+  }
+}
+
 router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const search = (req.query.search || "").trim();
     const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPagesPaginated(req.params.versionId, page, search)]);
     const project = version.expand?.project;
-    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
+    if (!supportsDocs(project)) {
+      throw new NotFoundError("Pages");
+    }
+    const docsOnlyMode = isDocsOnly(project);
 
     const pageTree = search ? [] : buildPageTree(pagesResult.items || []);
     const totalPages = pagesResult.totalItems ?? (pagesResult.items || []).length;
 
     res.render("admin/pages/index", {
-      title: simpleMode ? `${project.name} - Pages` : `${project.name} - ${version.label} - Pages`,
+      title: docsOnlyMode ? `${project.name} - Pages` : `${project.name} - ${version.label} - Pages`,
       headerSubtitle: `${totalPages} page${totalPages !== 1 ? "s" : ""}`,
       headerSearch: {
         action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
@@ -40,7 +59,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       },
       project,
       version,
-      simpleMode,
+      docsOnlyMode,
       pages: pagesResult.items || [],
       pageTree,
       pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
@@ -60,13 +79,16 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req
   try {
     const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
     const project = version.expand?.project;
-    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
+    if (!supportsDocs(project)) {
+      throw new NotFoundError("Pages");
+    }
+    const docsOnlyMode = isDocsOnly(project);
 
     res.render("admin/pages/editor", {
       title: "New Page",
       project,
       version,
-      simpleMode,
+      docsOnlyMode,
       page: null,
       pages: pagesResult.items || [],
       user: req.user,
@@ -89,12 +111,15 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
       const firstIssue = parsed.error.issues[0];
       const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
       const project = version.expand?.project;
-      const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
+      if (!supportsDocs(project)) {
+        throw new NotFoundError("Pages");
+      }
+      const docsOnlyMode = isDocsOnly(project);
       return res.status(422).render("admin/pages/editor", {
         title: "New Page",
         project,
         version,
-        simpleMode,
+        docsOnlyMode,
         page: null,
         pages: pagesResult.items || [],
         user: req.user,
@@ -107,18 +132,25 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
       });
     }
 
+    const version = await getVersion(req.params.versionId);
+    if (!supportsDocs(version.expand?.project)) {
+      throw new NotFoundError("Pages");
+    }
     const page = await createPage(req.params.versionId, parsed.data, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${page.id}?success=Page created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
       const project = version.expand?.project;
-      const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
+      if (!supportsDocs(project)) {
+        throw new NotFoundError("Pages");
+      }
+      const docsOnlyMode = isDocsOnly(project);
       return res.status(err.statusCode).render("admin/pages/editor", {
         title: "New Page",
         project,
         version,
-        simpleMode,
+        docsOnlyMode,
         page: null,
         pages: pagesResult.items || [],
         user: req.user,
@@ -138,13 +170,17 @@ router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, 
   try {
     const [version, page, pagesResult] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId), listPages(req.params.versionId)]);
     const project = version.expand?.project;
-    const simpleMode = (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.SIMPLE;
+    if (!supportsDocs(project)) {
+      throw new NotFoundError("Pages");
+    }
+    assertPageBelongsToVersion(page, version.id);
+    const docsOnlyMode = isDocsOnly(project);
 
     res.render("admin/pages/editor", {
       title: `Edit - ${page.title}`,
       project,
       version,
-      simpleMode,
+      docsOnlyMode,
       page,
       pages: pagesResult.items || [],
       user: req.user,
@@ -174,7 +210,11 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
       return res.status(422).json({ error: { code: "VALIDATION_FAILED", message: "Invalid reorder data." } });
     }
 
-    await reorderPages(parsed.data.pages, req.requestId);
+    const version = await getVersion(req.params.versionId);
+    if (!supportsDocs(version.expand?.project)) {
+      throw new NotFoundError("Pages");
+    }
+    await reorderPages(req.params.versionId, parsed.data.pages, req.requestId);
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -183,6 +223,11 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
 
 router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), validate(updatePageSchema), async (req, res, next) => {
   try {
+    const [version, page] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId)]);
+    if (!supportsDocs(version.expand?.project)) {
+      throw new NotFoundError("Pages");
+    }
+    assertPageBelongsToVersion(page, version.id);
     await updatePage(req.params.pageId, req.validatedBody, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${req.params.pageId}?success=Page saved.`);
   } catch (err) {
@@ -192,6 +237,11 @@ router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
 
 router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
+    const [version, page] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId)]);
+    if (!supportsDocs(version.expand?.project)) {
+      throw new NotFoundError("Pages");
+    }
+    assertPageBelongsToVersion(page, version.id);
     await deletePage(req.params.pageId, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=Page deleted.`);
   } catch (err) {

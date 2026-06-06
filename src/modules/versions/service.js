@@ -2,6 +2,7 @@ import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbF
 import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
+import { cloneKnowledgeBasePages } from "../knowledge-base/service.js";
 
 function generateSlug(label) {
   return label
@@ -176,6 +177,8 @@ async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) 
       content: "",
     });
   }
+
+  await cloneKnowledgeBasePages(sourceVersionId, targetVersionId, requestId);
 
   logger.info("Version content cloned", {
     requestId,

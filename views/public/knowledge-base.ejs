@@ -1,0 +1,94 @@
+<div class="docs-layout">
+  <%- include('../partials/docs-sidebar', {
+    project,
+    version,
+    versions,
+    pageTree,
+    page: null,
+    docsOnlyMode: typeof docsOnlyMode !== 'undefined' ? docsOnlyMode : false,
+    knowledgeBaseOnlyMode: typeof knowledgeBaseOnlyMode !== 'undefined' ? knowledgeBaseOnlyMode : false,
+    supportsKnowledgeBase: typeof supportsKnowledgeBase !== 'undefined' ? supportsKnowledgeBase : true,
+    kbBaseUrl,
+    section,
+    knowledgeBaseSectionCounts: typeof knowledgeBaseSectionCounts !== 'undefined' ? knowledgeBaseSectionCounts : {}
+  }) %>
+
+  <main class="docs-main">
+    <article class="docs-article">
+      <% if (typeof kbPage !== 'undefined' && kbPage) { %>
+      <div class="docs-article-header">
+        <i class="ph ph-<%= kbPage.icon || (section === 'troubleshooting' ? 'wrench' : 'question') %> docs-page-icon"></i>
+        <h1><%= kbPage.title %></h1>
+      </div>
+      <div class="docs-content prose">
+        <%- contentHtml %>
+      </div>
+      <% } else if (typeof section !== 'undefined' && section) { %>
+      <div class="docs-article-header">
+        <i class="ph ph-<%= section === 'troubleshooting' ? 'wrench' : 'question' %> docs-page-icon"></i>
+        <h1><%= sectionLabel %></h1>
+      </div>
+
+      <% if (typeof kbPageTree !== 'undefined' && kbPageTree.length > 0) { %>
+      <div class="search-results-list">
+        <% function renderKnowledgeBaseCards(nodes, depth) { %>
+          <% for (const node of nodes) { %>
+          <a href="<%= kbBaseUrl %>/<%= node.section %>/<%= node.slug %>" class="search-result-card" style="margin-left: <%= depth * 16 %>px">
+            <h3><% if (node.icon) { %><i class="ph ph-<%= node.icon %>"></i> <% } %><%= node.title %></h3>
+            <span class="search-result-slug">/<%= node.slug %></span>
+          </a>
+          <% if (node.children && node.children.length > 0) { renderKnowledgeBaseCards(node.children, depth + 1); } %>
+          <% } %>
+        <% } %>
+        <% renderKnowledgeBaseCards(kbPageTree, 0); %>
+      </div>
+      <% } else { %>
+      <div class="empty-state small">
+        <div class="empty-icon"><i class="ph ph-question"></i></div>
+        <h3>No articles yet</h3>
+        <p>No <%= sectionLabel %> articles have been published.</p>
+      </div>
+      <% } %>
+      <% } else { %>
+      <div class="docs-article-header">
+        <i class="ph ph-question docs-page-icon"></i>
+        <h1>Knowledge Base</h1>
+      </div>
+
+      <div class="search-results-list">
+        <% for (const group of sectionGroups) { %>
+        <a href="<%= kbBaseUrl %>/<%= group.value %>" class="search-result-card">
+          <h3><i class="ph ph-<%= group.icon %>"></i> <%= group.label %></h3>
+          <p><%= group.pages.length %> article<%= group.pages.length !== 1 ? 's' : '' %></p>
+          <span class="search-result-slug">/<%= group.value %></span>
+        </a>
+        <% } %>
+      </div>
+      <% } %>
+    </article>
+
+    <% if (typeof headings !== 'undefined' && headings.length > 0) { %>
+    <aside class="docs-toc">
+      <h4>On this page</h4>
+      <ul>
+        <% for (const h of headings) { %>
+        <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
+        <% } %>
+      </ul>
+    </aside>
+    <% } %>
+  </main>
+</div>
+
+<script src="<%= assetUrl('/js/search.js') %>"></script>
+<script src="<%= assetUrl('/js/version-switcher.js') %>"></script>
+<script src="<%= assetUrl('/js/code-copy.js') %>"></script>
+<script src="<%= assetUrl('/js/docs-toc.js') %>"></script>
+<script src="<%= assetUrl('/js/markdown-checkboxes.js') %>"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
+  });
+</script>

@@ -128,6 +128,7 @@ The PocketBase schema is defined in `db_schema.json` and applied automatically e
 | `versions` | Base | Project versions with ordering |
 | `pages` | Base | Documentation pages with nested hierarchy |
 | `changelogs` | Base | Per-version changelogs |
+| `knowledge_base_pages` | Base | Per-version Frequently Asked Questions and Troubleshooting articles |
 | `_superusers` | System Auth | PocketBase admin accounts |
 
 See [Architecture Overview](architecture.md#database-schema-er-diagram) for the full ER diagram and constraint details.
@@ -155,9 +156,12 @@ Defined in `src/config/constants.js`. These are compile-time values and cannot b
 | `MAX_SLUG_LENGTH` | 120 | Maximum slug characters |
 | `MAX_TITLE_LENGTH` | 200 | Maximum title characters |
 | `MAX_DESCRIPTION_LENGTH` | 500 | Maximum description characters |
-| `MAX_CONTENT_LENGTH` | 500,000 | Maximum page/changelog content characters |
+| `MAX_CONTENT_LENGTH` | 500,000 | Maximum page/changelog/Knowledge Base content characters |
 | `MAX_LABEL_LENGTH` | 100 | Maximum version label characters |
 | `PROJECT_MODE.VERSIONED` | `versioned` | Project uses versioned public routes and release history |
-| `PROJECT_MODE.SIMPLE` | `simple` | Project uses simple public routes without version slug |
+| `PROJECT_MODE.DOCUMENTATION` | `documentation` | Project uses one internal version and Documentation-only public routes |
+| `PROJECT_MODE.KNOWLEDGE_BASE` | `knowledge_base` | Project uses one internal version and Knowledge Base-only public routes |
+| `KNOWLEDGE_BASE_SECTIONS.FAQ` | `faq` | Frequently Asked Questions section value |
+| `KNOWLEDGE_BASE_SECTIONS.TROUBLESHOOTING` | `troubleshooting` | Troubleshooting section value |
 | `PAGINATION.DEFAULT_PER_PAGE` | 30 | Items per page |
 | `PAGINATION.MAX_PER_PAGE` | 100 | Maximum items per page |

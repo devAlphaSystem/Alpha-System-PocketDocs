@@ -1,18 +1,18 @@
 <div class="pages-page">
   <div class="page-header">
     <div>
-      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <% if (typeof docsOnlyMode !== 'undefined' && docsOnlyMode) { %>
       <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
       <% } else { %>
       <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> Versions</a>
       <% } %>
     </div>
-    <% if ((typeof simpleMode !== 'undefined' && simpleMode) || user.role === 'owner' || user.role === 'admin') { %>
+    <% if ((typeof docsOnlyMode !== 'undefined' && docsOnlyMode) || user.role === 'owner' || user.role === 'admin') { %>
     <div class="header-actions">
-      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <% if (typeof docsOnlyMode !== 'undefined' && docsOnlyMode) { %>
       <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
       <% } %>
-      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof simpleMode !== 'undefined' && simpleMode)) { %>
+      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof docsOnlyMode !== 'undefined' && docsOnlyMode)) { %>
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
       <% } %>
       <% if (user.role === 'owner' || user.role === 'admin') { %>
@@ -67,10 +67,10 @@
 
   <%- include('../../partials/pagination', { pagination, search }) %>
   <% } else { %>
-  <div class="versions-list pages-tree" id="pagesTree" data-project="<%= project.id %>" data-version="<%= version.id %>" data-csrf="<%= csrfToken %>">
+  <div class="versions-list pages-tree" id="pagesTree" data-sortable-tree data-project="<%= project.id %>" data-version="<%= version.id %>" data-reorder-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/reorder" data-csrf="<%= csrfToken %>">
     <% function renderAdminTree(nodes, depth) { %>
       <% for (const node of nodes) { %>
-      <div class="version-card row-link page-tree-item" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open page <%= node.title %>" data-id="<%= node.id %>" data-order="<%= node.order %>" draggable="true" style="--depth: <%= depth %>">
+      <div class="version-card row-link page-tree-item" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open page <%= node.title %>" data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= depth %>">
         <div class="version-card-main">
           <div class="version-info">
             <div class="page-tree-handle" title="Drag to reorder"><i class="ph ph-dots-six-vertical"></i></div>

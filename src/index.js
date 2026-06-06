@@ -27,6 +27,7 @@ import projectRoutes from "./modules/projects/controller.js";
 import versionRoutes from "./modules/versions/controller.js";
 import pageRoutes from "./modules/pages/controller.js";
 import changelogRoutes from "./modules/changelogs/controller.js";
+import knowledgeBaseRoutes from "./modules/knowledge-base/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
 import userRoutes from "./modules/users/controller.js";
 import publicRoutes from "./modules/public/controller.js";
@@ -197,6 +198,7 @@ app.use("/admin/projects", ipRestrictionMiddleware, adminLayoutMiddleware, proje
 app.use("/admin/projects/:projectId/versions", ipRestrictionMiddleware, adminLayoutMiddleware, versionRoutes);
 app.use("/admin/projects/:projectId/versions/:versionId/pages", ipRestrictionMiddleware, adminLayoutMiddleware, pageRoutes);
 app.use("/admin/projects/:projectId/versions/:versionId/changelog", ipRestrictionMiddleware, adminLayoutMiddleware, changelogRoutes);
+app.use("/admin/projects/:projectId/versions/:versionId/knowledge-base", ipRestrictionMiddleware, adminLayoutMiddleware, knowledgeBaseRoutes);
 
 app.use("/", generalLimiter, publicRoutes);
 

@@ -543,11 +543,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding-bottom: var(--space-6);
 }
 
 .editor-meta {
   flex: 0 0 auto;
+}
+
+.editor-meta .form-row {
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
 }
 
 .editor-content {
@@ -775,6 +778,10 @@ body.fullscreen .editor-content .editor-preview-side {
   padding: var(--space-1);
   overflow-x: auto;
   scrollbar-width: thin;
+}
+
+.knowledge-base-tabs-nav {
+  margin-bottom: var(--space-4);
 }
 
 .settings-tab-btn {
@@ -1053,6 +1060,10 @@ body.fullscreen .editor-content .editor-preview-side {
 
   .settings-tab-panel .form-section {
     padding: var(--space-4);
+  }
+
+  .editor-meta .form-row {
+    grid-template-columns: 1fr;
   }
 }
 

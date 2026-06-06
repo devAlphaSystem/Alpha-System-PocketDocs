@@ -190,7 +190,7 @@ Creates a new project.
 | `slug` | string | Yes | 1–120 characters, slug pattern |
 | `description` | string | No | Max 500 characters |
 | `visibility` | string | No | `public` or `private` (default: `private`) |
-| `mode` | string | No | `versioned` or `simple` (default: `versioned`) |
+| `mode` | string | No | `versioned`, `documentation`, or `knowledge_base` (default: `versioned`) |
 | `_csrf` | string | Yes | CSRF token |
 
 **Success:** Redirects to `/admin/projects/:projectId`
@@ -201,7 +201,7 @@ Creates a new project.
 
 Shows project details and its versions.
 
-For simple-mode projects, this route redirects to the pages list of the internal default version.
+For Documentation-only projects, this route redirects to the pages list of the internal default version. For Knowledge Base-only projects, it redirects to the Knowledge Base list of the internal default version.
 
 **Auth:** Required  
 **Roles:** Owner, Admin, Editor (with project access)
@@ -215,7 +215,7 @@ Renders the project edit form.
 
 ### `GET /admin/projects/:projectId/export`
 
-Streams all versions, pages, and changelogs for a project as a ZIP archive. Each version becomes a folder named by its slug, containing one Markdown file per page (`{slug}.md`) and a `_CHANGELOG.md`.
+Streams project content as a ZIP archive. Each version becomes a folder named by its slug. Versioned projects include documentation pages (`{slug}.md`), `_CHANGELOG.md`, and Knowledge Base files under `knowledge-base/{section}/{slug}.md`; Documentation-only projects include documentation pages; Knowledge Base-only projects include Knowledge Base files.
 
 **Auth:** Required  
 **Roles:** Admin, Owner
@@ -246,7 +246,7 @@ Note: `mode` is immutable after creation and is not accepted in update payloads.
 
 ### `POST /admin/projects/:projectId/delete`
 
-Deletes a project and all its versions, pages, and changelogs.
+Deletes a project and all its versions, pages, changelogs, and Knowledge Base pages.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -318,7 +318,7 @@ Updates a version.
 
 ### `POST /admin/projects/:projectId/versions/:versionId/delete`
 
-Deletes a version and all its pages and changelog.
+Deletes a version and all its pages, changelog, and Knowledge Base pages.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -477,6 +477,87 @@ Returns rendered Markdown as HTML.
 
 ---
 
+## Knowledge Base
+
+Routes under `/admin/projects/:projectId/versions/:versionId/knowledge-base`.
+
+Knowledge Base content is split into fixed Frequently Asked Questions (`faq`) and Troubleshooting (`troubleshooting`) sections. Versioned projects support Knowledge Base per version. Knowledge Base-only projects use one internal default version.
+
+### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base`
+
+Lists Knowledge Base articles for one section.
+
+**Auth:** Required  
+**Roles:** All (with project access)
+
+**Query:**
+
+| Param | Type | Default | Constraints |
+|-------|------|---------|-------------|
+| `section` | string | `faq` | `faq` or `troubleshooting` |
+| `page` | integer | 1 | ≥ 1 |
+| `search` | string | — | Optional title/slug search |
+
+### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/new`
+
+Renders the Knowledge Base article editor.
+
+**Auth:** Required  
+**Roles:** Admin, Owner
+
+### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/new`
+
+Creates a Knowledge Base article.
+
+**Auth:** Required  
+**Roles:** Admin, Owner  
+**CSRF:** Yes
+
+**Body:**
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `title` | string | Yes | 1–200 characters |
+| `slug` | string | Yes | 1–120 characters, slug pattern, unique per version + section |
+| `content` | string | No | Markdown, max 500,000 characters |
+| `parent` | string | No | Article ID in the same version + section |
+| `icon` | string | No | Max 50 characters |
+| `_csrf` | string | Yes | CSRF token |
+
+### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId`
+
+Renders an existing Knowledge Base article editor.
+
+**Auth:** Required  
+**Roles:** All (with project access)
+
+### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId`
+
+Updates a Knowledge Base article.
+
+**Auth:** Required  
+**Roles:** Owner, Admin, Editor  
+**CSRF:** Yes
+
+### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/reorder`
+
+Updates Knowledge Base article order and parent assignments.
+
+**Auth:** Required  
+**Roles:** Owner, Admin, Editor  
+**CSRF:** Yes  
+**Success:** JSON `{ "ok": true }`
+
+### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId/delete`
+
+Deletes a Knowledge Base article and re-parents its children to the deleted article's parent.
+
+**Auth:** Required  
+**Roles:** Admin, Owner  
+**CSRF:** Yes
+
+---
+
 ## Users
 
 All user routes require Owner role. Routes under `/admin/users`.
@@ -608,13 +689,14 @@ Home page showing all public projects.
 Project landing page.
 
 - Versioned project: redirects to the first public version's first page.
-- Simple project: redirects to the first page using a simple URL format.
+- Documentation-only project: redirects to the first page using the Documentation-only URL format.
+- Knowledge Base-only project: redirects to `/docs/:projectSlug/_kb/faq`.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/:segment`
 
-Simple-mode page route. Renders a documentation page directly without version slug.
+Documentation-only page route. Renders a documentation page directly without version slug.
 
 If the project is versioned, routing falls through to versioned routes.
 
@@ -643,9 +725,45 @@ Renders the version's changelog (if published).
 
 **Auth:** None
 
+### `GET /docs/:projectSlug/_kb`
+
+Redirects Knowledge Base-only projects to `/docs/:projectSlug/_kb/faq`.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/_kb/:section`
+
+Knowledge Base-only section page. `section` must be `faq` or `troubleshooting`.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/_kb/:section/:pageSlug`
+
+Knowledge Base-only article page with rendered Markdown and table of contents.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/:versionSlug/_kb`
+
+Redirects versioned projects to `/docs/:projectSlug/:versionSlug/_kb/faq`.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/:versionSlug/_kb/:section`
+
+Versioned Knowledge Base section page. `section` must be `faq` or `troubleshooting`.
+
+**Auth:** None
+
+### `GET /docs/:projectSlug/:versionSlug/_kb/:section/:pageSlug`
+
+Versioned Knowledge Base article page with rendered Markdown and table of contents.
+
+**Auth:** None
+
 ### `GET /api/search`
 
-Full-text search across public documentation pages.
+Full-text search across public documentation pages and Knowledge Base articles supported by the project type.
 
 **Auth:** None
 
@@ -654,7 +772,7 @@ Full-text search across public documentation pages.
 | Param | Type | Required | Constraints |
 |-------|------|----------|-------------|
 | `q` | string | Yes | Min 2 characters (after sanitization) |
-| `project` | string | No | Project ID to scope search |
+| `project` | string | No | Project slug to scope search |
 | `version` | string | No | Version ID to scope search |
 
 **Response (JSON):**
@@ -663,11 +781,25 @@ Full-text search across public documentation pages.
   "results": [
     {
       "id": "abc123def456789",
+      "type": "page",
       "title": "Getting Started",
       "slug": "getting-started",
       "versionLabel": "v1.0",
       "versionSlug": "v1-0",
-      "simpleMode": false
+      "simpleMode": false,
+      "href": "/docs/example/v1-0/getting-started"
+    },
+    {
+      "id": "kb123def456789",
+      "type": "knowledge_base",
+      "title": "Reset password",
+      "slug": "reset-password",
+      "section": "faq",
+      "sectionLabel": "Frequently Asked Questions",
+      "versionLabel": "v1.0",
+      "versionSlug": "v1-0",
+      "simpleMode": false,
+      "href": "/docs/example/v1-0/_kb/faq/reset-password"
     }
   ]
 }

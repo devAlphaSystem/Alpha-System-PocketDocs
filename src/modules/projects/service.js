@@ -5,6 +5,7 @@ import { logger } from "../../lib/logger.js";
 import { listVersions } from "../versions/service.js";
 import { listPages } from "../pages/service.js";
 import { getChangelog } from "../changelogs/service.js";
+import { listKnowledgeBasePages } from "../knowledge-base/service.js";
 
 /**
  * Retrieves a paginated list of projects sorted by creation date.
@@ -84,7 +85,7 @@ export async function createProject(data, userId, requestId) {
   const project = result.data;
   logger.info("Project created", { requestId, projectId: project.id, slug: data.slug });
 
-  if (data.mode === PROJECT_MODE.SIMPLE) {
+  if (data.mode === PROJECT_MODE.DOCUMENTATION || data.mode === PROJECT_MODE.KNOWLEDGE_BASE) {
     await pbCreate(COLLECTIONS.VERSIONS, {
       project: project.id,
       label: "Default",
@@ -92,7 +93,7 @@ export async function createProject(data, userId, requestId) {
       is_public: true,
       order: 1,
     });
-    logger.info("Default version created for simple project", { requestId, projectId: project.id });
+    logger.info("Default version created for single-version project", { requestId, projectId: project.id, mode: data.mode });
   }
 
   return project;
@@ -154,7 +155,7 @@ function formatPbErrors(data) {
 }
 
 /**
- * Aggregates all versions, pages, and changelogs for a project export.
+ * Aggregates all versions, pages, changelogs, and Knowledge Base pages for a project export.
  *
  * @param {string} projectId - The project record ID.
  * @returns {Promise<Object>} The project with nested version data.
@@ -163,14 +164,19 @@ export async function exportProject(projectId) {
   const project = await getProject(projectId);
   const versionsResult = await listVersions(projectId);
   const versions = versionsResult.items || [];
+  const mode = project.mode || PROJECT_MODE.VERSIONED;
+  const shouldExportDocs = mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.DOCUMENTATION;
+  const shouldExportChangelog = mode === PROJECT_MODE.VERSIONED;
+  const shouldExportKnowledgeBase = mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.KNOWLEDGE_BASE;
 
   const versionData = await Promise.all(
     versions.map(async (version) => {
-      const [pagesResult, changelog] = await Promise.all([listPages(version.id), getChangelog(version.id)]);
+      const [pagesResult, changelog, knowledgeBaseResult] = await Promise.all([shouldExportDocs ? listPages(version.id) : Promise.resolve({ items: [] }), shouldExportChangelog ? getChangelog(version.id) : Promise.resolve(null), shouldExportKnowledgeBase ? listKnowledgeBasePages(version.id) : Promise.resolve({ items: [] })]);
       return {
         version,
         pages: pagesResult.items || [],
         changelog,
+        knowledgeBasePages: knowledgeBaseResult.items || [],
       };
     }),
   );

@@ -187,13 +187,40 @@ export async function deletePage(pageId, requestId) {
 }
 
 /**
- * Batch-updates page ordering and parent assignments.
+ * Batch-updates page ordering and parent assignments within a version.
  *
+ * @param {string} versionId - The version record ID.
  * @param {Array<{ id: string, order: number, parent: string }>} updates - The reorder instructions.
  * @param {string} requestId - The unique request identifier for logging.
  * @returns {Promise<void>}
  */
-export async function reorderPages(updates, requestId) {
+export async function reorderPages(versionId, updates, requestId) {
+  const pagesResult = await listPages(versionId);
+  const pageMap = new Map((pagesResult.items || []).map((page) => [page.id, page]));
+  const proposedPageMap = new Map(pageMap);
+
+  for (const update of updates) {
+    if (!pageMap.has(update.id)) {
+      throw new ValidationError("Reorder data contains a page outside this version.");
+    }
+    if (update.parent && !pageMap.has(update.parent)) {
+      throw new ValidationError("Parent page must belong to the same version.");
+    }
+    proposedPageMap.set(update.id, { ...pageMap.get(update.id), parent: update.parent || "" });
+  }
+
+  for (const update of updates) {
+    let cursorId = update.parent || "";
+    const seen = new Set([update.id]);
+    while (cursorId) {
+      if (seen.has(cursorId)) {
+        throw new ValidationError("Page hierarchy contains a cycle.");
+      }
+      seen.add(cursorId);
+      cursorId = proposedPageMap.get(cursorId)?.parent || "";
+    }
+  }
+
   const results = await Promise.all(updates.map((u) => pbUpdate(COLLECTIONS.PAGES, u.id, { order: u.order, parent: u.parent || "" })));
 
   const failed = results.filter((r) => !r.ok);

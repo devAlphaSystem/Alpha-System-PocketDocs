@@ -5,7 +5,7 @@
     </div>
     <div class="header-actions">
       <% if (typeof page !== 'undefined' && page) { %>
-      <% if (typeof simpleMode !== 'undefined' && simpleMode) { %>
+      <% if (typeof docsOnlyMode !== 'undefined' && docsOnlyMode) { %>
       <a href="/docs/<%= project.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
       <% } else { %>
       <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
@@ -35,13 +35,11 @@
           <label for="slug">Slug</label>
           <input type="text" id="slug" name="slug" placeholder="getting-started" maxlength="200" value="<%= typeof page !== 'undefined' && page ? page.slug : (typeof formValues !== 'undefined' && formValues && formValues.slug ? formValues.slug : '') %>">
         </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
+        <div class="form-group flex-1">
           <label for="icon">Icon (<a href="https://phosphoricons.com/#toolbar" target="_blank" rel="noopener noreferrer">Phosphor</a>)</label>
           <input type="text" id="icon" name="icon" placeholder="book-open" maxlength="50" value="<%= typeof page !== 'undefined' && page ? (page.icon || '') : (typeof formValues !== 'undefined' && formValues && formValues.icon ? formValues.icon : '') %>">
         </div>
-        <div class="form-group">
+        <div class="form-group flex-1">
           <label for="parent">Parent page</label>
           <select id="parent" name="parent">
             <option value="">None (top-level)</option>

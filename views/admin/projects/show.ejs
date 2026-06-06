@@ -1,5 +1,6 @@
 <div class="project-detail">
   <% const _projectMode = project.mode || 'versioned'; %>
+  <% const _singleVersionMode = _projectMode === 'documentation' || _projectMode === 'knowledge_base'; %>
 
   <div class="page-header">
     <div>
@@ -9,11 +10,17 @@
       <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
       <% if (user.role === 'owner' || user.role === 'admin') { %>
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
-      <% if (_projectMode === 'simple') { %>
+      <% if (_singleVersionMode) { %>
       <% if (typeof defaultVersion !== 'undefined' && defaultVersion) { %>
+      <% if (_projectMode === 'knowledge_base') { %>
+      <a href="/admin/projects/<%= project.id %>/versions/<%= defaultVersion.id %>/knowledge-base/faq/new" class="btn btn-primary">
+        <i class="ph ph-plus"></i> New Article
+      </a>
+      <% } else { %>
       <a href="/admin/projects/<%= project.id %>/versions/<%= defaultVersion.id %>/pages/new" class="btn btn-primary">
         <i class="ph ph-plus"></i> New Page
       </a>
+      <% } %>
       <% } %>
       <% } else { %>
       <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
@@ -28,7 +35,7 @@
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
-  <% if (_projectMode === 'simple') { %>
+  <% if (_singleVersionMode) { %>
   <% const _pages = typeof pages !== 'undefined' ? pages : []; %>
   <% const _defaultVersion = typeof defaultVersion !== 'undefined' ? defaultVersion : null; %>
 
@@ -36,7 +43,7 @@
   <div class="empty-state small">
     <div class="empty-icon"><i class="ph ph-warning-circle"></i></div>
     <h3>Setup incomplete</h3>
-    <p>No default version found for this project. Please delete and recreate it.</p>
+    <p>No internal default version found for this project. Please delete and recreate it.</p>
   </div>
   <% } else if (_pages.length === 0) { %>
   <div class="empty-state small">
@@ -46,7 +53,7 @@
     <p>No pages found for "<%= search %>". <a href="/admin/projects/<%= project.id %>">Clear search</a></p>
     <% } else { %>
     <h3>No pages yet</h3>
-    <p>Create your first page to start writing docs.</p>
+    <p>Create your first page to start writing documentation.</p>
     <% } %>
   </div>
   <% } else { %>
@@ -80,7 +87,7 @@
     <p>No versions found for "<%= search %>". <a href="/admin/projects/<%= project.id %>">Clear search</a></p>
     <% } else { %>
     <h3>No versions yet</h3>
-    <p>Create your first version to start writing docs.</p>
+    <p>Create your first version to start writing documentation.</p>
     <% } %>
   </div>
   <% } else { %>
@@ -100,6 +107,7 @@
         <div class="version-actions">
           <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-outline"><i class="ph ph-files"></i> Pages</a>
           <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" class="btn btn-outline"><i class="ph ph-clock-counter-clockwise"></i> Changelog</a>
+          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/knowledge-base" class="btn btn-outline"><i class="ph ph-question"></i> Knowledge Base</a>
           <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
         </div>
       </div>

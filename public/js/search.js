@@ -46,8 +46,9 @@
             .map(function (r) {
               var safeTitle = escapeHtml(r.title);
               var safeSlug = escapeHtml(r.slug);
-              var href = r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
-              return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>/" + safeSlug + "</span></a>";
+              var safeMeta = r.sectionLabel ? escapeHtml(r.sectionLabel) + " / " + safeSlug : "/" + safeSlug;
+              var href = r.href ? escapeHtml(r.href) : r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
+              return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>" + safeMeta + "</span></a>";
             })
             .join("");
         }

@@ -8,12 +8,19 @@ import { createVersionSchema, updateVersionSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getProject } from "../projects/service.js";
-import { ROLES } from "../../config/constants.js";
+import { PROJECT_MODE, ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
+import { NotFoundError } from "../../errors/taxonomy.js";
 
 const router = Router({ mergeParams: true });
 
 router.use(requireAuth);
+
+function assertVersionManagementSupported(project) {
+  if ((project?.mode || PROJECT_MODE.VERSIONED) !== PROJECT_MODE.VERSIONED) {
+    throw new NotFoundError("Version");
+  }
+}
 
 router.get("/", requireProjectAccess(), async (req, res) => {
   res.redirect(`/admin/projects/${req.params.projectId}`);
@@ -22,6 +29,7 @@ router.get("/", requireProjectAccess(), async (req, res) => {
 router.get("/create", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
+    assertVersionManagementSupported(project);
     res.render("admin/versions/create", {
       title: `${project.name} - New Version`,
       project,
@@ -43,6 +51,7 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, 
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
       const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
+      assertVersionManagementSupported(project);
       return res.status(422).render("admin/versions/create", {
         title: `${project.name} - New Version`,
         project,
@@ -55,11 +64,14 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, 
       });
     }
 
+    const project = await getProject(req.params.projectId);
+    assertVersionManagementSupported(project);
     await createVersion(req.params.projectId, parsed.data, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}?success=Version created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
+      assertVersionManagementSupported(project);
       return res.status(err.statusCode).render("admin/versions/create", {
         title: `${project.name} - New Version`,
         project,
@@ -79,6 +91,7 @@ router.get("/:versionId/edit", csrfMiddleware, requireProjectAccess(), async (re
   try {
     const version = await getVersion(req.params.versionId);
     const project = version.expand?.project;
+    assertVersionManagementSupported(project);
     res.render("admin/versions/edit", {
       title: `${project.name} - ${version.label}`,
       project,
@@ -102,6 +115,7 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
       const firstIssue = parsed.error.issues[0];
       const version = await getVersion(req.params.versionId);
       const project = version.expand?.project;
+      assertVersionManagementSupported(project);
       return res.status(422).render("admin/versions/edit", {
         title: `${project.name} - ${version.label}`,
         project,
@@ -115,12 +129,15 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
       });
     }
 
+    const version = await getVersion(req.params.versionId);
+    assertVersionManagementSupported(version.expand?.project);
     await updateVersion(req.params.versionId, parsed.data, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/edit?success=Version updated.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const version = await getVersion(req.params.versionId);
       const project = version.expand?.project;
+      assertVersionManagementSupported(project);
       return res.status(err.statusCode).render("admin/versions/edit", {
         title: `${project.name} - ${version.label}`,
         project,
@@ -139,6 +156,8 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
 
 router.post("/:versionId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
+    const version = await getVersion(req.params.versionId);
+    assertVersionManagementSupported(version.expand?.project);
     await deleteVersion(req.params.versionId, req.requestId);
     res.redirect(`/admin/projects/${req.params.projectId}`);
   } catch (err) {

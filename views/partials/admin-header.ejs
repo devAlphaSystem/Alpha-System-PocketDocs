@@ -16,6 +16,13 @@
 <div class="topbar-right">
   <% if (headerSearch && headerSearch.action) { %>
   <form method="GET" action="<%= headerSearch.action %>" class="list-search-form topbar-search-form" role="search">
+    <% if (headerSearch.params) { %>
+      <% for (const [paramName, paramValue] of Object.entries(headerSearch.params)) { %>
+        <% if (paramValue !== undefined && paramValue !== null && paramValue !== '') { %>
+        <input type="hidden" name="<%= paramName %>" value="<%= paramValue %>">
+        <% } %>
+      <% } %>
+    <% } %>
     <div class="list-search-wrap">
       <i class="ph ph-magnifying-glass list-search-icon"></i>
       <input type="search" name="search" value="<%= headerSearch.value || '' %>" placeholder="<%= headerSearch.placeholder || 'Search...' %>" class="list-search-input" aria-label="Search">

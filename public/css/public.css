@@ -360,7 +360,8 @@
   background: var(--surface-2);
   color: var(--text-primary);
 }
-.docs-nav-item.active > .docs-nav-link {
+.docs-nav-item.active > .docs-nav-link,
+.docs-nav-link.active {
   background: var(--color-primary-bg);
   color: var(--color-primary);
   font-weight: 600;
@@ -370,6 +371,10 @@
   width: 18px;
   text-align: center;
   flex-shrink: 0;
+}
+.docs-nav-link span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .docs-nav-children {
   list-style: none;

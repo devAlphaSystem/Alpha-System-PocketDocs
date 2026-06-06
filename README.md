@@ -2,7 +2,7 @@
 
 Self-hosted documentation platform with versioning, powered by [PocketBase](https://pocketbase.io/).
 
-PocketDocs lets teams create, organize, and publish documentation for multiple projects with either versioned or simple docs mode, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
+PocketDocs lets teams create, organize, and publish documentation and Knowledge Base content for multiple projects with versioned, Documentation-only, or Knowledge Base-only modes, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
 
 PocketDocs supports two database modes:
 - External mode: connect to your own PocketBase instance.
@@ -10,8 +10,9 @@ PocketDocs supports two database modes:
 
 ## Features
 
-- **Flexible project modes** — choose versioned docs (release history) or simple docs (single stream)
+- **Flexible project modes** — choose versioned, Documentation-only, or Knowledge Base-only projects
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
+- **Knowledge Base** — versioned or standalone Frequently Asked Questions and Troubleshooting sections in Markdown
 - **Markdown editor** — EasyMDE with syntax-highlighted live preview and Markdown download
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
@@ -20,15 +21,16 @@ PocketDocs supports two database modes:
 - **Public & private projects** — control visibility per project
 - **IP restriction** — restrict admin access to specific IP addresses
 - **Theming** — built-in light/dark mode toggle
-- **ZIP export** — download all versions, pages, and changelogs for a project as a single ZIP archive
+- **ZIP export** — download project content as Markdown files in a single ZIP archive
 - **Keyboard shortcuts** — Ctrl+S / Cmd+S saves the current admin form from anywhere on the page
 - **Self-hosted** — runs on your infrastructure; data stays with you
 
 ## Project Modes
 
-- **Versioned mode** — classic release-based docs with multiple versions, version switcher, and per-version changelog
-- **Simple mode** — single-stream docs without versioned public URLs; optimized for internal/team knowledge bases
-- Simple-mode projects still store one internal default version for data consistency, but public links use `/docs/:projectSlug/:pageSlug`
+- **Versioned mode** — classic release-based documentation with multiple versions, version switcher, per-version changelog, and per-version Knowledge Base
+- **Documentation only** — single-stream documentation without versioned public URLs; public links use `/docs/:projectSlug/:pageSlug`
+- **Knowledge Base only** — Frequently Asked Questions and Troubleshooting sections without documentation pages; public links use `/docs/:projectSlug/_kb/...`
+- Documentation-only and Knowledge Base-only projects still store one internal default version for data consistency.
 
 ## Tech Stack
 
@@ -89,6 +91,7 @@ pocketdocs/
 │   └── modules/              # Feature modules (controller / service / validation)
 │       ├── auth/             # Login & logout
 │       ├── changelogs/       # Version changelogs
+│       ├── knowledge-base/   # Frequently Asked Questions and Troubleshooting articles
 │       ├── pages/            # Documentation pages
 │       ├── projects/         # Project management
 │       ├── public/           # Public-facing routes & search API

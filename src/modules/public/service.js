@@ -3,27 +3,26 @@ import { COLLECTIONS, VISIBILITY } from "../../config/constants.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
 /**
- * Retrieves the single internal version for a simple-mode project.
+ * Retrieves the single internal version for a single-version project.
  *
  * @param {string} projectId - The project record ID.
  * @param {boolean} [isAdmin=false] - Whether the current user is an admin previewing content.
  * @returns {Promise<Object|null>} The version record, or `null` if not found.
  */
-export async function getSimpleProjectVersion(projectId, isAdmin = false) {
+export async function getSingleProjectVersion(projectId, isAdmin = false) {
   const filter = isAdmin ? `project = "${pbFilterValue(projectId)}"` : `project = "${pbFilterValue(projectId)}" && is_public = true`;
   const result = await pbList(COLLECTIONS.VERSIONS, { filter, sort: "order", perPage: 1 });
   return result.items?.[0] || null;
 }
 
 /**
- * Retrieves a single public page directly by project slug and page slug for simple-mode projects.
+ * Retrieves a single public documentation page directly by page slug for Documentation-only projects.
  *
- * @param {string} projectId - The project record ID.
  * @param {string} pageSlug - The page slug.
  * @param {string} versionId - The internal default version ID.
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
-export async function getSimpleProjectPage(projectId, pageSlug, versionId) {
+export async function getSingleProjectPage(pageSlug, versionId) {
   return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
@@ -124,6 +123,38 @@ export async function getPublicPage(versionId, pageSlug) {
  */
 export async function getPublicChangelog(versionId) {
   return pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${pbFilterValue(versionId)}"`);
+}
+
+/**
+ * Retrieves public Knowledge Base pages for a version, optionally scoped to one section.
+ *
+ * @param {string} versionId - The version record ID.
+ * @param {string} [section=""] - Optional Knowledge Base section.
+ * @returns {Promise<Object>} Paginated result containing Knowledge Base page items.
+ */
+export async function getPublicKnowledgeBasePages(versionId, section = "") {
+  let filter = `version = "${pbFilterValue(versionId)}"`;
+  if (section) {
+    filter += ` && section = "${pbFilterValue(section)}"`;
+  }
+
+  return pbList(COLLECTIONS.KNOWLEDGE_BASE_PAGES, {
+    filter,
+    sort: "section,order,title",
+    perPage: 500,
+  });
+}
+
+/**
+ * Retrieves a single public Knowledge Base page by version, section, and slug.
+ *
+ * @param {string} versionId - The version record ID.
+ * @param {string} section - Knowledge Base section.
+ * @param {string} pageSlug - Knowledge Base page slug.
+ * @returns {Promise<Object|null>} The page record, or `null` if not found.
+ */
+export async function getPublicKnowledgeBasePage(versionId, section, pageSlug) {
+  return pbGetFirstByFilter(COLLECTIONS.KNOWLEDGE_BASE_PAGES, `version = "${pbFilterValue(versionId)}" && section = "${pbFilterValue(section)}" && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**

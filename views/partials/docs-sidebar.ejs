@@ -1,13 +1,20 @@
 <nav class="docs-sidebar" id="docsSidebar">
+  <% const _docsOnlyMode = typeof docsOnlyMode !== 'undefined' && docsOnlyMode; %>
+  <% const _knowledgeBaseOnlyMode = typeof knowledgeBaseOnlyMode !== 'undefined' && knowledgeBaseOnlyMode; %>
+  <% const _supportsKnowledgeBase = typeof supportsKnowledgeBase !== 'undefined' && supportsKnowledgeBase; %>
+  <% const _kbBaseUrl = typeof kbBaseUrl !== 'undefined' ? kbBaseUrl : ''; %>
+  <% const _knowledgeBaseSectionCounts = typeof knowledgeBaseSectionCounts !== 'undefined' && knowledgeBaseSectionCounts ? knowledgeBaseSectionCounts : {}; %>
+  <% const _showFaqLink = _supportsKnowledgeBase && _kbBaseUrl && Number(_knowledgeBaseSectionCounts.faq || 0) > 0; %>
+  <% const _showTroubleshootingLink = _supportsKnowledgeBase && _kbBaseUrl && Number(_knowledgeBaseSectionCounts.troubleshooting || 0) > 0; %>
   <div class="docs-sidebar-header">
-    <% if (typeof version !== 'undefined' && version && !(typeof simpleMode !== 'undefined' && simpleMode)) { %>
+    <% if (typeof version !== 'undefined' && version && !_docsOnlyMode && !_knowledgeBaseOnlyMode) { %>
     <%- include('./version-switcher', { project: project, version: version, versions: versions }) %>
     <% } %>
   </div>
   <div class="docs-sidebar-search">
     <div class="search-input-wrap">
       <i class="ph ph-magnifying-glass"></i>
-      <input type="search" id="docsSearch" placeholder="Search docs..." autocomplete="off" data-project="<%= project.slug %>" data-version="<%= version ? version.id : '' %>">
+      <input type="search" id="docsSearch" placeholder="<%= _knowledgeBaseOnlyMode ? 'Search answers...' : 'Search documentation...' %>" autocomplete="off" data-project="<%= project.slug %>" data-version="<%= version ? version.id : '' %>">
     </div>
     <div class="search-results" id="searchResults"></div>
   </div>
@@ -15,8 +22,7 @@
     <% function renderTree(nodes, depth) { %>
       <% for (const node of nodes) { %>
         <li class="docs-nav-item<%= (typeof page !== 'undefined' && page && page.id === node.id) ? ' active' : '' %><%= node.children && node.children.length > 0 ? ' has-children' : '' %>" data-depth="<%= depth %>">
-          <% const _simple = typeof simpleMode !== 'undefined' && simpleMode; %>
-          <a href="<% if (_simple) { %>/docs/<%= project.slug %>/<%= node.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %><% } %>" class="docs-nav-link">
+          <a href="<% if (_docsOnlyMode) { %>/docs/<%= project.slug %>/<%= node.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %><% } %>" class="docs-nav-link">
             <% if (node.icon) { %><i class="ph ph-<%= node.icon %>"></i><% } else { %><i class="ph ph-file-text"></i><% } %>
             <span><%= node.title %></span>
           </a>
@@ -30,12 +36,26 @@
     <% } %>
     <% if (typeof pageTree !== 'undefined') { renderTree(pageTree, 0); } %>
   </ul>
-  <% if (typeof version !== 'undefined' && version && !(typeof simpleMode !== 'undefined' && simpleMode)) { %>
+  <% if ((typeof version !== 'undefined' && version && !_docsOnlyMode && !_knowledgeBaseOnlyMode) || _showFaqLink || _showTroubleshootingLink) { %>
   <div class="docs-sidebar-footer">
+    <% if (typeof version !== 'undefined' && version && !_docsOnlyMode && !_knowledgeBaseOnlyMode) { %>
     <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="docs-nav-link changelog-link">
       <i class="ph ph-clock-counter-clockwise"></i>
       <span>Changelog</span>
     </a>
+    <% } %>
+    <% if (_showFaqLink) { %>
+    <a href="<%= _kbBaseUrl %>/faq" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'faq' ? ' active' : '' %>">
+      <i class="ph ph-question"></i>
+      <span>Frequently Asked Questions</span>
+    </a>
+    <% } %>
+    <% if (_showTroubleshootingLink) { %>
+    <a href="<%= _kbBaseUrl %>/troubleshooting" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'troubleshooting' ? ' active' : '' %>">
+      <i class="ph ph-wrench"></i>
+      <span>Troubleshooting</span>
+    </a>
+    <% } %>
   </div>
   <% } %>
 </nav>
