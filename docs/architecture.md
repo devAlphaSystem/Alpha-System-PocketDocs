@@ -234,11 +234,9 @@ Error taxonomy (in `src/errors/taxonomy.js`):
 | `AuthorizationError` | 403 | Insufficient permissions |
 | `NotFoundError` | 404 | Resource does not exist |
 | `ConflictError` | 409 | Duplicate slug, etc. |
-| `RateLimitError` | 429 | Too many requests |
 | `CsrfError` | 403 | CSRF token mismatch |
-| `DomainError` | 422 | Business rule violation |
+| `InfrastructureError` | 500 | Database or filesystem failure |
 | `ExternalServiceError` | 502 | Upstream service failure |
-| `InternalError` | 500 | Unexpected server error |
 
 ## Markdown Pipeline
 

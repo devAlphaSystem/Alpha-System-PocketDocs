@@ -38,7 +38,7 @@ router.get("/login", csrfMiddleware, (req, res) => {
 
 router.post("/login", csrfMiddleware, validate(loginSchema), async (req, res, next) => {
   try {
-    const { token, user } = await loginUser(req.validatedBody.email, req.validatedBody.password, req.requestId);
+    const { token } = await loginUser(req.validatedBody.email, req.validatedBody.password, req.requestId);
     res.cookie(COOKIE_NAMES.AUTH_TOKEN, token, cookieOptions);
     res.redirect("/admin");
   } catch (err) {

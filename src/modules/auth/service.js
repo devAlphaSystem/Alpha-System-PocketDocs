@@ -1,5 +1,5 @@
 import { pbAuthWithPassword } from "../../lib/pocketbase.js";
-import { COLLECTIONS, ROLES } from "../../config/constants.js";
+import { COLLECTIONS } from "../../config/constants.js";
 import { AuthenticationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 
@@ -9,7 +9,7 @@ import { logger } from "../../lib/logger.js";
  * @param {string} email - The user's email address.
  * @param {string} password - The user's password.
  * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<{ token: string, user: Object }>} The auth token and user profile.
+ * @returns {Promise<{ token: string }>} The auth token.
  * @throws {AuthenticationError} If the credentials are invalid.
  */
 export async function loginUser(email, password, requestId) {
@@ -23,11 +23,5 @@ export async function loginUser(email, password, requestId) {
   logger.info("User logged in", { requestId, userId: result.data.record.id });
   return {
     token: result.data.token,
-    user: {
-      id: result.data.record.id,
-      email: result.data.record.email,
-      name: result.data.record.name,
-      role: result.data.record.role || ROLES.EDITOR,
-    },
   };
 }

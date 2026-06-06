@@ -1,37 +1,38 @@
-<div class="editor-page">
-  <% const isDocumentsSection = section === 'documents'; %>
-  <% const itemLabel = sectionOption.itemLabel || (isDocumentsSection ? 'page' : 'article'); %>
-  <% const selectedParentValue = typeof page !== 'undefined' && page ? page.parent : (typeof formValues !== 'undefined' && formValues && formValues.parent ? formValues.parent : ''); %>
+<% const isDocumentsSection = section === 'documents'; %>
+<% const itemLabel = sectionOption.itemLabel || (isDocumentsSection ? 'page' : 'article'); %>
+<% const selectedParentValue = typeof page !== 'undefined' && page ? page.parent : (typeof formValues !== 'undefined' && formValues && formValues.parent ? formValues.parent : ''); %>
 
+<div class="editor-page">
   <div class="page-header">
     <div>
       <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages?section=<%= section %>" class="back-link"><i class="ph ph-arrow-left"></i> <%= sectionLabel %></a>
     </div>
     <div class="header-actions">
       <% if (typeof page !== 'undefined' && page) { %>
-      <% if (isDocumentsSection) { %>
-      <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
-      <a href="/docs/<%= project.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
-      <% } else { %>
-      <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
-      <% } %>
-      <% } else { %>
-      <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
-      <a href="/docs/<%= project.slug %>/_kb/<%= section %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
-      <% } else { %>
-      <a href="/docs/<%= project.slug %>/<%= version.slug %>/_kb/<%= section %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
-      <% } %>
-      <% } %>
+        <% if (isDocumentsSection) { %>
+          <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
+            <a href="/docs/<%= project.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+          <% } else { %>
+            <a href="/docs/<%= project.slug %>/<%= version.slug %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+          <% } %>
+        <% } else { %>
+          <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
+            <a href="/docs/<%= project.slug %>/_kb/<%= section %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+          <% } else { %>
+            <a href="/docs/<%= project.slug %>/<%= version.slug %>/_kb/<%= section %>/<%= page.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> Preview</a>
+          <% } %>
+        <% } %>
       <% } %>
       <button type="submit" form="pageForm" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save</button>
     </div>
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
-  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+    <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
+
   <% if (typeof success !== 'undefined' && success) { %>
-  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+    <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
   <form id="pageForm" method="POST" action="<%= typeof page !== 'undefined' && page ? '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/' + page.id : '/admin/projects/' + project.id + '/versions/' + version.id + '/pages/new?section=' + section %>" class="editor-form" novalidate>
@@ -42,7 +43,7 @@
       <div class="form-row">
         <div class="form-group flex-2">
           <label for="title">Title <span class="required">*</span></label>
-          <input type="text" id="title" name="title" placeholder="<%= isDocumentsSection ? 'Getting Started' : 'How do I reset my password?' %>" required maxlength="200" value="<%= typeof page !== 'undefined' && page ? page.title : (typeof formValues !== 'undefined' && formValues && formValues.title ? formValues.title : '') %>">
+          <input type="text" id="title" name="title" placeholder="<%= isDocumentsSection ? 'Getting Started' : 'How do I reset my password?' %>" required maxlength="200" value="<%= typeof page !== 'undefined' && page ? page.title : (typeof formValues !== 'undefined' && formValues && formValues.title ? formValues.title : '') %>" data-page-title-input data-auto-slug-source data-auto-slug-target="slug" data-auto-slug-when-empty="true">
         </div>
         <div class="form-group flex-1">
           <label for="slug">Slug</label>
@@ -50,7 +51,7 @@
         </div>
         <div class="form-group flex-1">
           <label for="icon">Icon (<a href="https://phosphoricons.com/#toolbar" target="_blank" rel="noopener noreferrer">Phosphor</a>)</label>
-          <input type="text" id="icon" name="icon" placeholder="<%= isDocumentsSection ? 'book-open' : sectionIcon %>" maxlength="50" value="<%= typeof page !== 'undefined' && page ? (page.icon || '') : (typeof formValues !== 'undefined' && formValues && formValues.icon ? formValues.icon : '') %>">
+          <input type="text" id="icon" name="icon" placeholder="<%= isDocumentsSection ? 'book-open' : sectionIcon %>" maxlength="50" value="<%= typeof page !== 'undefined' && page ? (page.icon || '') : (typeof formValues !== 'undefined' && formValues && formValues.icon ? formValues.icon : '') %>" data-page-icon-input>
         </div>
         <div class="form-group flex-1">
           <label for="parent">Parent <%= itemLabel %></label>
@@ -59,7 +60,7 @@
             <% if (typeof pages !== 'undefined') { %>
               <% for (const p of pages) { %>
                 <% if (typeof page === 'undefined' || !page || p.id !== page.id) { %>
-                <option value="<%= p.id %>"<%= selectedParentValue === p.id ? ' selected' : '' %>><%= p.title %></option>
+                  <option value="<%= p.id %>"<%= selectedParentValue === p.id ? ' selected' : '' %>><%= p.title %></option>
                 <% } %>
               <% } %>
             <% } %>
@@ -73,73 +74,3 @@
     </div>
   </form>
 </div>
-
-<script>
-  var titleInput = document.getElementById('title');
-  var slugInput = document.getElementById('slug');
-  var iconInput = document.getElementById('icon');
-  var autoSlug = !slugInput.value;
-  var autoIcon = !iconInput.value;
-
-  /**
-   * Map of page-title patterns to Phosphor icon names.
-   * Keys are matched case-insensitively against the trimmed title.
-   */
-  var PAGE_ICON_MAP = {
-    'readme':          'book-open-text',
-    'license':         'scales',
-    'licence':         'scales',
-    'changelog':       'clock-counter-clockwise',
-    'contributing':    'git-pull-request',
-    'code of conduct': 'handshake',
-    'security':        'shield-check',
-    'faq':             'question',
-    'getting started': 'rocket-launch',
-    'installation':    'download-simple',
-    'setup':           'gear',
-    'configuration':   'sliders-horizontal',
-    'api':             'plugs-connected',
-    'api reference':   'plugs-connected',
-    'authentication':  'lock-key',
-    'deployment':      'cloud-arrow-up',
-    'troubleshooting': 'wrench',
-    'architecture':    'tree-structure',
-    'migration':       'arrows-left-right',
-    'testing':         'test-tube',
-    'examples':        'code',
-    'tutorial':        'graduation-cap',
-    'introduction':    'hand-waving',
-    'overview':        'binoculars',
-    'quickstart':      'lightning',
-    'quick start':     'lightning',
-    'upgrade':         'arrow-circle-up',
-    'plugins':         'puzzle-piece',
-    'extensions':      'puzzle-piece',
-    'glossary':        'book-bookmark',
-    'reference':       'files',
-    'usage':           'book-open',
-    'guide':           'compass',
-    'features':        'star',
-    'release notes':   'newspaper',
-    'about':           'info',
-    'support':         'lifebuoy',
-    'contact':         'envelope-simple',
-    'privacy':         'eye-slash',
-    'privacy policy':  'eye-slash',
-    'terms':           'file-text',
-    'terms of service':'file-text',
-  };
-
-  slugInput.addEventListener('input', function() { autoSlug = false; });
-  iconInput.addEventListener('input', function() { autoIcon = false; });
-
-  titleInput.addEventListener('input', function() {
-    if (autoSlug) {
-      slugInput.value = titleInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    }
-    if (autoIcon) {
-      var key = titleInput.value.trim().toLowerCase();
-      iconInput.value = PAGE_ICON_MAP[key] || '';
-    }
-  });
-</script>

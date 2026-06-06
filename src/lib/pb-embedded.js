@@ -940,7 +940,7 @@ async function cli() {
 
   const commands = {
     async boot() {
-      const pb = await boot();
+      await boot();
       console.log("PocketBase is running. Press Ctrl+C to stop.\n");
 
       const shutdown = () => {

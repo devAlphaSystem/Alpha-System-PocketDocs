@@ -1,34 +1,40 @@
+<% const sidebarSiteName = typeof siteName !== 'undefined' ? siteName : 'PocketDocs'; %>
+<% const sidebarUserLabel = user ? (user.name || user.email) : 'Guest'; %>
+
 <div class="sidebar-brand">
   <a href="/admin" class="sidebar-logo">
-    <% const sidebarSiteName = typeof siteName !== 'undefined' ? siteName : 'PocketDocs'; %>
     <% if (sidebarSiteName === 'PocketDocs') { %>
-    <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+      <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
     <% } else { %>
-    <span><%= sidebarSiteName %></span>
+      <span><%= sidebarSiteName %></span>
     <% } %>
   </a>
 </div>
+
 <nav class="sidebar-nav">
   <a href="/admin/projects" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/projects') ? ' active' : '' %>">
     <i class="ph ph-folders"></i>
     <span>Projects</span>
   </a>
+
   <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
-  <div class="sidebar-section-label">Administration</div>
-  <% if (user && user.role === 'owner') { %>
-  <a href="/admin/users" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/users') ? ' active' : '' %>">
-    <i class="ph ph-users"></i>
-    <span>Users</span>
-  </a>
-  <% } %>
-  <a href="/admin/settings" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
-    <i class="ph ph-gear"></i>
-    <span>Settings</span>
-  </a>
+    <div class="sidebar-section-label">Administration</div>
+
+    <% if (user && user.role === 'owner') { %>
+      <a href="/admin/users" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/users') ? ' active' : '' %>">
+        <i class="ph ph-users"></i>
+        <span>Users</span>
+      </a>
+    <% } %>
+
+    <a href="/admin/settings" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
+      <i class="ph ph-gear"></i>
+      <span>Settings</span>
+    </a>
   <% } %>
 </nav>
+
 <div class="sidebar-footer">
-  <% const sidebarUserLabel = user ? (user.name || user.email) : 'Guest'; %>
   <div class="sidebar-footer-card">
     <div class="sidebar-user">
       <div class="sidebar-user-avatar">

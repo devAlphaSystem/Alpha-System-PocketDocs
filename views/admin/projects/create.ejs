@@ -10,7 +10,7 @@
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
-  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+    <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
 
   <form method="POST" action="/admin/projects/create" novalidate id="project-create-form">
@@ -18,7 +18,7 @@
 
     <div class="form-group">
       <label for="name">Project name <span class="required">*</span></label>
-      <input type="text" id="name" name="name" placeholder="My Documentation" required maxlength="100" value="<%= typeof values !== 'undefined' && values.name ? values.name : '' %>">
+      <input type="text" id="name" name="name" placeholder="My Documentation" required maxlength="100" value="<%= typeof values !== 'undefined' && values.name ? values.name : '' %>" data-auto-slug-source data-auto-slug-target="slug">
       <p class="form-hint">A human-readable name for your project.</p>
     </div>
 
@@ -54,15 +54,3 @@
     </div>
   </form>
 </div>
-
-<script>
-  var nameInput = document.getElementById('name');
-  var slugInput = document.getElementById('slug');
-  var autoSlug = true;
-  slugInput.addEventListener('input', function() { autoSlug = false; });
-  nameInput.addEventListener('input', function() {
-    if (autoSlug) {
-      slugInput.value = nameInput.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    }
-  });
-</script>

@@ -1,3 +1,5 @@
+<% const _nonVersionedMode = typeof nonVersionedMode !== 'undefined' && nonVersionedMode; %>
+
 <div class="docs-layout">
   <%- include('../partials/docs-sidebar', {
     project,
@@ -14,46 +16,52 @@
   <main class="docs-main">
     <article class="docs-article">
       <div class="docs-article-header">
-        <% if (page) { %><i class="ph ph-<%= page.icon || 'file-text' %> docs-page-icon"></i><% } %>
+        <% if (page) { %>
+          <i class="ph ph-<%= page.icon || 'file-text' %> docs-page-icon"></i>
+        <% } %>
+
         <h1><%= page ? page.title : project.name %></h1>
       </div>
       <div class="docs-content prose">
         <%- contentHtml %>
       </div>
-      <% const _nonVersionedMode = typeof nonVersionedMode !== 'undefined' && nonVersionedMode; %>
+
       <% if (typeof prevPage !== 'undefined' || typeof nextPage !== 'undefined') { %>
-      <nav class="docs-pagination">
-        <% if (typeof prevPage !== 'undefined' && prevPage) { %>
-        <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= prevPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %><% } %>" class="docs-pagination-link prev">
-          <i class="ph ph-arrow-left"></i>
-          <div>
-            <span class="docs-pagination-label">Previous</span>
-            <span class="docs-pagination-title"><%= prevPage.title %></span>
-          </div>
-        </a>
-        <% } else { %><div></div><% } %>
-        <% if (typeof nextPage !== 'undefined' && nextPage) { %>
-        <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= nextPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %><% } %>" class="docs-pagination-link next">
-          <div>
-            <span class="docs-pagination-label">Next</span>
-            <span class="docs-pagination-title"><%= nextPage.title %></span>
-          </div>
-          <i class="ph ph-arrow-right"></i>
-        </a>
-        <% } %>
-      </nav>
+        <nav class="docs-pagination">
+          <% if (typeof prevPage !== 'undefined' && prevPage) { %>
+            <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= prevPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %><% } %>" class="docs-pagination-link prev">
+              <i class="ph ph-arrow-left"></i>
+              <div>
+                <span class="docs-pagination-label">Previous</span>
+                <span class="docs-pagination-title"><%= prevPage.title %></span>
+              </div>
+            </a>
+          <% } else { %>
+            <div> </div>
+          <% } %>
+          
+          <% if (typeof nextPage !== 'undefined' && nextPage) { %>
+            <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= nextPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %><% } %>" class="docs-pagination-link next">
+              <div>
+                <span class="docs-pagination-label">Next</span>
+                <span class="docs-pagination-title"><%= nextPage.title %></span>
+              </div>
+              <i class="ph ph-arrow-right"></i>
+            </a>
+          <% } %>
+        </nav>
       <% } %>
     </article>
 
     <% if (typeof headings !== 'undefined' && headings.length > 0) { %>
-    <aside class="docs-toc">
-      <h4>On this page</h4>
-      <ul>
-        <% for (const h of headings) { %>
-        <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
-        <% } %>
-      </ul>
-    </aside>
+      <aside class="docs-toc">
+        <h4>On this page</h4>
+        <ul>
+          <% for (const h of headings) { %>
+            <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
+          <% } %>
+        </ul>
+      </aside>
     <% } %>
   </main>
 </div>
@@ -63,10 +71,4 @@
 <script src="<%= assetUrl('/js/code-copy.js') %>"></script>
 <script src="<%= assetUrl('/js/docs-toc.js') %>"></script>
 <script src="<%= assetUrl('/js/markdown-checkboxes.js') %>"></script>
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
-  });
-</script>
+<script type="module" src="<%= assetUrl('/js/mermaid-init.js') %>"></script>

@@ -1,3 +1,5 @@
+<% const visibilityValue = (typeof formValues !== 'undefined' && formValues && typeof formValues.is_public !== 'undefined') ? formValues.is_public : (version.is_public ? 'true' : 'false'); %>
+
 <div class="form-page">
   <div class="page-header">
     <div>
@@ -6,20 +8,22 @@
     <div class="header-actions">
       <a href="/admin/projects/<%= project.id %>" class="btn btn-outline">Cancel</a>
       <button type="submit" form="version-edit-form" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Changes</button>
+      
       <% if (user.role === 'owner' || user.role === 'admin') { %>
-      <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/delete" class="inline-form" data-confirm-title="Delete version?" data-confirm-message="Delete this version and all its pages? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-        <button type="submit" class="btn btn-danger"><i class="ph ph-trash"></i> Delete</button>
-      </form>
+        <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/delete" class="inline-form" data-confirm-title="Delete version?" data-confirm-message="Delete this version and all its pages? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <button type="submit" class="btn btn-danger"><i class="ph ph-trash"></i> Delete</button>
+        </form>
       <% } %>
     </div>
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
-  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+    <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
+
   <% if (typeof success !== 'undefined' && success) { %>
-  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+    <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
   <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>" novalidate id="version-edit-form">
@@ -32,7 +36,7 @@
 
     <div class="form-group">
       <label for="is_public">Visibility <span class="required">*</span></label>
-      <% const visibilityValue = (typeof formValues !== 'undefined' && formValues && typeof formValues.is_public !== 'undefined') ? formValues.is_public : (version.is_public ? 'true' : 'false'); %>
+      
       <select id="is_public" name="is_public">
         <option value="false"<%= visibilityValue === 'false' ? ' selected' : '' %>>Draft</option>
         <option value="true"<%= visibilityValue === 'true' ? ' selected' : '' %>>Public</option>

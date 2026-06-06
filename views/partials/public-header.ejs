@@ -1,20 +1,21 @@
 <header class="public-header">
   <% if (typeof project !== 'undefined' && project) { %>
-  <ul class="header-breadcrumb">
-    <li><a href="/">Home</a></li>
-    <li><a href="/docs/<%= project.slug %>"><%= project.name %></a></li>
-  </ul>
+    <ul class="header-breadcrumb">
+      <li><a href="/">Home</a></li>
+      <li><a href="/docs/<%= project.slug %>"><%= project.name %></a></li>
+    </ul>
   <% } %>
+  
   <div class="header-right">
     <button class="theme-toggle-btn btn btn-ghost public-theme-toggle" id="themeToggle" aria-label="Toggle theme">
       <i class="ph ph-moon"></i>
     </button>
     <% if (typeof ipAllowed !== 'undefined' && ipAllowed) { %>
-    <% if (user) { %>
-    <a href="/admin" class="btn btn-outline">Dashboard</a>
-    <% } else { %>
-    <a href="/auth/login" class="btn btn-outline">Sign In</a>
-    <% } %>
+      <% if (user) { %>
+        <a href="/admin" class="btn btn-outline">Dashboard</a>
+      <% } else { %>
+        <a href="/auth/login" class="btn btn-outline">Sign In</a>
+      <% } %>
     <% } %>
   </div>
 </header>

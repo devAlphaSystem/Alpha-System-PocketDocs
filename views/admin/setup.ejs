@@ -1,110 +1,102 @@
 <!DOCTYPE html>
+
 <html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script>
-    (function () {
-      try {
-        var key = 'pd_theme';
-        var theme = localStorage.getItem(key);
-        if (theme !== 'dark' && theme !== 'light') {
-          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <script>
+      (function () {
+        try {
+          var key = 'pd_theme';
+          var theme = localStorage.getItem(key);
+          if (theme !== 'dark' && theme !== 'light') {
+            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (_e) {
+          document.documentElement.setAttribute('data-theme', 'light');
         }
-        document.documentElement.setAttribute('data-theme', theme);
-      } catch (_e) {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
-    })();
-  </script>
-  <title>Setup | <%= siteName %></title>
-  <link rel="icon" type="image/png" href="/img/logo.png">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
-  <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
-  <link rel="stylesheet" href="<%= assetUrl('/css/admin.css') %>">
-</head>
-<body class="auth-body">
-  <div class="auth-container">
-    <div class="auth-card">
-      <div class="auth-header">
-        <a href="/" class="auth-brand">
-          <% if (siteName === 'PocketDocs') { %>
-          <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
-          <% } else { %>
-          <span><%= siteName %></span>
-          <% } %>
-        </a>
-        <h1>Welcome to <%= siteName %></h1>
-        <p>Create your owner account to get started.</p>
+      })();
+    </script>
+
+    <title>Setup | <%= siteName %></title>
+
+    <link rel="icon" type="image/png" href="/img/logo.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+    <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
+    <link rel="stylesheet" href="<%= assetUrl('/css/admin.css') %>">
+  </head>
+
+  <body class="auth-body">
+    <div class="auth-container">
+      <div class="auth-card">
+        <div class="auth-header">
+          <a href="/" class="auth-brand">
+            <% if (siteName === 'PocketDocs') { %>
+              <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
+            <% } else { %>
+              <span><%= siteName %></span>
+            <% } %>
+          </a>
+          <h1>Welcome to <%= siteName %></h1>
+          <p>Create your owner account to get started.</p>
+        </div>
+
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-error">
+            <i class="ph ph-warning-circle"></i>
+            <span><%= error %></span>
+          </div>
+        <% } %>
+
+        <form method="POST" action="/setup" class="auth-form" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+          <div class="form-group">
+            <label for="name">Full name</label>
+            <div class="input-wrap">
+              <i class="ph ph-user"></i>
+              <input type="text" id="name" name="name" placeholder="Jane Doe" required autocomplete="name" value="<%= typeof body !== 'undefined' && body.name ? body.name : '' %>">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email address</label>
+            <div class="input-wrap">
+              <i class="ph ph-envelope"></i>
+              <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="<%= typeof body !== 'undefined' && body.email ? body.email : '' %>">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+              <i class="ph ph-lock"></i>
+              <input type="password" id="password" name="password" placeholder="Min 8 characters" required autocomplete="new-password" minlength="8">
+              <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+                <i class="ph ph-eye"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="passwordConfirm">Confirm password</label>
+            <div class="input-wrap">
+              <i class="ph ph-lock"></i>
+              <input type="password" id="passwordConfirm" name="passwordConfirm" placeholder="Repeat your password" required autocomplete="new-password" minlength="8">
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">
+            <i class="ph ph-rocket-launch"></i> Complete Setup
+          </button>
+        </form>
       </div>
-
-      <% if (typeof error !== 'undefined' && error) { %>
-      <div class="alert alert-error">
-        <i class="ph ph-warning-circle"></i>
-        <span><%= error %></span>
-      </div>
-      <% } %>
-
-      <form method="POST" action="/setup" class="auth-form" novalidate>
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-
-        <div class="form-group">
-          <label for="name">Full name</label>
-          <div class="input-wrap">
-            <i class="ph ph-user"></i>
-            <input type="text" id="name" name="name" placeholder="Jane Doe" required autocomplete="name" value="<%= typeof body !== 'undefined' && body.name ? body.name : '' %>">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="email">Email address</label>
-          <div class="input-wrap">
-            <i class="ph ph-envelope"></i>
-            <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="<%= typeof body !== 'undefined' && body.email ? body.email : '' %>">
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="password">Password</label>
-          <div class="input-wrap">
-            <i class="ph ph-lock"></i>
-            <input type="password" id="password" name="password" placeholder="Min 8 characters" required autocomplete="new-password" minlength="8">
-            <button type="button" class="password-toggle" aria-label="Toggle password visibility">
-              <i class="ph ph-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="passwordConfirm">Confirm password</label>
-          <div class="input-wrap">
-            <i class="ph ph-lock"></i>
-            <input type="password" id="passwordConfirm" name="passwordConfirm" placeholder="Repeat your password" required autocomplete="new-password" minlength="8">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-full">
-          <i class="ph ph-rocket-launch"></i> Complete Setup
-        </button>
-      </form>
     </div>
-  </div>
-  <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
-  <script>
-    document.querySelectorAll('.password-toggle').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        var input = btn.parentElement.querySelector('input');
-        var icon = btn.querySelector('i');
-        if (input.type === 'password') {
-          input.type = 'text';
-          icon.className = 'ph ph-eye-slash';
-        } else {
-          input.type = 'password';
-          icon.className = 'ph ph-eye';
-        }
-      });
-    });
-  </script>
-</body>
+    
+    <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
+    <script src="<%= assetUrl('/js/auth.js') %>"></script>
+  </body>
 </html>

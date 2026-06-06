@@ -20,14 +20,14 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-router.use((req, res, next) => {
+router.use((_req, res, next) => {
   if (isOwnerSetupComplete()) {
     return res.redirect("/auth/login");
   }
   next();
 });
 
-router.get("/", csrfMiddleware, (req, res) => {
+router.get("/", csrfMiddleware, (_req, res) => {
   res.render("admin/setup", {
     layout: false,
     title: "Setup",

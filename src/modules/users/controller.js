@@ -57,7 +57,7 @@ router.get("/:id/edit", async (req, res, next) => {
 
 router.post("/create", validate(createUserSchema), async (req, res, next) => {
   try {
-    const created = await createUser(req.validatedBody, req.requestId);
+    await createUser(req.validatedBody, req.requestId);
     res.redirect("/admin/users?success=User created successfully.");
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {

@@ -108,49 +108,6 @@ export class ConflictError extends AppError {
 }
 
 /**
- * Represents a rate-limiting rejection (HTTP 429).
- *
- * @class
- * @extends AppError
- */
-export class RateLimitError extends AppError {
-  /**
-   * Creates a new RateLimitError instance.
-   *
-   * @param {string} [message="Too many requests. Please try again later."] - Error description.
-   */
-  constructor(message = "Too many requests. Please try again later.") {
-    super(message, {
-      code: "RATE_LIMITED",
-      statusCode: 429,
-      isOperational: true,
-    });
-  }
-}
-
-/**
- * Represents a domain-level business logic error (HTTP 422).
- *
- * @class
- * @extends AppError
- */
-export class DomainError extends AppError {
-  /**
-   * Creates a new DomainError instance.
-   *
-   * @param {string} message - Error description.
-   * @param {string} [code="DOMAIN_ERROR"] - Machine-readable error code.
-   */
-  constructor(message, code = "DOMAIN_ERROR") {
-    super(message, {
-      code,
-      statusCode: 422,
-      isOperational: true,
-    });
-  }
-}
-
-/**
  * Represents a failure in internal infrastructure such as database or file system (HTTP 500).
  *
  * @class
@@ -197,30 +154,6 @@ export class ExternalServiceError extends AppError {
       cause,
     });
     Object.assign(this, extra);
-  }
-}
-
-/**
- * Represents an unexpected internal error that is not operationally recoverable (HTTP 500).
- *
- * @class
- * @extends AppError
- */
-export class InternalError extends AppError {
-  /**
-   * Creates a new InternalError instance.
-   *
-   * @param {string} [message="An internal error occurred."] - Error description.
-   * @param {Object} [options] - Additional error metadata.
-   * @param {Error|null} [options.cause=null] - The underlying cause.
-   */
-  constructor(message = "An internal error occurred.", { cause = null } = {}) {
-    super(message, {
-      code: "INTERNAL_ERROR",
-      statusCode: 500,
-      isOperational: false,
-      cause,
-    });
   }
 }
 

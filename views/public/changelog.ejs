@@ -16,22 +16,24 @@
       <div class="docs-article-header">
         <h1>Changelog &mdash; <%= version.label %></h1>
       </div>
+
       <% if (typeof changelog !== 'undefined' && changelog) { %>
-      <% if (changelog.created) { %>
-      <p class="changelog-date">
-        <i class="ph ph-calendar"></i>
-        <%= new Date(changelog.created).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) %>
-      </p>
-      <% } %>
-      <div class="docs-content prose">
-        <%- contentHtml %>
-      </div>
+        <% if (changelog.created) { %>
+          <p class="changelog-date">
+            <i class="ph ph-calendar"></i>
+            <%= formatLongDate(changelog.created) %>
+          </p>
+        <% } %>
+        
+        <div class="docs-content prose">
+          <%- contentHtml %>
+        </div>
       <% } else { %>
-      <div class="empty-state small">
-        <div class="empty-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
-        <h3>No changelog yet</h3>
-        <p>No changelog has been published for this version.</p>
-      </div>
+        <div class="empty-state small">
+          <div class="empty-icon"><i class="ph ph-clock-counter-clockwise"></i></div>
+          <h3>No changelog yet</h3>
+          <p>No changelog has been published for this version.</p>
+        </div>
       <% } %>
     </article>
   </main>
@@ -41,10 +43,4 @@
 <script src="<%= assetUrl('/js/version-switcher.js') %>"></script>
 <script src="<%= assetUrl('/js/code-copy.js') %>"></script>
 <script src="<%= assetUrl('/js/markdown-checkboxes.js') %>"></script>
-<script type="module">
-  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default',
-  });
-</script>
+<script type="module" src="<%= assetUrl('/js/mermaid-init.js') %>"></script>

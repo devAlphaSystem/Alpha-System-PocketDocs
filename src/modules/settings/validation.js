@@ -8,7 +8,7 @@ export const updateSettingsSchema = z.object({
 });
 
 /** @type {import("zod").ZodObject} Validates IP restriction toggle and allow-list data. */
-export const updateIpRestrictionSchema = z.object({
+const updateIpRestrictionSchema = z.object({
   enabled: z.enum(["enable", "disable"]),
   allowedIps: z.string().trim().max(5000).optional().default(""),
 });

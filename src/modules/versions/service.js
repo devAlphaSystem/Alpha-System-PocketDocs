@@ -69,7 +69,7 @@ export async function getVersion(versionId) {
  * @param {string} slug - The version slug.
  * @returns {Promise<Object|null>} The version record, or `null` if not found.
  */
-export async function getVersionBySlug(projectId, slug) {
+async function getVersionBySlug(projectId, slug) {
   return pbGetFirstByFilter(COLLECTIONS.VERSIONS, `project = "${pbFilterValue(projectId)}" && slug = "${pbFilterValue(slug)}"`);
 }
 

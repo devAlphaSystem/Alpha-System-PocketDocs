@@ -34,7 +34,7 @@ export function isOwnerSetupComplete() {
  * @param {string} data.passwordConfirm - Password confirmation.
  * @param {string} data.name - The owner's display name.
  * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<{ token: string, user: Object }>} The auth token and user profile.
+ * @returns {Promise<{ token: string }>} The auth token.
  * @throws {ConflictError} If setup has already been completed.
  * @throws {ValidationError} If the registration data is invalid.
  */
@@ -82,11 +82,5 @@ export async function registerOwner(data, requestId) {
 
   return {
     token: loginResult.data.token,
-    user: {
-      id: loginResult.data.record.id,
-      email: loginResult.data.record.email,
-      name: loginResult.data.record.name,
-      role: loginResult.data.record.role,
-    },
   };
 }

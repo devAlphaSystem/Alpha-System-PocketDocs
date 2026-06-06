@@ -20,6 +20,7 @@ import { requestIdMiddleware, requestLoggerMiddleware } from "./middleware/reque
 import { securityHeadersMiddleware } from "./middleware/security-headers.js";
 import { loadUserMiddleware } from "./middleware/auth.js";
 import { errorHandlerMiddleware, notFoundMiddleware } from "./middleware/error-handler.js";
+import { buildPaginationViewModel, formatDate, formatLongDate, normalizeViewAssetList } from "./lib/view-helpers.js";
 
 import authRoutes from "./modules/auth/controller.js";
 import setupRoutes from "./modules/setup/controller.js";
@@ -149,6 +150,10 @@ app.use((req, res, next) => {
   res.locals.sitePbUrl = env.POCKETBASE_URL;
   res.locals.assetVersion = assetVersion;
   res.locals.assetUrl = assetUrlFn;
+  res.locals.normalizeViewAssetList = normalizeViewAssetList;
+  res.locals.buildPaginationViewModel = buildPaginationViewModel;
+  res.locals.formatDate = formatDate;
+  res.locals.formatLongDate = formatLongDate;
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();
@@ -158,7 +163,7 @@ app.use((req, res, next) => {
 
 app.use(
   "/setup",
-  (req, res, next) => {
+  (_req, res, next) => {
     res.locals.layout = false;
     next();
   },
@@ -169,7 +174,7 @@ app.use(
 app.use(
   "/auth",
   ipRestrictionMiddleware,
-  (req, res, next) => {
+  (_req, res, next) => {
     res.locals.layout = false;
     next();
   },
@@ -186,7 +191,7 @@ app.get("/admin", ipRestrictionMiddleware, (req, res) => {
   res.redirect("/admin/projects");
 });
 
-const adminLayoutMiddleware = (req, res, next) => {
+const adminLayoutMiddleware = (_req, res, next) => {
   res.locals.layout = "layouts/admin";
   next();
 };

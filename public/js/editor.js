@@ -1,4 +1,67 @@
 (function () {
+  var PAGE_ICON_MAP = {
+    readme: "book-open-text",
+    license: "scales",
+    licence: "scales",
+    changelog: "clock-counter-clockwise",
+    contributing: "git-pull-request",
+    "code of conduct": "handshake",
+    security: "shield-check",
+    faq: "question",
+    "getting started": "rocket-launch",
+    installation: "download-simple",
+    setup: "gear",
+    configuration: "sliders-horizontal",
+    api: "plugs-connected",
+    "api reference": "plugs-connected",
+    authentication: "lock-key",
+    deployment: "cloud-arrow-up",
+    troubleshooting: "wrench",
+    architecture: "tree-structure",
+    migration: "arrows-left-right",
+    testing: "test-tube",
+    examples: "code",
+    tutorial: "graduation-cap",
+    introduction: "hand-waving",
+    overview: "binoculars",
+    quickstart: "lightning",
+    "quick start": "lightning",
+    upgrade: "arrow-circle-up",
+    plugins: "puzzle-piece",
+    extensions: "puzzle-piece",
+    glossary: "book-bookmark",
+    reference: "files",
+    usage: "book-open",
+    guide: "compass",
+    features: "star",
+    "release notes": "newspaper",
+    about: "info",
+    support: "lifebuoy",
+    contact: "envelope-simple",
+    privacy: "eye-slash",
+    "privacy policy": "eye-slash",
+    terms: "file-text",
+    "terms of service": "file-text",
+  };
+
+  var titleInput = document.querySelector("[data-page-title-input]");
+  var iconInput = document.querySelector("[data-page-icon-input]");
+  var autoIcon = iconInput ? !iconInput.value : false;
+
+  if (iconInput) {
+    iconInput.addEventListener("input", function () {
+      autoIcon = false;
+    });
+  }
+
+  if (titleInput && iconInput) {
+    titleInput.addEventListener("input", function () {
+      if (!autoIcon) return;
+      var key = titleInput.value.trim().toLowerCase();
+      iconInput.value = PAGE_ICON_MAP[key] || "";
+    });
+  }
+
   var textarea = document.getElementById("content");
   if (!textarea || typeof EasyMDE === "undefined") return;
 

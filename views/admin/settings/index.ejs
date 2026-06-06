@@ -10,10 +10,11 @@
   </div>
 
   <% if (typeof error !== 'undefined' && error) { %>
-  <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
+    <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
+
   <% if (typeof success !== 'undefined' && success) { %>
-  <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
+    <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
   <form method="POST" action="/admin/settings" novalidate id="settings-form" class="settings-form">
@@ -25,11 +26,12 @@
           <i class="ph ph-image"></i>
           <span>Home Hero</span>
         </button>
+        
         <% if (canManageIpRestriction) { %>
-        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-ip" aria-controls="settings-panel-ip" aria-selected="false" data-tab-target="settings-panel-ip" tabindex="-1">
-          <i class="ph ph-shield-check"></i>
-          <span>IP Restriction</span>
-        </button>
+          <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-ip" aria-controls="settings-panel-ip" aria-selected="false" data-tab-target="settings-panel-ip" tabindex="-1">
+            <i class="ph ph-shield-check"></i>
+            <span>IP Restriction</span>
+          </button>
         <% } %>
       </div>
 
@@ -57,29 +59,29 @@
       </section>
 
       <% if (canManageIpRestriction) { %>
-      <section class="settings-tab-panel" id="settings-panel-ip" role="tabpanel" aria-labelledby="settings-tab-ip" data-tab-panel hidden>
-        <div class="form-section">
-          <h3>IP Restriction</h3>
-          <p class="form-section-desc">Restrict access to the admin dashboard and login pages by IP address. When enabled, only the listed IPs can access <code>/admin</code> and <code>/auth/login</code> routes.</p>
+        <section class="settings-tab-panel" id="settings-panel-ip" role="tabpanel" aria-labelledby="settings-tab-ip" data-tab-panel hidden>
+          <div class="form-section">
+            <h3>IP Restriction</h3>
+            <p class="form-section-desc">Restrict access to the admin dashboard and login pages by IP address. When enabled, only the listed IPs can access <code>/admin</code> and <code>/auth/login</code> routes.</p>
 
-          <div class="form-group">
-            <label for="ipEnabled">Status</label>
-            <select id="ipEnabled" name="enabled">
-              <option value="disable" <%= ipRestriction.enabled === 'disable' ? 'selected' : '' %>>Disabled</option>
-              <option value="enable" <%= ipRestriction.enabled === 'enable' ? 'selected' : '' %>>Enabled</option>
-            </select>
-          </div>
+            <div class="form-group">
+              <label for="ipEnabled">Status</label>
+              <select id="ipEnabled" name="enabled">
+                <option value="disable" <%= ipRestriction.enabled === 'disable' ? 'selected' : '' %>>Disabled</option>
+                <option value="enable" <%= ipRestriction.enabled === 'enable' ? 'selected' : '' %>>Enabled</option>
+              </select>
+            </div>
 
-          <div class="form-group">
-            <label for="allowedIps">Allowed IPs</label>
-            <textarea id="allowedIps" name="allowedIps" rows="5" maxlength="5000" placeholder="e.g. 127.0.0.1&#10;192.168.1.100&#10;10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
-            <p class="form-hint">Enter one IP address per line. IPv4 and IPv6 are supported.</p>
-            <% if (detectedIp) { %>
-            <p class="form-hint"><strong>Your current IP:</strong> <a href="#" id="insert-my-ip" data-ip="<%= detectedIp %>"><code><%= detectedIp %></code></a> — click to add to the list above.</p>
-            <% } %>
+            <div class="form-group">
+              <label for="allowedIps">Allowed IPs</label>
+              <textarea id="allowedIps" name="allowedIps" rows="5" maxlength="5000" placeholder="e.g. 127.0.0.1&#10;192.168.1.100&#10;10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
+              <p class="form-hint">Enter one IP address per line. IPv4 and IPv6 are supported.</p>
+              <% if (detectedIp) { %>
+                <p class="form-hint"><strong>Your current IP:</strong> <a href="#" id="insert-my-ip" data-ip="<%= detectedIp %>"><code><%= detectedIp %></code></a> — click to add to the list above.</p>
+              <% } %>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       <% } %>
     </div>
   </form>

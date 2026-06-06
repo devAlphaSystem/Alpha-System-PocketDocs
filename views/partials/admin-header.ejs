@@ -2,33 +2,37 @@
   <div class="header-title-wrap">
     <h1 class="header-title"><%= title %></h1>
     <% if (headerSubtitle || (headerBadge && headerBadge.text)) { %>
-    <div class="header-meta">
-      <% if (headerSubtitle) { %>
-      <span class="header-subtitle"><%= headerSubtitle %></span>
-      <% } %>
-      <% if (headerBadge && headerBadge.text) { %>
-      <span class="badge badge-<%= headerBadge.variant || 'draft' %>"><%= headerBadge.text %></span>
-      <% } %>
-    </div>
+      <div class="header-meta">
+        <% if (headerSubtitle) { %>
+          <span class="header-subtitle"><%= headerSubtitle %></span>
+        <% } %>
+
+        <% if (headerBadge && headerBadge.text) { %>
+          <span class="badge badge-<%= headerBadge.variant || 'draft' %>"><%= headerBadge.text %></span>
+        <% } %>
+      </div>
     <% } %>
   </div>
 </div>
+
 <div class="topbar-right">
   <% if (headerSearch && headerSearch.action) { %>
-  <form method="GET" action="<%= headerSearch.action %>" class="list-search-form topbar-search-form" role="search">
-    <% if (headerSearch.params) { %>
-      <% for (const [paramName, paramValue] of Object.entries(headerSearch.params)) { %>
-        <% if (paramValue !== undefined && paramValue !== null && paramValue !== '') { %>
-        <input type="hidden" name="<%= paramName %>" value="<%= paramValue %>">
+    <form method="GET" action="<%= headerSearch.action %>" class="list-search-form topbar-search-form" role="search">
+      <% if (headerSearch.params) { %>
+        <% for (const [paramName, paramValue] of Object.entries(headerSearch.params)) { %>
+          <% if (paramValue !== undefined && paramValue !== null && paramValue !== '') { %>
+            <input type="hidden" name="<%= paramName %>" value="<%= paramValue %>">
+          <% } %>
         <% } %>
       <% } %>
-    <% } %>
-    <div class="list-search-wrap">
-      <i class="ph ph-magnifying-glass list-search-icon"></i>
-      <input type="search" name="search" value="<%= headerSearch.value || '' %>" placeholder="<%= headerSearch.placeholder || 'Search...' %>" class="list-search-input" aria-label="Search">
-    </div>
-  </form>
+
+      <div class="list-search-wrap">
+        <i class="ph ph-magnifying-glass list-search-icon"></i>
+        <input type="search" name="search" value="<%= headerSearch.value || '' %>" placeholder="<%= headerSearch.placeholder || 'Search...' %>" class="list-search-input" aria-label="Search">
+      </div>
+    </form>
   <% } %>
+  
   <button class="theme-toggle-btn btn btn-ghost icon-btn" id="themeToggle" aria-label="Toggle theme">
     <i class="ph ph-moon"></i>
   </button>

@@ -5,7 +5,7 @@
  */
 import { Router } from "express";
 import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, getPublicSectionPages, getPublicSectionPage, searchPages, getSingleProjectVersion, getSingleProjectPage } from "./service.js";
-import { buildPageTree, getPageSectionLabel, isKnowledgeBaseSection, PAGE_SECTION_OPTIONS } from "../pages/service.js";
+import { buildPageTree, flattenPageTree, getPageSectionLabel, isKnowledgeBaseSection, PAGE_SECTION_OPTIONS } from "../pages/service.js";
 import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 import { ROLES, PROJECT_MODE, PAGE_SECTIONS } from "../../config/constants.js";
@@ -101,6 +101,7 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
     const allKnowledgeBasePages = allKnowledgeBaseResult?.items || knowledgeBasePages;
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(allKnowledgeBasePages);
     const pageTree = buildPageTree(docsPages);
+    const kbPageTree = buildPageTree(knowledgeBasePages);
     const selectedSection = section || "";
     const sectionLabel = selectedSection ? getPageSectionLabel(selectedSection) : "Knowledge Base";
 
@@ -141,7 +142,8 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
       sectionOptions: ARTICLE_SECTION_OPTIONS,
       sectionGroups: selectedSection ? [] : groupKnowledgeBasePages(knowledgeBasePages),
       kbPages: knowledgeBasePages,
-      kbPageTree: buildPageTree(knowledgeBasePages),
+      kbPageTree,
+      kbPageItems: flattenPageTree(kbPageTree),
       kbPage: knowledgeBasePage,
       contentHtml,
       headings,

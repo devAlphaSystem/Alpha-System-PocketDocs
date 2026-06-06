@@ -21,6 +21,17 @@
     return div.innerHTML;
   }
 
+  window.PocketDocs = window.PocketDocs || {};
+
+  function slugify(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
+  window.PocketDocs.slugify = slugify;
+
   var PENDING_TOAST_KEY = "pd_pending_toast";
 
   function queueNextPageToast(message, type) {
@@ -57,6 +68,63 @@
   }
 
   flushPendingToast();
+
+  document.querySelectorAll("[data-auto-slug-source]").forEach(function (source) {
+    var targetId = source.getAttribute("data-auto-slug-target");
+    var target = targetId ? document.getElementById(targetId) : null;
+    if (!target) return;
+
+    var autoSlug = source.getAttribute("data-auto-slug-when-empty") === "true" ? !target.value : true;
+
+    target.addEventListener("input", function () {
+      autoSlug = false;
+    });
+
+    source.addEventListener("input", function () {
+      if (autoSlug) {
+        target.value = slugify(source.value);
+      }
+    });
+  });
+
+  function openDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.showModal === "function") {
+      dialog.showModal();
+      return;
+    }
+    dialog.setAttribute("open", "");
+  }
+
+  function closeDialog(dialog) {
+    if (!dialog) return;
+    if (typeof dialog.close === "function") {
+      dialog.close();
+      return;
+    }
+    dialog.removeAttribute("open");
+  }
+
+  document.addEventListener("click", function (event) {
+    var openTrigger = event.target.closest ? event.target.closest("[data-dialog-open]") : null;
+    if (openTrigger) {
+      event.preventDefault();
+      openDialog(document.getElementById(openTrigger.getAttribute("data-dialog-open")));
+      return;
+    }
+
+    var closeTrigger = event.target.closest ? event.target.closest("[data-dialog-close]") : null;
+    if (closeTrigger) {
+      event.preventDefault();
+      closeDialog(document.getElementById(closeTrigger.getAttribute("data-dialog-close")));
+    }
+  });
+
+  document.querySelectorAll("[data-dialog-autoshow]").forEach(function (dialog) {
+    if (!dialog.open) {
+      openDialog(dialog);
+    }
+  });
 
   var clickableRows = document.querySelectorAll("[data-row-link]");
   if (clickableRows.length) {

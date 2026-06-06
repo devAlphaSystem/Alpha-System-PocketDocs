@@ -94,7 +94,7 @@ function extractSetextHeading(content) {
  * @param {string} filename - Candidate filename or relative path.
  * @returns {boolean} True when the filename ends with `.md` or `.markdown`.
  */
-export function isMarkdownImportFilename(filename) {
+function isMarkdownImportFilename(filename) {
   return MARKDOWN_EXTENSION_PATTERN.test(String(filename || ""));
 }
 
@@ -104,7 +104,7 @@ export function isMarkdownImportFilename(filename) {
  * @param {string} value - Raw value to slugify.
  * @returns {string} URL-safe slug.
  */
-export function slugifyMarkdownImportValue(value) {
+function slugifyMarkdownImportValue(value) {
   return String(value || "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -123,7 +123,7 @@ export function slugifyMarkdownImportValue(value) {
  * @returns {string} Page title.
  * @throws {ValidationError} If a safe title cannot be inferred.
  */
-export function deriveMarkdownImportTitle(filename, content = "") {
+function deriveMarkdownImportTitle(filename, content = "") {
   const title = extractAtxHeading(content) || extractSetextHeading(content) || humanizeFilename(filename);
   if (!title) {
     throw new ValidationError(`Could not infer a page title from ${displayFilename(filename)}.`);
@@ -142,7 +142,7 @@ export function deriveMarkdownImportTitle(filename, content = "") {
  * @returns {string} Page slug.
  * @throws {ValidationError} If a safe slug cannot be inferred.
  */
-export function deriveMarkdownImportSlug(filename, title) {
+function deriveMarkdownImportSlug(filename, title) {
   const slug = slugifyMarkdownImportValue(getFilenameStem(filename)) || slugifyMarkdownImportValue(title);
   if (!slug || !SLUG_PATTERN.test(slug)) {
     throw new ValidationError(`Could not infer a valid slug from ${displayFilename(filename)}.`);
@@ -157,7 +157,7 @@ export function deriveMarkdownImportSlug(filename, title) {
  * @returns {{ segment: string, title: string, slug: string }} Normalized folder metadata.
  * @throws {ValidationError} If a safe folder title or slug cannot be inferred.
  */
-export function normalizeMarkdownImportDirectory(segment) {
+function normalizeMarkdownImportDirectory(segment) {
   const title = humanizePathSegment(segment);
   if (!title) {
     throw new ValidationError("Could not infer a page title from an imported folder.");

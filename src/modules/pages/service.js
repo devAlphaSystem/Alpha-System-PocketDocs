@@ -114,6 +114,19 @@ export function buildPageTree(pages) {
   return roots;
 }
 
+export function flattenPageTree(nodes, depth = 0) {
+  const items = [];
+
+  for (const node of nodes || []) {
+    items.push({ ...node, depth });
+    if (node.children && node.children.length > 0) {
+      items.push(...flattenPageTree(node.children, depth + 1));
+    }
+  }
+
+  return items;
+}
+
 export async function getPage(pageId) {
   const page = await pbGetOne(COLLECTIONS.PAGES, pageId, { expand: "version" });
   if (!page) {
@@ -122,7 +135,7 @@ export async function getPage(pageId) {
   return page;
 }
 
-export async function getPageBySlug(versionId, section, slug) {
+async function getPageBySlug(versionId, section, slug) {
   return pbGetFirstByFilter(COLLECTIONS.PAGES, `${pageFilter(versionId, section)} && slug = "${pbFilterValue(slug)}"`);
 }
 

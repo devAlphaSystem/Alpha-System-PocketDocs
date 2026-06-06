@@ -3,7 +3,7 @@
  * @description Express routes for CRUD operations on version content sections.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
+import { listPages, listPagesPaginated, buildPageTree, flattenPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
 import { createPageSchema, updatePageSchema, reorderPagesSchema, importMarkdownPagesSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
@@ -115,9 +115,19 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
 
     const pages = pagesResult.items || [];
     const pageTree = search ? [] : buildPageTree(pages);
+    const pageTreeItems = search ? [] : flattenPageTree(pageTree);
     const totalPages = pagesResult.totalItems ?? pages.length;
     const sectionLabel = getPageSectionLabel(section);
     const sectionOption = getPageSectionOption(section);
+    const extraJs = [];
+
+    if (!search) {
+      extraJs.push("/js/sidebar-sort.js");
+    }
+
+    if (userCanImport(req.user)) {
+      extraJs.push("/js/markdown-import.js");
+    }
 
     res.render("admin/pages/index", {
       title: nonVersionedMode ? `${project.name} - ${sectionLabel}` : `${project.name} - ${version.label} - ${sectionLabel}`,
@@ -138,6 +148,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       sectionOptions: PAGE_SECTION_OPTIONS,
       pages,
       pageTree,
+      pageTreeItems,
       pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
       search,
       user: req.user,
@@ -147,7 +158,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       siteName: env.SITE_NAME,
       markdownImport: MARKDOWN_IMPORT,
       publicSectionUrl: publicSectionUrl(project, version, section),
-      extraJs: userCanImport(req.user) ? "/js/markdown-import.js" : null,
+      extraJs: extraJs.length > 0 ? extraJs : null,
     });
   } catch (err) {
     next(err);

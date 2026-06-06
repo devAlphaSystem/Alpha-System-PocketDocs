@@ -48,7 +48,7 @@ export async function getProject(projectId) {
  * @param {string} slug - The project slug.
  * @returns {Promise<Object|null>} The project record, or `null` if not found.
  */
-export async function getProjectBySlug(slug) {
+async function getProjectBySlug(slug) {
   return pbGetFirstByFilter(COLLECTIONS.PROJECTS, `slug = "${pbFilterValue(slug)}"`, { expand: "owner" });
 }
 
