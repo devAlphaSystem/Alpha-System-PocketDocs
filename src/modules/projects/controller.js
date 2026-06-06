@@ -11,10 +11,7 @@ import { requireAuth, requireRole, requireProjectAccess } from "../../middleware
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { COOKIE_NAMES, ROLES, PROJECT_MODE } from "../../config/constants.js";
 import { env } from "../../config/env.js";
-import { isGitHubConfigured } from "../github/service.js";
-import { getClientIp } from "../../lib/request-ip.js";
-import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
-import archiver from "archiver";
+import { ZipArchive } from "archiver";
 
 const router = Router();
 
@@ -54,14 +51,12 @@ router.get("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), (re
     error: null,
     values: {},
     siteName: env.SITE_NAME,
-    githubConfigured: isGitHubConfigured(),
   });
 });
 
 router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), validate(createProjectSchema), async (req, res, next) => {
   try {
     const project = await createProject(req.validatedBody, req.user.id, req.requestId);
-    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_CREATED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: project.id, description: `Created project "${req.validatedBody.name}" (/${req.validatedBody.slug})`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${project.id}?success=Project created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -72,7 +67,6 @@ router.post("/create", csrfMiddleware, requireRole(ROLES.ADMIN, ROLES.OWNER), va
         error: err.message,
         values: req.validatedBody,
         siteName: env.SITE_NAME,
-        githubConfigured: isGitHubConfigured(),
       });
     }
     next(err);
@@ -184,7 +178,7 @@ router.get("/:projectId/export", requireProjectAccess(ROLES.ADMIN), async (req, 
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${data.project.slug}.zip"`);
 
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    const archive = new ZipArchive({ zlib: { level: 9 } });
     archive.on("error", (err) => next(err));
     archive.pipe(res);
 
@@ -207,7 +201,6 @@ router.get("/:projectId/export", requireProjectAccess(ROLES.ADMIN), async (req, 
 router.post("/:projectId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(updateProjectSchema), async (req, res, next) => {
   try {
     await updateProject(req.params.projectId, req.validatedBody, req.requestId);
-    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: req.params.projectId, description: `Updated project`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}?success=Project updated successfully.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
@@ -229,7 +222,6 @@ router.post("/:projectId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), va
 router.post("/:projectId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     await deleteProject(req.params.projectId, req.requestId);
-    recordAuditLog({ action: AUDIT_ACTIONS.PROJECT_DELETED, userId: req.user.id, userEmail: req.user.email, targetType: "project", targetId: req.params.projectId, description: `Deleted project`, ipAddress: getClientIp(req) });
     res.redirect("/admin/projects?success=Project deleted.");
   } catch (err) {
     next(err);

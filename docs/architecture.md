@@ -10,12 +10,10 @@ graph TD
     Express["Express 5 Server"]
     PB["PocketBase"]
     FS["File System"]
-    GH["GitHub API"]
 
     Browser -->|HTTP| Express
     Express -->|PocketBase JS SDK| PB
     Express -->|Read/Write| FS
-    Express -->|REST API| GH
 
     subgraph Express Application
         MW["Middleware Chain"]
@@ -26,7 +24,6 @@ graph TD
 
     MW --> Ctrl --> Val --> Svc
     Svc --> PB
-    Svc --> GH
 ```
 
 ### Components
@@ -35,7 +32,6 @@ graph TD
 |-----------|---------------|
 | **Express Server** | HTTP handling, routing, template rendering, static file serving |
 | **PocketBase** | Persistent storage, user authentication, file uploads, full-text filtering |
-| **GitHub API** | Optional integration for importing docs from repositories |
 | **File System** | Runtime configuration (`data/`), log files (`logs/`) |
 
 ## Request Lifecycle
@@ -96,7 +92,6 @@ src/modules/{feature}/
 | `users` | User management (owner-only) | User (name, email, role) |
 | `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
-| `github` | GitHub integration — repo browsing & doc import | Repos, tags, commits, file trees |
 
 ## Database Schema (ER Diagram)
 
@@ -241,7 +236,7 @@ Error taxonomy (in `src/errors/taxonomy.js`):
 | `RateLimitError` | 429 | Too many requests |
 | `CsrfError` | 403 | CSRF token mismatch |
 | `DomainError` | 422 | Business rule violation |
-| `ExternalServiceError` | 502 | GitHub API failure, etc. |
+| `ExternalServiceError` | 502 | Upstream service failure |
 | `InternalError` | 500 | Unexpected server error |
 
 ## Markdown Pipeline

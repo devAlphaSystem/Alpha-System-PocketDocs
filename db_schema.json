@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "source": "pb_schema.json",
-  "generatedAt": "2026-04-06T04:07:08.906Z",
+  "generatedAt": "2026-06-06T02:04:06.550Z",
   "collections": [
     {
       "name": "users",
@@ -51,107 +51,6 @@
       ],
       "authRule": "",
       "manageRule": null
-    },
-    {
-      "name": "audit_logs",
-      "type": "base",
-      "listRule": null,
-      "viewRule": null,
-      "createRule": null,
-      "updateRule": null,
-      "deleteRule": null,
-      "indexes": [
-        "CREATE INDEX `idx_al_action` ON `audit_logs` (`action`)",
-        "CREATE INDEX `idx_al_category` ON `audit_logs` (`category`)",
-        "CREATE INDEX `idx_al_user` ON `audit_logs` (`user`)",
-        "CREATE INDEX `idx_al_created` ON `audit_logs` (`created`)"
-      ],
-      "fields": [
-        {
-          "name": "action",
-          "type": "text",
-          "required": true,
-          "min": 1,
-          "max": 100,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "category",
-          "type": "text",
-          "required": true,
-          "min": 1,
-          "max": 50,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "user",
-          "type": "relation",
-          "required": false,
-          "maxSelect": 1,
-          "minSelect": 0,
-          "cascadeDelete": false,
-          "relationTo": "users"
-        },
-        {
-          "name": "user_email",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 255,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "target_type",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 50,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "target_id",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 50,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 1000,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "ip_address",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 45,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "onCreate": true,
-          "onUpdate": false
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "onCreate": true,
-          "onUpdate": true
-        }
-      ]
     },
     {
       "name": "projects",

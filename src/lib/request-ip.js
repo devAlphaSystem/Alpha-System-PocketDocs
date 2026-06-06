@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 function getHeaderValue(headers, name) {
   const value = headers?.[name];
 
@@ -15,6 +17,48 @@ function splitForwardedHeader(value) {
     .filter(Boolean);
 }
 
+function splitForwardedForHeader(value) {
+  return String(value || "")
+    .split(",")
+    .map((entry) => {
+      const match = entry.match(/(?:^|;)\s*for=(?:"?)([^;"]+)/i);
+      if (!match) return "";
+      return normalizeIp(match[1]);
+    })
+    .filter(Boolean);
+}
+
+function isLoopbackIp(ip) {
+  const normalized = normalizeIp(ip);
+  return normalized === "127.0.0.1";
+}
+
+function isProxyTrusted(req) {
+  const trustProxy = typeof req.app?.get === "function" ? req.app.get("trust proxy") : false;
+  if (!trustProxy) {
+    return false;
+  }
+
+  if (trustProxy === true) {
+    return true;
+  }
+
+  const remoteAddress = normalizeIp(req.socket?.remoteAddress || "");
+  const trustProxyFn = typeof req.app?.get === "function" ? req.app.get("trust proxy fn") : null;
+  return Boolean(remoteAddress && typeof trustProxyFn === "function" && trustProxyFn(remoteAddress, 0));
+}
+
+function getTrustedProxyHeaderIp(req) {
+  if (!isProxyTrusted(req)) {
+    return "";
+  }
+
+  const proxyIps = Array.isArray(req.ips) ? req.ips.map((ip) => normalizeIp(ip)).filter(Boolean) : [];
+  const candidates = [proxyIps[0], splitForwardedHeader(getHeaderValue(req.headers, "cf-connecting-ip"))[0], splitForwardedHeader(getHeaderValue(req.headers, "x-real-ip"))[0], splitForwardedForHeader(getHeaderValue(req.headers, "forwarded"))[0]];
+
+  return candidates.find(Boolean) || "";
+}
+
 /**
  * Normalizes an IP address by stripping ports, converting IPv6-mapped IPv4,
  * and resolving loopback addresses.
@@ -23,9 +67,11 @@ function splitForwardedHeader(value) {
  * @returns {string} The normalized IP address, or an empty string if invalid.
  */
 export function normalizeIp(ip) {
-  const raw = String(ip || "").trim();
+  const raw = String(ip || "")
+    .trim()
+    .replace(/^["']|["']$/g, "");
 
-  if (!raw) {
+  if (!raw || raw.toLowerCase() === "unknown") {
     return "";
   }
 
@@ -44,10 +90,10 @@ export function normalizeIp(ip) {
 
   const ipv4WithPortMatch = raw.match(/^(\d{1,3}(?:\.\d{1,3}){3}):(\d+)$/);
   if (ipv4WithPortMatch) {
-    return ipv4WithPortMatch[1];
+    return isIP(ipv4WithPortMatch[1]) ? ipv4WithPortMatch[1] : "";
   }
 
-  return raw;
+  return isIP(raw) ? raw : "";
 }
 
 /**
@@ -57,7 +103,12 @@ export function normalizeIp(ip) {
  * @returns {string} The normalized client IP address.
  */
 export function getClientIp(req) {
-  return normalizeIp(req.ip || req.socket?.remoteAddress || "");
+  const expressIp = normalizeIp(req.ip || "");
+  if (expressIp && !isLoopbackIp(expressIp)) {
+    return expressIp;
+  }
+
+  return getTrustedProxyHeaderIp(req) || expressIp || normalizeIp(req.socket?.remoteAddress || "");
 }
 
 /**
@@ -65,14 +116,17 @@ export function getClientIp(req) {
  * and forwarding configurations.
  *
  * @param {import("express").Request} req - The Express request object.
- * @returns {{ clientIp: string, proxyIps: Array<string>, remoteAddress: string, xForwardedFor: Array<string>, xRealIp: string }} IP debug information.
+ * @returns {{ clientIp: string, proxyIps: Array<string>, trustedProxyHeaderIp: string, remoteAddress: string, xForwardedFor: Array<string>, xRealIp: string, cfConnectingIp: string, forwardedFor: Array<string> }} IP debug information.
  */
 export function getClientIpDebug(req) {
   return {
     clientIp: getClientIp(req),
     proxyIps: Array.isArray(req.ips) ? req.ips.map((ip) => normalizeIp(ip)).filter(Boolean) : [],
+    trustedProxyHeaderIp: getTrustedProxyHeaderIp(req),
     remoteAddress: normalizeIp(req.socket?.remoteAddress || ""),
     xForwardedFor: splitForwardedHeader(getHeaderValue(req.headers, "x-forwarded-for")),
     xRealIp: normalizeIp(getHeaderValue(req.headers, "x-real-ip")),
+    cfConnectingIp: normalizeIp(getHeaderValue(req.headers, "cf-connecting-ip")),
+    forwardedFor: splitForwardedForHeader(getHeaderValue(req.headers, "forwarded")),
   };
 }

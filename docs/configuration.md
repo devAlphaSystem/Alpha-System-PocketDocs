@@ -53,14 +53,6 @@ All environment variables are validated at startup via Zod. Invalid values cause
 | `SITE_NAME` | string | `PocketDocs` | No | Public site name displayed in the header and page titles. |
 | `SITE_URL` | URL | `http://localhost:3000` | No | Public base URL. Used for generating canonical links. Set to your production URL in deployment. |
 
-### GitHub Integration
-
-| Variable | Type | Default | Required | Description |
-|----------|------|---------|----------|-------------|
-| `GITHUB_TOKEN` | string | — | No | GitHub personal access token for the import feature. Without this, GitHub integration is disabled. Requires `repo` scope for private repositories or no scope for public-only access. |
-
----
-
 ## Trust Proxy
 
 The `TRUST_PROXY` variable controls how Express reads the client IP from proxy headers. This directly affects rate limiting, IP restriction, and request logging.

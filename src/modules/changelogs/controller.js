@@ -11,9 +11,6 @@ import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
 import { ROLES } from "../../config/constants.js";
 import { env } from "../../config/env.js";
-import { renderMarkdown } from "../../lib/markdown.js";
-import { getClientIp } from "../../lib/request-ip.js";
-import { recordAuditLog, AUDIT_ACTIONS } from "../audit-logs/service.js";
 
 const router = Router({ mergeParams: true });
 const EDITOR_EXTRA_CSS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css", "/css/easymde.css"];
@@ -44,19 +41,9 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
   }
 });
 
-router.post("/preview", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
-  try {
-    const html = renderMarkdown(req.body?.content || "");
-    res.json({ html });
-  } catch (err) {
-    next(err);
-  }
-});
-
 router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(updateChangelogSchema), async (req, res, next) => {
   try {
     await upsertChangelog(req.params.versionId, req.validatedBody, req.requestId);
-    recordAuditLog({ action: AUDIT_ACTIONS.CHANGELOG_UPDATED, userId: req.user.id, userEmail: req.user.email, targetType: "changelog", targetId: req.params.versionId, description: `Updated changelog for version`, ipAddress: getClientIp(req) });
     res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/changelog?success=Changelog saved.`);
   } catch (err) {
     next(err);

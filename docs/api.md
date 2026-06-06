@@ -39,7 +39,7 @@ All errors follow a consistent envelope:
 | 422 | `DOMAIN_ERROR` | Business rule violation |
 | 429 | `RATE_LIMITED` | Too many requests |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
-| 502 | `EXTERNAL_SERVICE_ERROR` | Upstream service failure (e.g. GitHub API) |
+| 502 | `EXTERNAL_SERVICE_ERROR` | Upstream service failure |
 
 ---
 
@@ -416,44 +416,6 @@ Returns rendered Markdown as HTML (for live editor preview).
 }
 ```
 
-### `POST /admin/projects/:projectId/versions/:versionId/pages/validate-links`
-
-Checks all Markdown links in the provided content for validity. Validates internal page slugs and anchors against the current version, and probes external HTTP(S) URLs.
-
-**Auth:** Required  
-**Roles:** All (with project access)  
-**CSRF:** Yes
-
-**Body:**
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `content` | string | Yes | Raw Markdown content to scan |
-| `currentPageSlug` | string | No | Slug of the page being edited (used to resolve same-page anchor links) |
-| `_csrf` | string | Yes | CSRF token |
-
-**Response (JSON):**
-```json
-{
-  "totalChecked": 5,
-  "brokenLinks": [
-    {
-      "text": "Old guide",
-      "href": "old-guide.md",
-      "reason": "GitHub-style .md links do not resolve in PocketDocs routes",
-      "suggestedFix": "old-guide"
-    },
-    {
-      "text": "Missing page",
-      "href": "nonexistent-slug",
-      "reason": "Page \"nonexistent-slug\" not found in this version"
-    }
-  ]
-}
-```
-
-`brokenLinks` is an empty array when all links are valid. External URLs are limited to 15 per request with a 6-second per-URL timeout. `.md`-suffixed internal links include a `suggestedFix` field with the corrected slug.
-
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/reorder`
 
 Reorders pages and updates parent relationships.
@@ -630,120 +592,6 @@ Updates site settings and (optionally) IP restriction rules.
 | `_csrf` | string | Yes | CSRF token | |
 
 **Success:** Redirects to settings page
-
----
-
-## GitHub Integration
-
-Routes under `/admin/github`. Requires Admin or Owner role. All routes require a configured `GITHUB_TOKEN` environment variable.
-
-### `GET /admin/github/repos`
-
-Lists GitHub repositories accessible with the configured token.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-**Query:**
-
-| Param | Type | Default |
-|-------|------|---------|
-| `page` | integer | 1 |
-
-**Response (JSON):**
-```json
-[
-  {
-    "full_name": "owner/repo",
-    "description": "Repository description",
-    "html_url": "https://github.com/owner/repo",
-    "default_branch": "main"
-  }
-]
-```
-
-### `GET /admin/github/repo-info`
-
-Fetches metadata for a specific repository by URL.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-**Query:**
-
-| Param | Type | Required |
-|-------|------|----------|
-| `url` | string | Yes |
-
-**Response (JSON):** GitHub repository object
-
-### `GET /admin/github/repos/:owner/:repo/tags`
-
-Lists tags for a repository.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-**Query:**
-
-| Param | Type | Default |
-|-------|------|---------|
-| `page` | integer | 1 |
-
-**Response (JSON):** Array of tag objects
-
-### `GET /admin/github/repos/:owner/:repo/commits`
-
-Lists commits for a repository.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-**Query:**
-
-| Param | Type | Default |
-|-------|------|---------|
-| `page` | integer | 1 |
-
-**Response (JSON):** Array of commit objects
-
-### `GET /admin/github/repos/:owner/:repo/docs-check`
-
-Checks whether a `docs/` directory exists at the given ref.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-**Query:**
-
-| Param | Type | Default |
-|-------|------|---------|
-| `ref` | string | `HEAD` |
-
-**Response (JSON):** Directory tree or error
-
-### `POST /admin/github/import`
-
-Imports documentation from a GitHub repository. Creates a project and versions from selected refs.
-
-**Auth:** Required  
-**Roles:** Admin, Owner  
-**CSRF:** Yes
-
-**Body:**
-
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `repoUrl` | string | Yes | Valid GitHub repository URL |
-| `projectName` | string | Yes | 1–200 characters |
-| `projectSlug` | string | Yes | 1–120 characters, slug pattern |
-| `visibility` | string | No | `public` or `private` (default: `private`) |
-| `refs` | array | Yes | Array of ref strings (tags, branches, commits) |
-| `_csrf` | string | Yes | CSRF token |
-
-**Success:** Redirects to the created project
-
-**Process:** For each ref, the importer fetches the `docs/` directory tree, reads all `.md` files, extracts titles and slugs from filenames, preserves directory hierarchy as parent-child page relationships, and creates pages with the Markdown content.
 
 ---
 

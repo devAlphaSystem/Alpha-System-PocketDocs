@@ -2,7 +2,7 @@
 
 Self-hosted documentation platform with versioning, powered by [PocketBase](https://pocketbase.io/).
 
-PocketDocs lets teams create, organize, and publish documentation for multiple projects with either versioned or simple docs mode, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview, role-based access control, and optional GitHub import to bootstrap docs from existing repositories.
+PocketDocs lets teams create, organize, and publish documentation for multiple projects with either versioned or simple docs mode, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
 
 PocketDocs supports two database modes:
 - External mode: connect to your own PocketBase instance.
@@ -12,11 +12,10 @@ PocketDocs supports two database modes:
 
 - **Flexible project modes** — choose versioned docs (release history) or simple docs (single stream)
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
-- **Markdown editor** — EasyMDE with syntax-highlighted live preview, link checker, and Markdown download
+- **Markdown editor** — EasyMDE with syntax-highlighted live preview and Markdown download
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
 - **Role-based access** — Owner, Admin, and Editor roles with granular permissions
-- **GitHub import** — import Markdown docs directly from GitHub repos (tags, branches, commits)
 - **Changelogs** — per-version changelog with optional publish date
 - **Public & private projects** — control visibility per project
 - **IP restriction** — restrict admin access to specific IP addresses
@@ -90,7 +89,6 @@ pocketdocs/
 │   └── modules/              # Feature modules (controller / service / validation)
 │       ├── auth/             # Login & logout
 │       ├── changelogs/       # Version changelogs
-│       ├── github/           # GitHub repo import
 │       ├── pages/            # Documentation pages
 │       ├── projects/         # Project management
 │       ├── public/           # Public-facing routes & search API
