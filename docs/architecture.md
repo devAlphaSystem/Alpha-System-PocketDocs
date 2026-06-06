@@ -87,9 +87,8 @@ src/modules/{feature}/
 | `setup` | First-run owner account creation | Owner registration |
 | `projects` | CRUD for documentation projects and mode-specific flow | Project (name, slug, visibility, mode, owner) |
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
-| `pages` | CRUD, bulk Markdown import, and tree ordering for documentation pages | Page (title, slug, content, parent, order) |
+| `pages` | CRUD, bulk Markdown import, and tree ordering for Documents, FAQ, and Troubleshooting | Page (section, title, slug, content, parent, order) |
 | `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
-| `knowledge-base` | Frequently Asked Questions and Troubleshooting article management with bulk Markdown import | Knowledge Base page (section, title, slug, content, parent, order) |
 | `users` | User management (owner-only) | User (name, email, role) |
 | `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
@@ -114,7 +113,7 @@ erDiagram
         string slug UK
         string description
         string visibility "public | private"
-        string mode "versioned | documentation | knowledge_base"
+        string mode "versioned | non_versioned"
         file logo
         string owner FK
         datetime created
@@ -135,6 +134,7 @@ erDiagram
     pages {
         string id PK
         string version FK
+        string section "documents | faq | troubleshooting"
         string title
         string slug
         text content
@@ -153,37 +153,20 @@ erDiagram
         datetime updated
     }
 
-    knowledge_base_pages {
-        string id PK
-        string version FK
-        string section "faq | troubleshooting"
-        string title
-        string slug
-        text content
-        string parent FK "self-referencing"
-        string icon
-        int order
-        datetime created
-        datetime updated
-    }
-
     users ||--o{ projects : "owns"
     projects ||--o{ versions : "has"
     versions ||--o{ pages : "contains"
     versions ||--o| changelogs : "has"
-    versions ||--o{ knowledge_base_pages : "contains"
     pages ||--o{ pages : "parent-child"
-    knowledge_base_pages ||--o{ knowledge_base_pages : "parent-child"
 ```
 
 ### Key Constraints
 
 - **projects.slug** — unique across all projects
 - **(versions.project, versions.slug)** — unique per project
-- **(pages.version, pages.slug)** — unique per version
+- **(pages.version, pages.section, pages.slug)** — unique per version section
 - **changelogs.version** — one changelog per version
-- **(knowledge_base_pages.version, knowledge_base_pages.section, knowledge_base_pages.slug)** — unique per Knowledge Base section
-- **Cascade deletes** — deleting a project removes all its versions, pages, changelogs, and Knowledge Base pages
+- **Cascade deletes** — deleting a project removes all its versions, pages, and changelogs
 
 ## Authentication & Authorization
 

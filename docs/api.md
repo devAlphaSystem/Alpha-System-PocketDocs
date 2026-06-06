@@ -190,7 +190,7 @@ Creates a new project.
 | `slug` | string | Yes | 1–120 characters, slug pattern |
 | `description` | string | No | Max 500 characters |
 | `visibility` | string | No | `public` or `private` (default: `private`) |
-| `mode` | string | No | `versioned`, `documentation`, or `knowledge_base` (default: `versioned`) |
+| `mode` | string | No | `versioned` or `non_versioned` (default: `versioned`) |
 | `_csrf` | string | Yes | CSRF token |
 
 **Success:** Redirects to `/admin/projects/:projectId`
@@ -201,7 +201,7 @@ Creates a new project.
 
 Shows project details and its versions.
 
-For Documentation-only projects, this route redirects to the pages list of the internal default version. For Knowledge Base-only projects, it redirects to the Knowledge Base list of the internal default version.
+For Non-Versioned projects, this route redirects to the pages list of the internal default version with Documents/FAQ/Troubleshooting tabs.
 
 **Auth:** Required  
 **Roles:** Owner, Admin, Editor (with project access)
@@ -215,7 +215,7 @@ Renders the project edit form.
 
 ### `GET /admin/projects/:projectId/export`
 
-Streams project content as a ZIP archive. Each version becomes a folder named by its slug. Versioned projects include documentation pages (`{slug}.md`), `_CHANGELOG.md`, and Knowledge Base files under `knowledge-base/{section}/{slug}.md`; Documentation-only projects include documentation pages; Knowledge Base-only projects include Knowledge Base files.
+Streams project content as a ZIP archive. Each version becomes a folder named by its slug. Documents export as `{slug}.md`, FAQ/Troubleshooting files export under `knowledge-base/{section}/{slug}.md`, and versioned projects include `_CHANGELOG.md`.
 
 **Auth:** Required  
 **Roles:** Admin, Owner
@@ -246,7 +246,7 @@ Note: `mode` is immutable after creation and is not accepted in update payloads.
 
 ### `POST /admin/projects/:projectId/delete`
 
-Deletes a project and all its versions, pages, changelogs, and Knowledge Base pages.
+Deletes a project and all its versions, content pages, and changelogs.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -318,7 +318,7 @@ Updates a version.
 
 ### `POST /admin/projects/:projectId/versions/:versionId/delete`
 
-Deletes a version and all its pages, changelog, and Knowledge Base pages.
+Deletes a version and all its content pages and changelog.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -509,116 +509,26 @@ Returns rendered Markdown as HTML.
 
 ---
 
-## Knowledge Base
+## Content Sections
 
-Routes under `/admin/projects/:projectId/versions/:versionId/knowledge-base`.
+Routes under `/admin/projects/:projectId/versions/:versionId/pages` manage all fixed content sections: Documents (`documents`), Frequently Asked Questions (`faq`), and Troubleshooting (`troubleshooting`). The selected section is passed with the `section` query/body value and defaults to `documents`.
 
-Knowledge Base content is split into fixed Frequently Asked Questions (`faq`) and Troubleshooting (`troubleshooting`) sections. Versioned projects support Knowledge Base per version. Knowledge Base-only projects use one internal default version.
+### Section-aware page routes
 
-### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base`
+The existing page routes support all sections:
 
-Lists Knowledge Base articles for one section.
+| Route | Purpose |
+|-------|---------|
+| `GET /admin/projects/:projectId/versions/:versionId/pages?section=faq` | Lists one section |
+| `GET /admin/projects/:projectId/versions/:versionId/pages/new?section=faq` | Renders the editor for that section |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/new?section=faq` | Creates a page/article in that section |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/import?section=faq` | Imports Markdown into that section |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/reorder?section=faq` | Reorders pages/articles in that section |
+| `GET /admin/projects/:projectId/versions/:versionId/pages/:pageId` | Edits an existing page/article |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/:pageId` | Updates an existing page/article |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/:pageId/delete` | Deletes an existing page/article |
 
-**Auth:** Required  
-**Roles:** All (with project access)
-
-**Query:**
-
-| Param | Type | Default | Constraints |
-|-------|------|---------|-------------|
-| `section` | string | `faq` | `faq` or `troubleshooting` |
-| `page` | integer | 1 | ≥ 1 |
-| `search` | string | — | Optional title/slug search |
-
-### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/new`
-
-Renders the Knowledge Base article editor.
-
-**Auth:** Required  
-**Roles:** Admin, Owner
-
-### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/new`
-
-Creates a Knowledge Base article.
-
-**Auth:** Required  
-**Roles:** Admin, Owner  
-**CSRF:** Yes
-
-**Body:**
-
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `title` | string | Yes | 1–200 characters |
-| `slug` | string | Yes | 1–120 characters, slug pattern, unique per version + section |
-| `content` | string | No | Markdown, max 500,000 characters |
-| `parent` | string | No | Article ID in the same version + section |
-| `icon` | string | No | Max 50 characters |
-| `_csrf` | string | Yes | CSRF token |
-
-### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/import`
-
-Bulk-imports Markdown files as Knowledge Base articles in the selected section. Relative folder paths are preserved by creating or reusing folder articles as parents before importing child articles. The server infers each article title from the first Markdown H1, falling back to the filename, and infers each slug from the filename or folder name.
-
-**Auth:** Required  
-**Roles:** Admin, Owner  
-**CSRF:** Yes  
-**Content-Type:** `application/json`
-
-**Body:**
-
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| `files` | array | Yes | At least 1 item; limited by total content size |
-| `files[].filename` | string | Yes | Max 500 characters, optional relative folders, `.md` or `.markdown` |
-| `files[].content` | string | Yes | Max 500,000 characters per file; max 1,500,000 characters total |
-
-**Success (201):**
-```json
-{
-  "ok": true,
-  "importedCount": 2,
-  "pages": [
-    { "id": "kb123def456789", "title": "Reset Password", "slug": "reset-password", "section": "faq" },
-    { "id": "kb456abc123789", "title": "Billing FAQ", "slug": "billing-faq", "section": "faq" }
-  ],
-  "redirectUrl": "/admin/projects/proj123/versions/ver123/knowledge-base?section=faq&success=2%20articles%20imported."
-}
-```
-
-**Errors:** 409 when an inferred article slug already exists in the selected section or a folder slug exists under another parent; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
-
-### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId`
-
-Renders an existing Knowledge Base article editor.
-
-**Auth:** Required  
-**Roles:** All (with project access)
-
-### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId`
-
-Updates a Knowledge Base article.
-
-**Auth:** Required  
-**Roles:** Owner, Admin, Editor  
-**CSRF:** Yes
-
-### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/reorder`
-
-Updates Knowledge Base article order and parent assignments.
-
-**Auth:** Required  
-**Roles:** Owner, Admin, Editor  
-**CSRF:** Yes  
-**Success:** JSON `{ "ok": true }`
-
-### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId/delete`
-
-Deletes a Knowledge Base article and re-parents its children to the deleted article's parent.
-
-**Auth:** Required  
-**Roles:** Admin, Owner  
-**CSRF:** Yes
+`slug` values are unique per version + section. Parent pages must belong to the same version + section.
 
 ---
 
@@ -752,15 +662,14 @@ Home page showing all public projects.
 
 Project landing page.
 
-- Versioned project: redirects to the first public version's first page.
-- Documentation-only project: redirects to the first page using the Documentation-only URL format.
-- Knowledge Base-only project: redirects to `/docs/:projectSlug/_kb/faq`.
+- Versioned project: redirects to the first public version's first document, then FAQ/Troubleshooting if no documents exist.
+- Non-Versioned project: redirects to the first document using `/docs/:projectSlug/:pageSlug`, then FAQ/Troubleshooting if no documents exist.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/:segment`
 
-Documentation-only page route. Renders a documentation page directly without version slug.
+Non-Versioned document route. Renders a document directly without version slug.
 
 If the project is versioned, routing falls through to versioned routes.
 
@@ -768,7 +677,7 @@ If the project is versioned, routing falls through to versioned routes.
 
 ### `GET /docs/:projectSlug/:versionSlug`
 
-Version page. Redirects to the first page of the version, or to the changelog if no pages exist.
+Version page. Redirects to the first document of the version, then FAQ/Troubleshooting if no documents exist, or to the changelog if no content exists.
 
 **Auth:** None
 
@@ -791,31 +700,31 @@ Renders the version's changelog (if published).
 
 ### `GET /docs/:projectSlug/_kb`
 
-Redirects Knowledge Base-only projects to `/docs/:projectSlug/_kb/faq`.
+Redirects Non-Versioned projects to the first article section with content, falling back to `/docs/:projectSlug/_kb/faq`.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/_kb/:section`
 
-Knowledge Base-only section page. `section` must be `faq` or `troubleshooting`.
+Non-Versioned FAQ/Troubleshooting section page. `section` must be `faq` or `troubleshooting`.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/_kb/:section/:pageSlug`
 
-Knowledge Base-only article page with rendered Markdown and table of contents.
+Non-Versioned FAQ/Troubleshooting article page with rendered Markdown and table of contents.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/:versionSlug/_kb`
 
-Redirects versioned projects to `/docs/:projectSlug/:versionSlug/_kb/faq`.
+Redirects versioned projects to the first article section with content, falling back to `/docs/:projectSlug/:versionSlug/_kb/faq`.
 
 **Auth:** None
 
 ### `GET /docs/:projectSlug/:versionSlug/_kb/:section`
 
-Versioned Knowledge Base section page. `section` must be `faq` or `troubleshooting`.
+Versioned article section page. `section` must be `faq` or `troubleshooting`.
 
 **Auth:** None
 
@@ -827,7 +736,7 @@ Versioned Knowledge Base article page with rendered Markdown and table of conten
 
 ### `GET /api/search`
 
-Full-text search across public documentation pages and Knowledge Base articles supported by the project type.
+Full-text search across public Documents, FAQ, and Troubleshooting pages.
 
 **Auth:** None
 
@@ -855,7 +764,7 @@ Full-text search across public documentation pages and Knowledge Base articles s
     },
     {
       "id": "kb123def456789",
-      "type": "knowledge_base",
+      "type": "article",
       "title": "Reset password",
       "slug": "reset-password",
       "section": "faq",

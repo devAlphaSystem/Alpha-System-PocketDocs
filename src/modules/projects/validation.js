@@ -7,7 +7,7 @@ export const createProjectSchema = z.object({
   slug: z.string().trim().min(1, "Slug is required.").max(MAX_SLUG_LENGTH).regex(SLUG_PATTERN, "Slug must contain only lowercase letters, numbers, and hyphens."),
   description: z.string().trim().max(MAX_DESCRIPTION_LENGTH).optional().default(""),
   visibility: z.enum(["public", "private"]).default("private"),
-  mode: z.enum([PROJECT_MODE.VERSIONED, PROJECT_MODE.DOCUMENTATION, PROJECT_MODE.KNOWLEDGE_BASE]).default(PROJECT_MODE.VERSIONED),
+  mode: z.enum([PROJECT_MODE.VERSIONED, PROJECT_MODE.NON_VERSIONED]).default(PROJECT_MODE.VERSIONED),
 });
 
 /** @type {import("zod").ZodObject} Validates partial project update data (mode is excluded from updates). */

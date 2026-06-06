@@ -1,16 +1,14 @@
 /**
  * @module pages/controller
- * @description Express routes for CRUD operations on documentation pages
- * within a project version.
+ * @description Express routes for CRUD operations on version content sections.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages } from "./service.js";
+import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
 import { createPageSchema, updatePageSchema, reorderPagesSchema, importMarkdownPagesSchema } from "./validation.js";
-import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
-import { ROLES, PROJECT_MODE, MARKDOWN_IMPORT } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE, PAGE_SECTIONS, MARKDOWN_IMPORT } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
@@ -20,17 +18,51 @@ const EDITOR_EXTRA_JS = ["https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easym
 
 router.use(requireAuth);
 
-function supportsDocs(project) {
-  const mode = project?.mode || PROJECT_MODE.VERSIONED;
-  return mode === PROJECT_MODE.VERSIONED || mode === PROJECT_MODE.DOCUMENTATION;
-}
-
-function isDocsOnly(project) {
-  return (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.DOCUMENTATION;
+function isNonVersioned(project) {
+  return (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.NON_VERSIONED;
 }
 
 function userCanImport(user) {
   return user?.role === ROLES.OWNER || user?.role === ROLES.ADMIN;
+}
+
+function selectedSection(req) {
+  const section = req.query.section || req.body?.section || PAGE_SECTIONS.DOCUMENTS;
+  return isPageSection(section) ? section : PAGE_SECTIONS.DOCUMENTS;
+}
+
+async function getAdminContext(req) {
+  const version = await getVersion(req.params.versionId);
+  const project = version.expand?.project;
+  if (!project) {
+    throw new NotFoundError("Project");
+  }
+  return {
+    project,
+    version,
+    nonVersionedMode: isNonVersioned(project),
+  };
+}
+
+function pageAdminUrl(projectId, versionId, section, extraParams = {}) {
+  const params = new URLSearchParams({ section });
+  for (const [key, value] of Object.entries(extraParams)) {
+    if (value !== undefined && value !== null && value !== "") {
+      params.set(key, value);
+    }
+  }
+  return `/admin/projects/${projectId}/versions/${versionId}/pages?${params.toString()}`;
+}
+
+function pageEditorUrl(projectId, versionId, pageId) {
+  return `/admin/projects/${projectId}/versions/${versionId}/pages/${pageId}`;
+}
+
+function publicSectionUrl(project, version, section) {
+  if (section === PAGE_SECTIONS.DOCUMENTS) {
+    return isNonVersioned(project) ? `/docs/${project.slug}` : `/docs/${project.slug}/${version.slug}`;
+  }
+  return isNonVersioned(project) ? `/docs/${project.slug}/_kb/${section}` : `/docs/${project.slug}/${version.slug}/_kb/${section}`;
 }
 
 function assertPageBelongsToVersion(page, versionId) {
@@ -47,32 +79,64 @@ function validationDetails(error) {
   }));
 }
 
+function renderEditor(res, req, context, values) {
+  const { project, version, nonVersionedMode } = context;
+  const section = values.section;
+  const sectionOption = getPageSectionOption(section);
+  return res.status(values.statusCode || 200).render("admin/pages/editor", {
+    title: values.title,
+    project,
+    version,
+    nonVersionedMode,
+    section,
+    sectionLabel: getPageSectionLabel(section),
+    sectionIcon: getPageSectionIcon(section),
+    sectionOption,
+    page: values.page || null,
+    pages: values.pages || [],
+    user: req.user,
+    csrfToken: res.locals.csrfToken,
+    error: values.error || null,
+    success: req.query.success || null,
+    formValues: values.formValues || null,
+    siteName: env.SITE_NAME,
+    extraCss: EDITOR_EXTRA_CSS,
+    extraJs: EDITOR_EXTRA_JS,
+  });
+}
+
 router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
+    const section = selectedSection(req);
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const search = (req.query.search || "").trim();
-    const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPagesPaginated(req.params.versionId, page, search)]);
-    const project = version.expand?.project;
-    if (!supportsDocs(project)) {
-      throw new NotFoundError("Pages");
-    }
-    const docsOnlyMode = isDocsOnly(project);
+    const { project, version, nonVersionedMode } = await getAdminContext(req);
+    const pagesResult = await listPagesPaginated(version.id, section, page, search);
 
-    const pageTree = search ? [] : buildPageTree(pagesResult.items || []);
-    const totalPages = pagesResult.totalItems ?? (pagesResult.items || []).length;
+    const pages = pagesResult.items || [];
+    const pageTree = search ? [] : buildPageTree(pages);
+    const totalPages = pagesResult.totalItems ?? pages.length;
+    const sectionLabel = getPageSectionLabel(section);
+    const sectionOption = getPageSectionOption(section);
 
     res.render("admin/pages/index", {
-      title: docsOnlyMode ? `${project.name} - Pages` : `${project.name} - ${version.label} - Pages`,
-      headerSubtitle: `${totalPages} page${totalPages !== 1 ? "s" : ""}`,
+      title: nonVersionedMode ? `${project.name} - ${sectionLabel}` : `${project.name} - ${version.label} - ${sectionLabel}`,
+      headerSubtitle: `${sectionLabel} - ${totalPages} ${sectionOption.itemLabel}${totalPages !== 1 ? "s" : ""}`,
       headerSearch: {
         action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
-        placeholder: "Search pages...",
+        params: { section },
+        placeholder: `Search ${sectionLabel}...`,
         value: search,
       },
       project,
       version,
-      docsOnlyMode,
-      pages: pagesResult.items || [],
+      nonVersionedMode,
+      section,
+      sectionLabel,
+      sectionIcon: getPageSectionIcon(section),
+      sectionOption,
+      sectionOptions: PAGE_SECTION_OPTIONS,
+      pages,
       pageTree,
       pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
       search,
@@ -82,6 +146,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       success: req.query.success || null,
       siteName: env.SITE_NAME,
       markdownImport: MARKDOWN_IMPORT,
+      publicSectionUrl: publicSectionUrl(project, version, section),
       extraJs: userCanImport(req.user) ? "/js/markdown-import.js" : null,
     });
   } catch (err) {
@@ -91,27 +156,15 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
 
 router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
-    const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
-    const project = version.expand?.project;
-    if (!supportsDocs(project)) {
-      throw new NotFoundError("Pages");
-    }
-    const docsOnlyMode = isDocsOnly(project);
+    const section = selectedSection(req);
+    const context = await getAdminContext(req);
+    const pagesResult = await listPages(context.version.id, section);
 
-    res.render("admin/pages/editor", {
-      title: "New Page",
-      project,
-      version,
-      docsOnlyMode,
+    return renderEditor(res, req, context, {
+      title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
+      section,
       page: null,
       pages: pagesResult.items || [],
-      user: req.user,
-      csrfToken: res.locals.csrfToken,
-      error: null,
-      success: req.query.success || null,
-      siteName: env.SITE_NAME,
-      extraCss: EDITOR_EXTRA_CSS,
-      extraJs: EDITOR_EXTRA_JS,
     });
   } catch (err) {
     next(err);
@@ -120,60 +173,39 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req
 
 router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
-    const parsed = createPageSchema.safeParse(req.body);
+    const section = selectedSection(req);
+    const parsed = createPageSchema.safeParse({ ...req.body, section });
     if (!parsed.success) {
       const firstIssue = parsed.error.issues[0];
-      const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
-      const project = version.expand?.project;
-      if (!supportsDocs(project)) {
-        throw new NotFoundError("Pages");
-      }
-      const docsOnlyMode = isDocsOnly(project);
-      return res.status(422).render("admin/pages/editor", {
-        title: "New Page",
-        project,
-        version,
-        docsOnlyMode,
+      const context = await getAdminContext(req);
+      const pagesResult = await listPages(context.version.id, section);
+      return renderEditor(res, req, context, {
+        statusCode: 422,
+        title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
+        section,
         page: null,
         pages: pagesResult.items || [],
-        user: req.user,
-        csrfToken: res.locals.csrfToken,
         error: firstIssue.message,
         formValues: req.body,
-        siteName: env.SITE_NAME,
-        extraCss: EDITOR_EXTRA_CSS,
-        extraJs: EDITOR_EXTRA_JS,
       });
     }
 
-    const version = await getVersion(req.params.versionId);
-    if (!supportsDocs(version.expand?.project)) {
-      throw new NotFoundError("Pages");
-    }
+    await getAdminContext(req);
     const page = await createPage(req.params.versionId, parsed.data, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${page.id}?success=Page created.`);
+    res.redirect(`${pageEditorUrl(req.params.projectId, req.params.versionId, page.id)}?success=Page created.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
-      const [version, pagesResult] = await Promise.all([getVersion(req.params.versionId), listPages(req.params.versionId)]);
-      const project = version.expand?.project;
-      if (!supportsDocs(project)) {
-        throw new NotFoundError("Pages");
-      }
-      const docsOnlyMode = isDocsOnly(project);
-      return res.status(err.statusCode).render("admin/pages/editor", {
-        title: "New Page",
-        project,
-        version,
-        docsOnlyMode,
+      const section = selectedSection(req);
+      const context = await getAdminContext(req);
+      const pagesResult = await listPages(context.version.id, section);
+      return renderEditor(res, req, context, {
+        statusCode: err.statusCode,
+        title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
+        section,
         page: null,
         pages: pagesResult.items || [],
-        user: req.user,
-        csrfToken: res.locals.csrfToken,
         error: err.message,
         formValues: req.body,
-        siteName: env.SITE_NAME,
-        extraCss: EDITOR_EXTRA_CSS,
-        extraJs: EDITOR_EXTRA_JS,
       });
     }
     next(err);
@@ -182,28 +214,17 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
 
 router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
-    const [version, page, pagesResult] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId), listPages(req.params.versionId)]);
-    const project = version.expand?.project;
-    if (!supportsDocs(project)) {
-      throw new NotFoundError("Pages");
-    }
-    assertPageBelongsToVersion(page, version.id);
-    const docsOnlyMode = isDocsOnly(project);
+    const context = await getAdminContext(req);
+    const page = await getPage(req.params.pageId);
+    assertPageBelongsToVersion(page, context.version.id);
+    const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
+    const pagesResult = await listPages(context.version.id, section);
 
-    res.render("admin/pages/editor", {
+    return renderEditor(res, req, context, {
       title: `Edit - ${page.title}`,
-      project,
-      version,
-      docsOnlyMode,
+      section,
       page,
       pages: pagesResult.items || [],
-      user: req.user,
-      csrfToken: res.locals.csrfToken,
-      error: null,
-      success: req.query.success || null,
-      siteName: env.SITE_NAME,
-      extraCss: EDITOR_EXTRA_CSS,
-      extraJs: EDITOR_EXTRA_JS,
     });
   } catch (err) {
     next(err);
@@ -212,10 +233,11 @@ router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, 
 
 router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
   try {
+    const section = selectedSection(req);
     let pages;
     try {
       pages = typeof req.body.pages === "string" ? JSON.parse(req.body.pages) : req.body.pages;
-    } catch (_e) {
+    } catch (_err) {
       return res.status(400).json({ error: { code: "INVALID_FORMAT", message: "Invalid page order data." } });
     }
 
@@ -224,11 +246,8 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
       return res.status(422).json({ error: { code: "VALIDATION_FAILED", message: "Invalid reorder data." } });
     }
 
-    const version = await getVersion(req.params.versionId);
-    if (!supportsDocs(version.expand?.project)) {
-      throw new NotFoundError("Pages");
-    }
-    await reorderPages(req.params.versionId, parsed.data.pages, req.requestId);
+    await getAdminContext(req);
+    await reorderPages(req.params.versionId, section, parsed.data.pages, req.requestId);
     res.json({ ok: true });
   } catch (err) {
     next(err);
@@ -237,6 +256,7 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
 
 router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
+    const section = selectedSection(req);
     const parsed = importMarkdownPagesSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(422).json({
@@ -249,15 +269,11 @@ router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async 
       });
     }
 
-    const version = await getVersion(req.params.versionId);
-    const project = version.expand?.project;
-    if (!supportsDocs(project)) {
-      throw new NotFoundError("Pages");
-    }
-
-    const pages = await importMarkdownPages(req.params.versionId, parsed.data.files, req.requestId);
+    await getAdminContext(req);
+    const pages = await importMarkdownPages(req.params.versionId, section, parsed.data.files, req.requestId);
     const importedCount = pages.length;
-    const successMessage = `${importedCount} page${importedCount !== 1 ? "s" : ""} imported.`;
+    const sectionOption = getPageSectionOption(section);
+    const successMessage = `${importedCount} ${sectionOption.itemLabel}${importedCount !== 1 ? "s" : ""} imported.`;
     res.status(201).json({
       ok: true,
       importedCount,
@@ -265,37 +281,68 @@ router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async 
         id: page.id,
         title: page.title,
         slug: page.slug,
+        section: page.section,
       })),
-      redirectUrl: `/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=${encodeURIComponent(successMessage)}`,
+      redirectUrl: pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: successMessage }),
     });
   } catch (err) {
     next(err);
   }
 });
 
-router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), validate(updatePageSchema), async (req, res, next) => {
+router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
   try {
-    const [version, page] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId)]);
-    if (!supportsDocs(version.expand?.project)) {
-      throw new NotFoundError("Pages");
+    const parsed = updatePageSchema.safeParse(req.body);
+    const context = await getAdminContext(req);
+    const page = await getPage(req.params.pageId);
+    assertPageBelongsToVersion(page, context.version.id);
+    const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
+
+    if (!parsed.success) {
+      const firstIssue = parsed.error.issues[0];
+      const pagesResult = await listPages(context.version.id, section);
+      return renderEditor(res, req, context, {
+        statusCode: 422,
+        title: `Edit - ${page.title}`,
+        section,
+        page,
+        pages: pagesResult.items || [],
+        error: firstIssue.message,
+        formValues: req.body,
+      });
     }
-    assertPageBelongsToVersion(page, version.id);
-    await updatePage(req.params.pageId, req.validatedBody, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages/${req.params.pageId}?success=Page saved.`);
+
+    await updatePage(req.params.pageId, parsed.data, req.requestId);
+    res.redirect(`${pageEditorUrl(req.params.projectId, req.params.versionId, req.params.pageId)}?success=Page saved.`);
   } catch (err) {
+    if (err.statusCode === 409 || err.statusCode === 422) {
+      const context = await getAdminContext(req);
+      const page = await getPage(req.params.pageId);
+      assertPageBelongsToVersion(page, context.version.id);
+      const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
+      const pagesResult = await listPages(context.version.id, section);
+      return renderEditor(res, req, context, {
+        statusCode: err.statusCode,
+        title: `Edit - ${page.title}`,
+        section,
+        page,
+        pages: pagesResult.items || [],
+        error: err.message,
+        formValues: req.body,
+      });
+    }
     next(err);
   }
 });
 
 router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
-    const [version, page] = await Promise.all([getVersion(req.params.versionId), getPage(req.params.pageId)]);
-    if (!supportsDocs(version.expand?.project)) {
-      throw new NotFoundError("Pages");
-    }
-    assertPageBelongsToVersion(page, version.id);
+    const context = await getAdminContext(req);
+    const page = await getPage(req.params.pageId);
+    assertPageBelongsToVersion(page, context.version.id);
+    const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
     await deletePage(req.params.pageId, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=Page deleted.`);
+    res.redirect(pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: "Page deleted." }));
   } catch (err) {
     next(err);
   }

@@ -5,7 +5,7 @@
     versions,
     pageTree,
     page,
-    docsOnlyMode: typeof docsOnlyMode !== 'undefined' ? docsOnlyMode : false,
+    nonVersionedMode: typeof nonVersionedMode !== 'undefined' ? nonVersionedMode : false,
     supportsKnowledgeBase: typeof supportsKnowledgeBase !== 'undefined' ? supportsKnowledgeBase : false,
     kbBaseUrl: typeof kbBaseUrl !== 'undefined' ? kbBaseUrl : '',
     knowledgeBaseSectionCounts: typeof knowledgeBaseSectionCounts !== 'undefined' ? knowledgeBaseSectionCounts : {}
@@ -20,11 +20,11 @@
       <div class="docs-content prose">
         <%- contentHtml %>
       </div>
-      <% const _docsOnly = typeof docsOnlyMode !== 'undefined' && docsOnlyMode; %>
+      <% const _nonVersionedMode = typeof nonVersionedMode !== 'undefined' && nonVersionedMode; %>
       <% if (typeof prevPage !== 'undefined' || typeof nextPage !== 'undefined') { %>
       <nav class="docs-pagination">
         <% if (typeof prevPage !== 'undefined' && prevPage) { %>
-        <a href="<% if (_docsOnly) { %>/docs/<%= project.slug %>/<%= prevPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %><% } %>" class="docs-pagination-link prev">
+        <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= prevPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= prevPage.slug %><% } %>" class="docs-pagination-link prev">
           <i class="ph ph-arrow-left"></i>
           <div>
             <span class="docs-pagination-label">Previous</span>
@@ -33,7 +33,7 @@
         </a>
         <% } else { %><div></div><% } %>
         <% if (typeof nextPage !== 'undefined' && nextPage) { %>
-        <a href="<% if (_docsOnly) { %>/docs/<%= project.slug %>/<%= nextPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %><% } %>" class="docs-pagination-link next">
+        <a href="<% if (_nonVersionedMode) { %>/docs/<%= project.slug %>/<%= nextPage.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= nextPage.slug %><% } %>" class="docs-pagination-link next">
           <div>
             <span class="docs-pagination-label">Next</span>
             <span class="docs-pagination-title"><%= nextPage.title %></span>

@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "source": "pb_schema.json",
-  "generatedAt": "2026-06-06T15:29:10.095Z",
+  "generatedAt": "2026-06-06T19:11:38.000Z",
   "collections": [
     {
       "name": "users",
@@ -119,8 +119,7 @@
           "maxSelect": 1,
           "values": [
             "versioned",
-            "documentation",
-            "knowledge_base"
+            "non_versioned"
           ]
         },
         {
@@ -268,7 +267,7 @@
       ]
     },
     {
-      "name": "knowledge_base_pages",
+      "name": "pages",
       "type": "base",
       "listRule": "",
       "viewRule": "",
@@ -276,9 +275,9 @@
       "updateRule": "@request.auth.id != ''",
       "deleteRule": "@request.auth.id != ''",
       "indexes": [
-        "CREATE UNIQUE INDEX `idx_kb_version_section_slug` ON `knowledge_base_pages` (`version`, `section`, `slug`)",
-        "CREATE INDEX `idx_kb_version_section_order` ON `knowledge_base_pages` (`version`, `section`, `order`)",
-        "CREATE INDEX `idx_kb_parent` ON `knowledge_base_pages` (`parent`)"
+        "CREATE UNIQUE INDEX `idx_page_version_section_slug` ON `pages` (`version`, `section`, `slug`)",
+        "CREATE INDEX `idx_page_version_section_order` ON `pages` (`version`, `section`, `order`)",
+        "CREATE INDEX `idx_page_parent` ON `pages` (`parent`)"
       ],
       "fields": [
         {
@@ -296,99 +295,10 @@
           "required": true,
           "maxSelect": 1,
           "values": [
+            "documents",
             "faq",
             "troubleshooting"
           ]
-        },
-        {
-          "name": "title",
-          "type": "text",
-          "required": true,
-          "min": 1,
-          "max": 200,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "slug",
-          "type": "text",
-          "required": true,
-          "min": 1,
-          "max": 120,
-          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "content",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 50000000,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "parent",
-          "type": "relation",
-          "required": false,
-          "maxSelect": 1,
-          "minSelect": 0,
-          "cascadeDelete": false,
-          "relationTo": "knowledge_base_pages"
-        },
-        {
-          "name": "icon",
-          "type": "text",
-          "required": false,
-          "min": 0,
-          "max": 50,
-          "pattern": "",
-          "autogeneratePattern": ""
-        },
-        {
-          "name": "order",
-          "type": "number",
-          "required": false,
-          "min": 0,
-          "max": null,
-          "onlyInt": true
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "onCreate": true,
-          "onUpdate": false
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "onCreate": true,
-          "onUpdate": true
-        }
-      ]
-    },
-    {
-      "name": "pages",
-      "type": "base",
-      "listRule": "",
-      "viewRule": "",
-      "createRule": "@request.auth.id != ''",
-      "updateRule": "@request.auth.id != ''",
-      "deleteRule": "@request.auth.id != ''",
-      "indexes": [
-        "CREATE UNIQUE INDEX `idx_page_version_slug` ON `pages` (`version`, `slug`)",
-        "CREATE INDEX `idx_page_version_order` ON `pages` (`version`, `order`)",
-        "CREATE INDEX `idx_page_parent` ON `pages` (`parent`)"
-      ],
-      "fields": [
-        {
-          "name": "version",
-          "type": "relation",
-          "required": true,
-          "maxSelect": 1,
-          "minSelect": 0,
-          "cascadeDelete": true,
-          "relationTo": "versions"
         },
         {
           "name": "title",

@@ -48,10 +48,9 @@
       <label for="mode">Project type</label>
       <select id="mode" name="mode">
         <option value="versioned"<%= typeof values === 'undefined' || !values.mode || values.mode === 'versioned' ? ' selected' : '' %>>Versioned (with version history)</option>
-        <option value="documentation"<%= typeof values !== 'undefined' && values.mode === 'documentation' ? ' selected' : '' %>>Documentation only</option>
-        <option value="knowledge_base"<%= typeof values !== 'undefined' && values.mode === 'knowledge_base' ? ' selected' : '' %>>Knowledge Base only</option>
+        <option value="non_versioned"<%= typeof values !== 'undefined' && values.mode === 'non_versioned' ? ' selected' : '' %>>Non-Versioned</option>
       </select>
-      <p class="form-hint">Versioned projects support documentation, changelogs, and Knowledge Base. Single-purpose projects use one internal default version.</p>
+      <p class="form-hint">Versioned projects support release history and changelogs. Non-Versioned projects use one internal default version.</p>
     </div>
   </form>
 </div>

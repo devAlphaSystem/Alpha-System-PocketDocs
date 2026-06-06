@@ -26,28 +26,40 @@ export const VISIBILITY = Object.freeze({
  */
 export const PROJECT_MODE = Object.freeze({
   VERSIONED: "versioned",
-  DOCUMENTATION: "documentation",
-  KNOWLEDGE_BASE: "knowledge_base",
+  NON_VERSIONED: "non_versioned",
 });
 
 /**
- * Defines the fixed Knowledge Base sections.
+ * Defines the fixed content sections stored in the pages collection.
  *
  * @enum {string}
  */
-export const KNOWLEDGE_BASE_SECTIONS = Object.freeze({
+export const PAGE_SECTIONS = Object.freeze({
+  DOCUMENTS: "documents",
   FAQ: "faq",
   TROUBLESHOOTING: "troubleshooting",
 });
 
 /**
- * Maps Knowledge Base section values to their public labels.
+ * Maps page section values to their public labels.
  *
  * @enum {string}
  */
-export const KNOWLEDGE_BASE_SECTION_LABELS = Object.freeze({
-  [KNOWLEDGE_BASE_SECTIONS.FAQ]: "Frequently Asked Questions",
-  [KNOWLEDGE_BASE_SECTIONS.TROUBLESHOOTING]: "Troubleshooting",
+export const PAGE_SECTION_LABELS = Object.freeze({
+  [PAGE_SECTIONS.DOCUMENTS]: "Documents",
+  [PAGE_SECTIONS.FAQ]: "Frequently Asked Questions",
+  [PAGE_SECTIONS.TROUBLESHOOTING]: "Troubleshooting",
+});
+
+/**
+ * Maps page section values to their default Phosphor icon names.
+ *
+ * @enum {string}
+ */
+export const PAGE_SECTION_ICONS = Object.freeze({
+  [PAGE_SECTIONS.DOCUMENTS]: "file-text",
+  [PAGE_SECTIONS.FAQ]: "question",
+  [PAGE_SECTIONS.TROUBLESHOOTING]: "wrench",
 });
 
 /**
@@ -61,7 +73,6 @@ export const COLLECTIONS = Object.freeze({
   VERSIONS: "versions",
   PAGES: "pages",
   CHANGELOGS: "changelogs",
-  KNOWLEDGE_BASE_PAGES: "knowledge_base_pages",
 });
 
 /**

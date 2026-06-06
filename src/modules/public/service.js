@@ -1,5 +1,5 @@
 import { pbList, pbGetFirstByFilter, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS, VISIBILITY } from "../../config/constants.js";
+import { COLLECTIONS, VISIBILITY, PAGE_SECTIONS } from "../../config/constants.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
 /**
@@ -16,14 +16,14 @@ export async function getSingleProjectVersion(projectId, isAdmin = false) {
 }
 
 /**
- * Retrieves a single public documentation page directly by page slug for Documentation-only projects.
+ * Retrieves a single public document directly by page slug for Non-Versioned projects.
  *
  * @param {string} pageSlug - The page slug.
  * @param {string} versionId - The internal default version ID.
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
 export async function getSingleProjectPage(pageSlug, versionId) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(pageSlug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -98,7 +98,7 @@ export async function getPublicVersionByProjectSlug(projectSlug, versionSlug, is
  */
 export async function getPublicPages(versionId) {
   return pbList(COLLECTIONS.PAGES, {
-    filter: `version = "${pbFilterValue(versionId)}"`,
+    filter: `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}"`,
     sort: "order,title",
     perPage: 500,
   });
@@ -112,7 +112,7 @@ export async function getPublicPages(versionId) {
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
 export async function getPublicPage(versionId, pageSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(pageSlug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -126,19 +126,19 @@ export async function getPublicChangelog(versionId) {
 }
 
 /**
- * Retrieves public Knowledge Base pages for a version, optionally scoped to one section.
+ * Retrieves public pages for a version, optionally scoped to one section.
  *
  * @param {string} versionId - The version record ID.
- * @param {string} [section=""] - Optional Knowledge Base section.
- * @returns {Promise<Object>} Paginated result containing Knowledge Base page items.
+ * @param {string} [section=""] - Optional content section.
+ * @returns {Promise<Object>} Paginated result containing content page items.
  */
-export async function getPublicKnowledgeBasePages(versionId, section = "") {
+export async function getPublicSectionPages(versionId, section = "") {
   let filter = `version = "${pbFilterValue(versionId)}"`;
   if (section) {
     filter += ` && section = "${pbFilterValue(section)}"`;
   }
 
-  return pbList(COLLECTIONS.KNOWLEDGE_BASE_PAGES, {
+  return pbList(COLLECTIONS.PAGES, {
     filter,
     sort: "section,order,title",
     perPage: 500,
@@ -146,15 +146,15 @@ export async function getPublicKnowledgeBasePages(versionId, section = "") {
 }
 
 /**
- * Retrieves a single public Knowledge Base page by version, section, and slug.
+ * Retrieves a single public page by version, section, and slug.
  *
  * @param {string} versionId - The version record ID.
- * @param {string} section - Knowledge Base section.
- * @param {string} pageSlug - Knowledge Base page slug.
+ * @param {string} section - Content section.
+ * @param {string} pageSlug - Content page slug.
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
-export async function getPublicKnowledgeBasePage(versionId, section, pageSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.KNOWLEDGE_BASE_PAGES, `version = "${pbFilterValue(versionId)}" && section = "${pbFilterValue(section)}" && slug = "${pbFilterValue(pageSlug)}"`);
+export async function getPublicSectionPage(versionId, section, pageSlug) {
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${pbFilterValue(section)}" && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -176,13 +176,13 @@ export async function searchPages(projectId, query, versionId = null, isAdmin = 
   if (versionId) {
     filter += ` && version = "${pbFilterValue(versionId)}"`;
   }
-  filter += ` && (title ~ "${pbFilterValue(safeQuery)}" || content ~ "${pbFilterValue(safeQuery)}")`;
+  filter += ` && (title ~ "${pbFilterValue(safeQuery)}" || slug ~ "${pbFilterValue(safeQuery)}" || content ~ "${pbFilterValue(safeQuery)}")`;
 
   const result = await pbList(COLLECTIONS.PAGES, {
     filter,
     perPage: 20,
     expand: "version",
-    fields: "id,title,slug,version,expand.version.label,expand.version.slug",
+    fields: "id,title,slug,section,version,expand.version.label,expand.version.slug",
   });
 
   return result.items || [];

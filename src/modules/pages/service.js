@@ -1,8 +1,49 @@
 import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
+import { COLLECTIONS, PAGINATION, PAGE_SECTIONS, PAGE_SECTION_LABELS, PAGE_SECTION_ICONS } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 import { buildMarkdownImportHierarchy, formatMarkdownImportPbErrors, formatMarkdownImportSlugList, isPocketBaseUniqueSlugError, normalizeMarkdownImportFiles } from "./import-utils.js";
+
+export const PAGE_SECTION_OPTIONS = Object.freeze([
+  { value: PAGE_SECTIONS.DOCUMENTS, label: PAGE_SECTION_LABELS[PAGE_SECTIONS.DOCUMENTS], icon: PAGE_SECTION_ICONS[PAGE_SECTIONS.DOCUMENTS], itemLabel: "page", itemLabelPlural: "pages" },
+  { value: PAGE_SECTIONS.FAQ, label: PAGE_SECTION_LABELS[PAGE_SECTIONS.FAQ], icon: PAGE_SECTION_ICONS[PAGE_SECTIONS.FAQ], itemLabel: "article", itemLabelPlural: "articles" },
+  { value: PAGE_SECTIONS.TROUBLESHOOTING, label: PAGE_SECTION_LABELS[PAGE_SECTIONS.TROUBLESHOOTING], icon: PAGE_SECTION_ICONS[PAGE_SECTIONS.TROUBLESHOOTING], itemLabel: "article", itemLabelPlural: "articles" },
+]);
+
+export function isPageSection(section) {
+  return Object.values(PAGE_SECTIONS).includes(section);
+}
+
+export function isKnowledgeBaseSection(section) {
+  return section === PAGE_SECTIONS.FAQ || section === PAGE_SECTIONS.TROUBLESHOOTING;
+}
+
+export function assertPageSection(section) {
+  if (!isPageSection(section)) {
+    throw new NotFoundError("Page section");
+  }
+  return section;
+}
+
+export function getPageSectionLabel(section) {
+  return PAGE_SECTION_LABELS[section] || "Pages";
+}
+
+export function getPageSectionIcon(section) {
+  return PAGE_SECTION_ICONS[section] || PAGE_SECTION_ICONS[PAGE_SECTIONS.DOCUMENTS];
+}
+
+export function getPageSectionOption(section) {
+  return PAGE_SECTION_OPTIONS.find((option) => option.value === section) || PAGE_SECTION_OPTIONS[0];
+}
+
+function pageFilter(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
+  let filter = `version = "${pbFilterValue(versionId)}"`;
+  if (section) {
+    filter += ` && section = "${pbFilterValue(assertPageSection(section))}"`;
+  }
+  return filter;
+}
 
 async function rollbackImportedPages(createdPages, requestId) {
   const failures = [];
@@ -24,30 +65,24 @@ async function rollbackImportedPages(createdPages, requestId) {
   }
 }
 
-/**
- * Retrieves all pages belonging to a version, sorted by order and title.
- *
- * @param {string} versionId - The version ID to list pages for.
- * @returns {Promise<Object>} Paginated result containing page items.
- */
-export async function listPages(versionId) {
+export async function listPages(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
   return pbList(COLLECTIONS.PAGES, {
-    filter: `version = "${pbFilterValue(versionId)}"`,
+    filter: pageFilter(versionId, section),
     sort: "order,title",
     perPage: 500,
   });
 }
 
-/**
- * Retrieves a paginated list of pages for a version with optional search.
- *
- * @param {string} versionId - The version record ID.
- * @param {number} [page=1] - The 1-based page number.
- * @param {string} [search=""] - Optional search term to filter by title or slug.
- * @returns {Promise<Object>} Paginated result containing page items.
- */
-export async function listPagesPaginated(versionId, page = PAGINATION.DEFAULT_PAGE, search = "") {
-  let filter = `version = "${pbFilterValue(versionId)}"`;
+export async function listAllPages(versionId) {
+  return pbList(COLLECTIONS.PAGES, {
+    filter: `version = "${pbFilterValue(versionId)}"`,
+    sort: "section,order,title",
+    perPage: 1000,
+  });
+}
+
+export async function listPagesPaginated(versionId, section = PAGE_SECTIONS.DOCUMENTS, page = PAGINATION.DEFAULT_PAGE, search = "") {
+  let filter = pageFilter(versionId, section);
   if (search) {
     filter += ` && (title ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}")`;
   }
@@ -59,13 +94,6 @@ export async function listPagesPaginated(versionId, page = PAGINATION.DEFAULT_PA
   });
 }
 
-/**
- * Transforms a flat array of pages into a nested tree structure based on
- * parent-child relationships.
- *
- * @param {Array<Object>} pages - Flat array of page records.
- * @returns {Array<Object>} Array of root page nodes, each with a `children` array.
- */
 export function buildPageTree(pages) {
   const map = new Map();
   const roots = [];
@@ -86,13 +114,6 @@ export function buildPageTree(pages) {
   return roots;
 }
 
-/**
- * Retrieves a single page by its ID with the version relation expanded.
- *
- * @param {string} pageId - The page record ID.
- * @returns {Promise<Object>} The page record with expanded version.
- * @throws {NotFoundError} If the page does not exist.
- */
 export async function getPage(pageId) {
   const page = await pbGetOne(COLLECTIONS.PAGES, pageId, { expand: "version" });
   if (!page) {
@@ -101,42 +122,51 @@ export async function getPage(pageId) {
   return page;
 }
 
-/**
- * Retrieves a single page by its slug within a version.
- *
- * @param {string} versionId - The version ID to search within.
- * @param {string} slug - The page slug.
- * @returns {Promise<Object|null>} The matching page record, or `null` if not found.
- */
-export async function getPageBySlug(versionId, slug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && slug = "${pbFilterValue(slug)}"`);
+export async function getPageBySlug(versionId, section, slug) {
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `${pageFilter(versionId, section)} && slug = "${pbFilterValue(slug)}"`);
 }
 
-/**
- * Creates a new page in the specified version after validating slug uniqueness.
- *
- * @param {string} versionId - The version ID to create the page in.
- * @param {Object} data - Page creation data.
- * @param {string} data.title - The page title.
- * @param {string} data.slug - The URL slug.
- * @param {string} [data.content] - The Markdown content.
- * @param {string} [data.parent] - The parent page ID.
- * @param {string} [data.icon] - The page icon identifier.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<Object>} The created page record.
- * @throws {ConflictError} If a page with the same slug already exists.
- * @throws {ValidationError} If the creation fails.
- */
-export async function createPage(versionId, data, requestId) {
-  const [existing, allPages] = await Promise.all([getPageBySlug(versionId, data.slug), listPages(versionId)]);
-  if (existing) {
-    throw new ConflictError("A page with this slug already exists in this version.");
+function assertParentAllowedFromPages(pages, parentId, currentPageId = "") {
+  if (!parentId) return;
+
+  const pageMap = new Map((pages || []).map((page) => [page.id, page]));
+  const parent = pageMap.get(parentId);
+  if (!parent) {
+    throw new ValidationError("Parent page must belong to the same section.");
   }
 
-  const maxOrder = allPages.items?.reduce((max, p) => Math.max(max, p.order || 0), 0) || 0;
+  if (currentPageId && parentId === currentPageId) {
+    throw new ValidationError("A page cannot be its own parent.");
+  }
+
+  let cursor = parent;
+  const seen = new Set();
+  while (cursor?.parent) {
+    if (cursor.parent === currentPageId) {
+      throw new ValidationError("Parent page cannot be a child of this page.");
+    }
+    if (seen.has(cursor.parent)) {
+      throw new ValidationError("Page hierarchy contains a cycle.");
+    }
+    seen.add(cursor.parent);
+    cursor = pageMap.get(cursor.parent);
+  }
+}
+
+export async function createPage(versionId, data, requestId) {
+  const section = assertPageSection(data.section || PAGE_SECTIONS.DOCUMENTS);
+  const [existing, allPages] = await Promise.all([getPageBySlug(versionId, section, data.slug), listPages(versionId, section)]);
+  if (existing) {
+    throw new ConflictError("A page with this slug already exists in this section.");
+  }
+
+  const pages = allPages.items || [];
+  assertParentAllowedFromPages(pages, data.parent || "");
+  const maxOrder = pages.reduce((max, page) => Math.max(max, page.order || 0), 0);
 
   const result = await pbCreate(COLLECTIONS.PAGES, {
     version: versionId,
+    section,
     title: data.title,
     slug: data.slug,
     content: data.content || "",
@@ -149,24 +179,15 @@ export async function createPage(versionId, data, requestId) {
     throw new ValidationError("Failed to create page.");
   }
 
-  logger.info("Page created", { requestId, pageId: result.data.id, versionId });
+  logger.info("Page created", { requestId, pageId: result.data.id, versionId, section });
   return result.data;
 }
 
-/**
- * Imports Markdown files as pages within a version, preserving relative folders.
- *
- * @param {string} versionId - The version ID to import pages into.
- * @param {Array<{ filename: string, content: string }>} files - Markdown file payloads.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<Array<Object>>} Created page records.
- * @throws {ConflictError} If imported slugs collide with existing pages.
- * @throws {ValidationError} If the import payload or database write fails.
- */
-export async function importMarkdownPages(versionId, files, requestId) {
+export async function importMarkdownPages(versionId, section, files, requestId) {
+  const normalizedSection = assertPageSection(section || PAGE_SECTIONS.DOCUMENTS);
   const normalizedFiles = normalizeMarkdownImportFiles(files);
   const importPlan = buildMarkdownImportHierarchy(normalizedFiles);
-  const pagesResult = await listPages(versionId);
+  const pagesResult = await listPages(versionId, normalizedSection);
   const existingPages = pagesResult.items || [];
   const existingPageBySlug = new Map(existingPages.map((page) => [page.slug, page]));
   const existingSlugs = new Set(existingPages.map((page) => page.slug));
@@ -205,6 +226,7 @@ export async function importMarkdownPages(versionId, files, requestId) {
 
       const result = await pbCreate(COLLECTIONS.PAGES, {
         version: versionId,
+        section: normalizedSection,
         title: folder.title,
         slug: folder.slug,
         content: "",
@@ -229,6 +251,7 @@ export async function importMarkdownPages(versionId, files, requestId) {
     for (const file of importPlan.files) {
       const result = await pbCreate(COLLECTIONS.PAGES, {
         version: versionId,
+        section: normalizedSection,
         title: file.title,
         slug: file.slug,
         content: file.content,
@@ -253,47 +276,36 @@ export async function importMarkdownPages(versionId, files, requestId) {
     throw err;
   }
 
-  logger.info("Markdown pages imported", { requestId, versionId, count: createdPages.length });
+  logger.info("Markdown pages imported", { requestId, versionId, section: normalizedSection, count: createdPages.length });
   return createdPages;
 }
 
-/**
- * Updates an existing page, validating slug uniqueness if the slug is changed.
- *
- * @param {string} pageId - The page record ID to update.
- * @param {Object} data - The fields to update.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<Object>} The updated page record.
- * @throws {ConflictError} If the new slug collides with another page.
- * @throws {ValidationError} If the update fails.
- */
 export async function updatePage(pageId, data, requestId) {
-  if (data.slug) {
-    const page = await getPage(pageId);
-    const versionId = page.version;
-    const existing = await getPageBySlug(versionId, data.slug);
+  const page = await getPage(pageId);
+  const updateData = { ...data };
+  delete updateData.section;
+
+  if (updateData.slug && updateData.slug !== page.slug) {
+    const existing = await getPageBySlug(page.version, page.section, updateData.slug);
     if (existing && existing.id !== pageId) {
-      throw new ConflictError("A page with this slug already exists.");
+      throw new ConflictError("A page with this slug already exists in this section.");
     }
   }
 
-  const result = await pbUpdate(COLLECTIONS.PAGES, pageId, data);
+  if (updateData.parent !== undefined) {
+    const allPages = await listPages(page.version, page.section);
+    assertParentAllowedFromPages(allPages.items || [], updateData.parent || "", pageId);
+  }
+
+  const result = await pbUpdate(COLLECTIONS.PAGES, pageId, updateData);
   if (!result.ok) {
     throw new ValidationError("Failed to update page.");
   }
 
-  logger.info("Page updated", { requestId, pageId });
+  logger.info("Page updated", { requestId, pageId, versionId: page.version, section: page.section });
   return result.data;
 }
 
-/**
- * Deletes a page and re-parents its children to the deleted page's parent.
- *
- * @param {string} pageId - The page record ID to delete.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<void>}
- * @throws {NotFoundError} If the page does not exist.
- */
 export async function deletePage(pageId, requestId) {
   const page = await getPage(pageId);
 
@@ -308,53 +320,111 @@ export async function deletePage(pageId, requestId) {
     throw new NotFoundError("Page");
   }
 
-  logger.info("Page deleted", { requestId, pageId });
+  logger.info("Page deleted", { requestId, pageId, versionId: page.version, section: page.section });
 }
 
-/**
- * Batch-updates page ordering and parent assignments within a version.
- *
- * @param {string} versionId - The version record ID.
- * @param {Array<{ id: string, order: number, parent: string }>} updates - The reorder instructions.
- * @param {string} requestId - The unique request identifier for logging.
- * @returns {Promise<void>}
- */
-export async function reorderPages(versionId, updates, requestId) {
-  const pagesResult = await listPages(versionId);
+function assertReorderDoesNotCreateCycle(pageMap, pageId, parentId) {
+  let cursorId = parentId;
+  const seen = new Set([pageId]);
+
+  while (cursorId) {
+    if (seen.has(cursorId)) {
+      throw new ValidationError("Page hierarchy contains a cycle.");
+    }
+    seen.add(cursorId);
+    cursorId = pageMap.get(cursorId)?.parent || "";
+  }
+}
+
+export async function reorderPages(versionId, section, updates, requestId) {
+  const normalizedSection = assertPageSection(section || PAGE_SECTIONS.DOCUMENTS);
+  const pagesResult = await listPages(versionId, normalizedSection);
   const pageMap = new Map((pagesResult.items || []).map((page) => [page.id, page]));
   const proposedPageMap = new Map(pageMap);
 
   for (const update of updates) {
     if (!pageMap.has(update.id)) {
-      throw new ValidationError("Reorder data contains a page outside this version.");
+      throw new ValidationError("Reorder data contains a page outside this section.");
     }
     if (update.parent && !pageMap.has(update.parent)) {
-      throw new ValidationError("Parent page must belong to the same version.");
+      throw new ValidationError("Parent page must belong to the same section.");
     }
     proposedPageMap.set(update.id, { ...pageMap.get(update.id), parent: update.parent || "" });
   }
 
   for (const update of updates) {
-    let cursorId = update.parent || "";
-    const seen = new Set([update.id]);
-    while (cursorId) {
-      if (seen.has(cursorId)) {
-        throw new ValidationError("Page hierarchy contains a cycle.");
-      }
-      seen.add(cursorId);
-      cursorId = proposedPageMap.get(cursorId)?.parent || "";
-    }
+    assertReorderDoesNotCreateCycle(proposedPageMap, update.id, update.parent || "");
   }
 
-  const results = await Promise.all(updates.map((u) => pbUpdate(COLLECTIONS.PAGES, u.id, { order: u.order, parent: u.parent || "" })));
-
-  const failed = results.filter((r) => !r.ok);
+  const results = await Promise.all(updates.map((update) => pbUpdate(COLLECTIONS.PAGES, update.id, { order: update.order, parent: update.parent || "" })));
+  const failed = results.filter((result) => !result.ok);
   if (failed.length > 0) {
     logger.warn("Some page reorder operations failed", {
       requestId,
       failedCount: failed.length,
+      versionId,
+      section: normalizedSection,
     });
   }
 
-  logger.info("Pages reordered", { requestId, count: updates.length });
+  logger.info("Pages reordered", { requestId, versionId, section: normalizedSection, count: updates.length });
+}
+
+function sortPagesForClone(pages) {
+  const sorted = [];
+  const remaining = [...pages];
+  const processed = new Set();
+
+  for (let i = remaining.length - 1; i >= 0; i -= 1) {
+    if (!remaining[i].parent) {
+      sorted.push(remaining[i]);
+      processed.add(remaining[i].id);
+      remaining.splice(i, 1);
+    }
+  }
+
+  let safety = remaining.length + 1;
+  while (remaining.length > 0 && safety > 0) {
+    safety -= 1;
+    for (let i = remaining.length - 1; i >= 0; i -= 1) {
+      if (processed.has(remaining[i].parent)) {
+        sorted.push(remaining[i]);
+        processed.add(remaining[i].id);
+        remaining.splice(i, 1);
+      }
+    }
+  }
+
+  sorted.push(...remaining);
+  return sorted;
+}
+
+export async function clonePages(sourceVersionId, targetVersionId, requestId) {
+  const sourcePagesResult = await listAllPages(sourceVersionId);
+  const sourcePages = sortPagesForClone(sourcePagesResult.items || []);
+  const idMap = new Map();
+
+  for (const page of sourcePages) {
+    const newParent = page.parent ? idMap.get(page.parent) || "" : "";
+    const cloned = await pbCreate(COLLECTIONS.PAGES, {
+      version: targetVersionId,
+      section: page.section || PAGE_SECTIONS.DOCUMENTS,
+      title: page.title,
+      slug: page.slug,
+      content: page.content || "",
+      parent: newParent,
+      icon: page.icon || "",
+      order: page.order || 0,
+    });
+    if (cloned.ok) {
+      idMap.set(page.id, cloned.data.id);
+    }
+  }
+
+  logger.info("Pages cloned", {
+    requestId,
+    sourceVersionId,
+    targetVersionId,
+    pagesCloned: idMap.size,
+  });
 }

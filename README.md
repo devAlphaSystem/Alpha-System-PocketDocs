@@ -2,7 +2,7 @@
 
 Self-hosted documentation platform with versioning, powered by [PocketBase](https://pocketbase.io/).
 
-PocketDocs lets teams create, organize, and publish documentation and Knowledge Base content for multiple projects with versioned, Documentation-only, or Knowledge Base-only modes, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
+PocketDocs lets teams create, organize, and publish documentation and Knowledge Base content for multiple projects with versioned or Non-Versioned modes, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
 
 PocketDocs supports two database modes:
 - External mode: connect to your own PocketBase instance.
@@ -10,9 +10,9 @@ PocketDocs supports two database modes:
 
 ## Features
 
-- **Flexible project modes** — choose versioned, Documentation-only, or Knowledge Base-only projects
+- **Flexible project modes** — choose versioned or Non-Versioned projects
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
-- **Knowledge Base** — versioned or standalone Frequently Asked Questions and Troubleshooting sections in Markdown
+- **Knowledge Base** — Frequently Asked Questions and Troubleshooting sections in Markdown alongside documents
 - **Markdown editor** — EasyMDE with syntax-highlighted live preview and Markdown download
 - **Bulk Markdown import** — create documentation pages or Knowledge Base articles from `.md` or `.markdown` files and folders, preserving hierarchy within the total import size limit
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
@@ -28,10 +28,8 @@ PocketDocs supports two database modes:
 
 ## Project Modes
 
-- **Versioned mode** — classic release-based documentation with multiple versions, version switcher, per-version changelog, and per-version Knowledge Base
-- **Documentation only** — single-stream documentation without versioned public URLs; public links use `/docs/:projectSlug/:pageSlug`
-- **Knowledge Base only** — Frequently Asked Questions and Troubleshooting sections without documentation pages; public links use `/docs/:projectSlug/_kb/...`
-- Documentation-only and Knowledge Base-only projects still store one internal default version for data consistency.
+- **Versioned mode** — classic release-based documentation with multiple versions, version switcher, per-version changelog, and per-version Documents/FAQ/Troubleshooting sections
+- **Non-Versioned mode** — one public content stream with Documents, Frequently Asked Questions, and Troubleshooting tabs backed by one internal default version
 
 ## Tech Stack
 
@@ -92,8 +90,7 @@ pocketdocs/
 │   └── modules/              # Feature modules (controller / service / validation)
 │       ├── auth/             # Login & logout
 │       ├── changelogs/       # Version changelogs
-│       ├── knowledge-base/   # Frequently Asked Questions and Troubleshooting articles
-│       ├── pages/            # Documentation pages
+│       ├── pages/            # Documents, FAQ, and Troubleshooting pages
 │       ├── projects/         # Project management
 │       ├── public/           # Public-facing routes & search API
 │       ├── settings/         # Site settings & IP restriction

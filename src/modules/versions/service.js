@@ -2,7 +2,7 @@ import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbF
 import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
-import { cloneKnowledgeBasePages } from "../knowledge-base/service.js";
+import { clonePages } from "../pages/service.js";
 
 function generateSlug(label) {
   return label
@@ -121,54 +121,7 @@ export async function createVersion(projectId, data, requestId) {
 }
 
 async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) {
-  const sourcePages = await pbList(COLLECTIONS.PAGES, {
-    filter: `version = "${pbFilterValue(sourceVersionId)}"`,
-    sort: "order",
-    perPage: 500,
-  });
-
-  const idMap = new Map();
-  const allPages = sourcePages.items || [];
-
-  const sorted = [];
-  const remaining = [...allPages];
-  const processed = new Set();
-
-  for (let i = remaining.length - 1; i >= 0; i--) {
-    if (!remaining[i].parent) {
-      sorted.push(remaining[i]);
-      processed.add(remaining[i].id);
-      remaining.splice(i, 1);
-    }
-  }
-
-  let safety = remaining.length + 1;
-  while (remaining.length > 0 && safety-- > 0) {
-    for (let i = remaining.length - 1; i >= 0; i--) {
-      if (processed.has(remaining[i].parent)) {
-        sorted.push(remaining[i]);
-        processed.add(remaining[i].id);
-        remaining.splice(i, 1);
-      }
-    }
-  }
-  sorted.push(...remaining);
-
-  for (const page of sorted) {
-    const newParent = page.parent ? idMap.get(page.parent) || "" : "";
-    const cloned = await pbCreate(COLLECTIONS.PAGES, {
-      version: targetVersionId,
-      title: page.title,
-      slug: page.slug,
-      content: page.content,
-      icon: page.icon || "",
-      order: page.order,
-      parent: newParent,
-    });
-    if (cloned.ok) {
-      idMap.set(page.id, cloned.data.id);
-    }
-  }
+  await clonePages(sourceVersionId, targetVersionId, requestId);
 
   const sourceChangelog = await pbGetFirstByFilter(COLLECTIONS.CHANGELOGS, `version = "${pbFilterValue(sourceVersionId)}"`);
   if (sourceChangelog) {
@@ -178,13 +131,10 @@ async function cloneVersionContent(sourceVersionId, targetVersionId, requestId) 
     });
   }
 
-  await cloneKnowledgeBasePages(sourceVersionId, targetVersionId, requestId);
-
   logger.info("Version content cloned", {
     requestId,
     sourceVersionId,
     targetVersionId,
-    pagesCloned: idMap.size,
   });
 }
 

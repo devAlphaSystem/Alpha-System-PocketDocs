@@ -1,63 +1,72 @@
 <div class="pages-page">
+  <% const isDocumentsSection = section === 'documents'; %>
+  <% const itemLabel = sectionOption.itemLabel || (isDocumentsSection ? 'page' : 'article'); %>
+  <% const itemLabelPlural = sectionOption.itemLabelPlural || itemLabel + 's'; %>
+
   <div class="page-header">
     <div>
-      <% if (typeof docsOnlyMode !== 'undefined' && docsOnlyMode) { %>
+      <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
       <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
       <% } else { %>
       <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> Versions</a>
       <% } %>
     </div>
-    <% if ((typeof docsOnlyMode !== 'undefined' && docsOnlyMode) || user.role === 'owner' || user.role === 'admin') { %>
     <div class="header-actions">
-      <% if (typeof docsOnlyMode !== 'undefined' && docsOnlyMode) { %>
-      <a href="/docs/<%= project.slug %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
-      <% } %>
-      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof docsOnlyMode !== 'undefined' && docsOnlyMode)) { %>
+      <a href="<%= publicSectionUrl %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
+      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof nonVersionedMode !== 'undefined' && nonVersionedMode)) { %>
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
       <% } %>
       <% if (user.role === 'owner' || user.role === 'admin') { %>
       <button type="button" class="btn btn-outline" data-markdown-import-open>
         <i class="ph ph-upload-simple"></i> Import Markdown
       </button>
-      <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new" class="btn btn-primary">
-        <i class="ph ph-plus"></i> New Page
+      <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new?section=<%= section %>" class="btn btn-primary">
+        <i class="ph ph-plus"></i> New <%= isDocumentsSection ? 'Page' : 'Article' %>
       </a>
       <% } %>
     </div>
-    <% } %>
   </div>
 
   <% if (typeof success !== 'undefined' && success) { %>
   <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
 
+  <div class="settings-tabs-nav knowledge-base-tabs-nav" role="tablist" aria-label="Content sections">
+    <% for (const option of sectionOptions) { %>
+    <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages?section=<%= option.value %>" class="settings-tab-btn" role="tab" aria-selected="<%= option.value === section ? 'true' : 'false' %>" tabindex="<%= option.value === section ? '0' : '-1' %>">
+      <i class="ph ph-<%= option.icon %>"></i>
+      <span><%= option.label %></span>
+    </a>
+    <% } %>
+  </div>
+
   <% const isSearching = typeof search !== 'undefined' && search; %>
 
   <% if (pages.length === 0) { %>
   <div class="empty-state small">
-    <div class="empty-icon"><i class="ph ph-file-text"></i></div>
+    <div class="empty-icon"><i class="ph ph-<%= sectionIcon %>"></i></div>
     <% if (isSearching) { %>
-    <h3>No matching pages</h3>
-    <p>No pages found for "<%= search %>". <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages">Clear search</a></p>
+    <h3>No matching <%= itemLabelPlural %></h3>
+    <p>No <%= sectionLabel %> <%= itemLabelPlural %> found for "<%= search %>". <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages?section=<%= section %>">Clear search</a></p>
     <% } else { %>
-    <h3>No pages yet</h3>
-    <p>Create the first page for this version.</p>
+    <h3>No <%= sectionLabel %> <%= itemLabelPlural %> yet</h3>
+    <p>Create the first <%= itemLabel %> in this section.</p>
     <% } %>
   </div>
   <% } else if (isSearching) { %>
   <div class="versions-list">
     <% for (const pg of pages) { %>
-    <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open page <%= pg.title %>">
+    <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= pg.title %>">
       <div class="version-card-main">
         <div class="version-info">
-          <% if (pg.icon) { %><i class="ph ph-<%= pg.icon %> page-icon"></i><% } else { %><i class="ph ph-file-text page-icon"></i><% } %>
+          <% if (pg.icon) { %><i class="ph ph-<%= pg.icon %> page-icon"></i><% } else { %><i class="ph ph-<%= sectionIcon %> page-icon"></i><% } %>
           <h3 class="page-title"><%= pg.title %></h3>
           <span class="page-slug text-muted">/<%= pg.slug %></span>
         </div>
         <div class="version-actions page-tree-actions">
           <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
           <% if (user.role === 'owner' || user.role === 'admin') { %>
-          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>/delete" class="inline-form" data-confirm-title="Delete page?" data-confirm-message="Delete this page?" data-confirm-button="Delete" data-confirm-variant="danger">
+          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>/delete" class="inline-form" data-confirm-title="Delete <%= itemLabel %>?" data-confirm-message="Delete this <%= itemLabel %>?" data-confirm-button="Delete" data-confirm-variant="danger">
             <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
           </form>
@@ -68,27 +77,27 @@
     <% } %>
   </div>
 
-  <%- include('../../partials/pagination', { pagination, search }) %>
+  <%- include('../../partials/pagination', { pagination, search, queryParams: { section } }) %>
   <% } else { %>
-  <div class="versions-list pages-tree" id="pagesTree" data-sortable-tree data-project="<%= project.id %>" data-version="<%= version.id %>" data-reorder-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/reorder" data-csrf="<%= csrfToken %>">
+  <div class="versions-list pages-tree" id="pagesTree" data-sortable-tree data-reorder-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/reorder?section=<%= section %>" data-csrf="<%= csrfToken %>" data-sort-success="<%= sectionLabel %> reordered" data-sort-error="Failed to reorder <%= sectionLabel %>">
     <% function renderAdminTree(nodes, depth) { %>
       <% for (const node of nodes) { %>
-      <div class="version-card row-link page-tree-item" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open page <%= node.title %>" data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= depth %>">
+      <div class="version-card row-link page-tree-item" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= node.title %>" data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= depth %>">
         <div class="version-card-main">
           <div class="version-info">
             <div class="page-tree-handle" title="Drag to reorder"><i class="ph ph-dots-six-vertical"></i></div>
-            <% if (node.icon) { %><i class="ph ph-<%= node.icon %> page-icon"></i><% } else { %><i class="ph ph-file-text page-icon"></i><% } %>
+            <% if (node.icon) { %><i class="ph ph-<%= node.icon %> page-icon"></i><% } else { %><i class="ph ph-<%= sectionIcon %> page-icon"></i><% } %>
             <h3 class="page-title"><%= node.title %></h3>
             <span class="page-slug text-muted">/<%= node.slug %></span>
           </div>
           <div class="version-actions page-tree-actions">
             <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
-          <% if (user.role === 'owner' || user.role === 'admin') { %>
-          <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>/delete" class="inline-form" data-confirm-title="Delete page?" data-confirm-message="Delete this page?" data-confirm-button="Delete" data-confirm-variant="danger">
-            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
-          </form>
-          <% } %>
+            <% if (user.role === 'owner' || user.role === 'admin') { %>
+            <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>/delete" class="inline-form" data-confirm-title="Delete <%= itemLabel %>?" data-confirm-message="Delete this <%= itemLabel %>?" data-confirm-button="Delete" data-confirm-variant="danger">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
+            </form>
+            <% } %>
           </div>
         </div>
       </div>
@@ -98,12 +107,12 @@
     <% renderAdminTree(pageTree, 0); %>
   </div>
 
-  <%- include('../../partials/pagination', { pagination, search: '' }) %>
+  <%- include('../../partials/pagination', { pagination, search: '', queryParams: { section } }) %>
   <% } %>
 </div>
 
 <% if (user.role === 'owner' || user.role === 'admin') { %>
-<dialog id="markdownImportDialog" class="admin-dialog markdown-import-dialog" data-markdown-import-dialog data-import-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/import" data-csrf="<%= csrfToken %>" data-max-total-content="<%= markdownImport.MAX_TOTAL_CONTENT_LENGTH %>">
+<dialog id="markdownImportDialog" class="admin-dialog markdown-import-dialog" data-markdown-import-dialog data-import-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/import?section=<%= section %>" data-csrf="<%= csrfToken %>" data-max-total-content="<%= markdownImport.MAX_TOTAL_CONTENT_LENGTH %>">
   <div class="dialog-content">
     <div class="dialog-header">
       <h2>Import Markdown</h2>
@@ -127,7 +136,7 @@
       </div>
       <div class="dialog-footer">
         <button type="button" class="btn btn-outline" data-markdown-import-close>Cancel</button>
-        <button type="submit" class="btn btn-primary" data-markdown-import-submit disabled><i class="ph ph-upload-simple"></i> Import Pages</button>
+        <button type="submit" class="btn btn-primary" data-markdown-import-submit disabled><i class="ph ph-upload-simple"></i> Import <%= isDocumentsSection ? 'Pages' : 'Articles' %></button>
       </div>
     </form>
   </div>

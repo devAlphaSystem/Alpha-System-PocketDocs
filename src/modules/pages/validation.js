@@ -1,8 +1,11 @@
 import { z } from "zod";
-import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT } from "../../config/constants.js";
+import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT, PAGE_SECTIONS } from "../../config/constants.js";
+
+const sectionSchema = z.enum([PAGE_SECTIONS.DOCUMENTS, PAGE_SECTIONS.FAQ, PAGE_SECTIONS.TROUBLESHOOTING]);
 
 /** @type {import("zod").ZodObject} Validates page creation data including title, slug, and content. */
 export const createPageSchema = z.object({
+  section: sectionSchema.default(PAGE_SECTIONS.DOCUMENTS),
   title: z.string().trim().min(1, "Page title is required.").max(MAX_TITLE_LENGTH),
   slug: z.string().trim().min(1, "Slug is required.").max(MAX_SLUG_LENGTH).regex(SLUG_PATTERN, "Slug must contain only lowercase letters, numbers, and hyphens."),
   content: z.string().max(MAX_CONTENT_LENGTH).default(""),

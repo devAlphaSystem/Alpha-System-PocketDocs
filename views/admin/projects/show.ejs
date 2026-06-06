@@ -1,6 +1,6 @@
 <div class="project-detail">
   <% const _projectMode = project.mode || 'versioned'; %>
-  <% const _singleVersionMode = _projectMode === 'documentation' || _projectMode === 'knowledge_base'; %>
+  <% const _singleVersionMode = _projectMode === 'non_versioned'; %>
 
   <div class="page-header">
     <div>
@@ -12,15 +12,9 @@
       <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
       <% if (_singleVersionMode) { %>
       <% if (typeof defaultVersion !== 'undefined' && defaultVersion) { %>
-      <% if (_projectMode === 'knowledge_base') { %>
-      <a href="/admin/projects/<%= project.id %>/versions/<%= defaultVersion.id %>/knowledge-base/faq/new" class="btn btn-primary">
-        <i class="ph ph-plus"></i> New Article
-      </a>
-      <% } else { %>
       <a href="/admin/projects/<%= project.id %>/versions/<%= defaultVersion.id %>/pages/new" class="btn btn-primary">
         <i class="ph ph-plus"></i> New Page
       </a>
-      <% } %>
       <% } %>
       <% } else { %>
       <a href="/admin/projects/<%= project.id %>/versions/create" class="btn btn-primary">
@@ -53,7 +47,7 @@
     <p>No pages found for "<%= search %>". <a href="/admin/projects/<%= project.id %>">Clear search</a></p>
     <% } else { %>
     <h3>No pages yet</h3>
-    <p>Create your first page to start writing documentation.</p>
+    <p>Create your first page to start writing.</p>
     <% } %>
   </div>
   <% } else { %>
@@ -105,9 +99,8 @@
           <% } %>
         </div>
         <div class="version-actions">
-          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-outline"><i class="ph ph-files"></i> Pages</a>
+          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-outline"><i class="ph ph-files"></i> Content</a>
           <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" class="btn btn-outline"><i class="ph ph-clock-counter-clockwise"></i> Changelog</a>
-          <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/knowledge-base" class="btn btn-outline"><i class="ph ph-question"></i> Knowledge Base</a>
           <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
         </div>
       </div>
