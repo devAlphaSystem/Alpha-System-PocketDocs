@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH } from "../../config/constants.js";
+import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT } from "../../config/constants.js";
 
 /** @type {import("zod").ZodObject} Validates page creation data including title, slug, and content. */
 export const createPageSchema = z.object({
@@ -32,3 +32,26 @@ export const reorderPagesSchema = z.object({
     )
     .min(1),
 });
+
+/** @type {import("zod").ZodObject} Validates bulk Markdown page import payloads. */
+export const importMarkdownPagesSchema = z
+  .object({
+    files: z
+      .array(
+        z.object({
+          filename: z.string().trim().min(1, "Markdown filename is required.").max(500, "Markdown filename is too long."),
+          content: z.string().max(MAX_CONTENT_LENGTH, "Markdown file content is too large."),
+        }),
+      )
+      .min(1, "Select at least one Markdown file to import."),
+  })
+  .superRefine((data, ctx) => {
+    const totalLength = data.files.reduce((sum, file) => sum + file.content.length, 0);
+    if (totalLength > MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["files"],
+        message: `Markdown import content is larger than ${MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH} characters.`,
+      });
+    }
+  });

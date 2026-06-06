@@ -2,6 +2,27 @@ import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbF
 import { COLLECTIONS, PAGINATION } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
+import { buildMarkdownImportHierarchy, formatMarkdownImportPbErrors, formatMarkdownImportSlugList, isPocketBaseUniqueSlugError, normalizeMarkdownImportFiles } from "./import-utils.js";
+
+async function rollbackImportedPages(createdPages, requestId) {
+  const failures = [];
+
+  for (const page of createdPages) {
+    try {
+      const deleted = await pbDelete(COLLECTIONS.PAGES, page.id);
+      if (!deleted.ok) {
+        failures.push(page.id);
+      }
+    } catch (err) {
+      failures.push(page.id);
+      logger.warn("Failed to rollback imported page", { requestId, pageId: page.id, error: err.message });
+    }
+  }
+
+  if (failures.length > 0) {
+    logger.warn("Markdown import rollback finished with failures", { requestId, failedCount: failures.length });
+  }
+}
 
 /**
  * Retrieves all pages belonging to a version, sorted by order and title.
@@ -130,6 +151,110 @@ export async function createPage(versionId, data, requestId) {
 
   logger.info("Page created", { requestId, pageId: result.data.id, versionId });
   return result.data;
+}
+
+/**
+ * Imports Markdown files as pages within a version, preserving relative folders.
+ *
+ * @param {string} versionId - The version ID to import pages into.
+ * @param {Array<{ filename: string, content: string }>} files - Markdown file payloads.
+ * @param {string} requestId - The unique request identifier for logging.
+ * @returns {Promise<Array<Object>>} Created page records.
+ * @throws {ConflictError} If imported slugs collide with existing pages.
+ * @throws {ValidationError} If the import payload or database write fails.
+ */
+export async function importMarkdownPages(versionId, files, requestId) {
+  const normalizedFiles = normalizeMarkdownImportFiles(files);
+  const importPlan = buildMarkdownImportHierarchy(normalizedFiles);
+  const pagesResult = await listPages(versionId);
+  const existingPages = pagesResult.items || [];
+  const existingPageBySlug = new Map(existingPages.map((page) => [page.slug, page]));
+  const existingSlugs = new Set(existingPages.map((page) => page.slug));
+  const existingConflicts = [];
+
+  if (importPlan.duplicateSlugs.length > 0) {
+    throw new ValidationError(`Markdown import contains duplicate page slugs: ${formatMarkdownImportSlugList(importPlan.duplicateSlugs)}.`);
+  }
+
+  for (const file of importPlan.files) {
+    if (existingSlugs.has(file.slug)) {
+      existingConflicts.push(file.slug);
+    }
+  }
+
+  if (existingConflicts.length > 0) {
+    throw new ConflictError(`Pages already exist for these slugs: ${formatMarkdownImportSlugList(existingConflicts)}.`);
+  }
+
+  let nextOrder = existingPages.reduce((max, page) => Math.max(max, page.order || 0), 0) + 1;
+  const createdPages = [];
+  const folderIdByKey = new Map();
+
+  try {
+    for (const folder of importPlan.folders) {
+      const parent = folder.parentKey ? folderIdByKey.get(folder.parentKey) || "" : "";
+      const existing = existingPageBySlug.get(folder.slug);
+
+      if (existing) {
+        if ((existing.parent || "") !== parent) {
+          throw new ConflictError(`Cannot preserve folder hierarchy because the slug ${folder.slug} already exists under another parent.`);
+        }
+        folderIdByKey.set(folder.key, existing.id);
+        continue;
+      }
+
+      const result = await pbCreate(COLLECTIONS.PAGES, {
+        version: versionId,
+        title: folder.title,
+        slug: folder.slug,
+        content: "",
+        parent,
+        icon: "",
+        order: nextOrder,
+      });
+
+      if (!result.ok) {
+        const details = formatMarkdownImportPbErrors(result.data);
+        if (result.status === 409 || isPocketBaseUniqueSlugError(result.data)) {
+          throw new ConflictError("A folder page with one of these slugs already exists.");
+        }
+        throw new ValidationError("Failed to import Markdown folders.", details);
+      }
+
+      nextOrder += 1;
+      createdPages.push(result.data);
+      folderIdByKey.set(folder.key, result.data.id);
+    }
+
+    for (const file of importPlan.files) {
+      const result = await pbCreate(COLLECTIONS.PAGES, {
+        version: versionId,
+        title: file.title,
+        slug: file.slug,
+        content: file.content,
+        parent: file.parentKey ? folderIdByKey.get(file.parentKey) || "" : "",
+        icon: "",
+        order: nextOrder,
+      });
+
+      if (!result.ok) {
+        const details = formatMarkdownImportPbErrors(result.data);
+        if (result.status === 409 || isPocketBaseUniqueSlugError(result.data)) {
+          throw new ConflictError("A page with one of these slugs already exists.");
+        }
+        throw new ValidationError("Failed to import Markdown pages.", details);
+      }
+
+      nextOrder += 1;
+      createdPages.push(result.data);
+    }
+  } catch (err) {
+    await rollbackImportedPages(createdPages, requestId);
+    throw err;
+  }
+
+  logger.info("Markdown pages imported", { requestId, versionId, count: createdPages.length });
+  return createdPages;
 }
 
 /**

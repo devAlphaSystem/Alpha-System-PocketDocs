@@ -3,13 +3,14 @@
  * @description Express routes for managing version Knowledge Base pages.
  */
 import { Router } from "express";
-import { KNOWLEDGE_BASE_SECTION_OPTIONS, assertKnowledgeBaseSection, buildKnowledgeBaseTree, createKnowledgeBasePage, deleteKnowledgeBasePage, getKnowledgeBasePage, getKnowledgeBaseSectionLabel, isKnowledgeBaseSection, listKnowledgeBasePages, listKnowledgeBasePagesPaginated, reorderKnowledgeBasePages, updateKnowledgeBasePage } from "./service.js";
-import { createKnowledgeBasePageSchema, reorderKnowledgeBasePagesSchema, updateKnowledgeBasePageSchema } from "./validation.js";
+import { KNOWLEDGE_BASE_SECTION_OPTIONS, assertKnowledgeBaseSection, buildKnowledgeBaseTree, createKnowledgeBasePage, deleteKnowledgeBasePage, getKnowledgeBasePage, getKnowledgeBaseSectionLabel, importKnowledgeBaseMarkdownPages, isKnowledgeBaseSection, listKnowledgeBasePages, listKnowledgeBasePagesPaginated, reorderKnowledgeBasePages, updateKnowledgeBasePage } from "./service.js";
+import { createKnowledgeBasePageSchema, importKnowledgeBaseMarkdownPagesSchema, reorderKnowledgeBasePagesSchema, updateKnowledgeBasePageSchema } from "./validation.js";
+import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
-import { KNOWLEDGE_BASE_SECTIONS, PROJECT_MODE, ROLES } from "../../config/constants.js";
+import { KNOWLEDGE_BASE_SECTIONS, PROJECT_MODE, ROLES, MARKDOWN_IMPORT } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 
 const router = Router({ mergeParams: true });
@@ -26,6 +27,10 @@ function supportsKnowledgeBase(project) {
 function isSingleVersionProject(project) {
   const mode = project?.mode || PROJECT_MODE.VERSIONED;
   return mode === PROJECT_MODE.DOCUMENTATION || mode === PROJECT_MODE.KNOWLEDGE_BASE;
+}
+
+function userCanImport(user) {
+  return user?.role === ROLES.OWNER || user?.role === ROLES.ADMIN;
 }
 
 async function getAdminContext(req) {
@@ -89,6 +94,8 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       error: null,
       success: req.query.success || null,
       siteName: env.SITE_NAME,
+      markdownImport: MARKDOWN_IMPORT,
+      extraJs: userCanImport(req.user) ? "/js/markdown-import.js" : null,
     });
   } catch (err) {
     next(err);
@@ -198,6 +205,29 @@ router.post("/:section/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMI
     await getAdminContext(req);
     await reorderKnowledgeBasePages(req.params.versionId, section, parsed.data.pages, req.requestId);
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/:section/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(importKnowledgeBaseMarkdownPagesSchema), async (req, res, next) => {
+  try {
+    const section = assertKnowledgeBaseSection(req.params.section);
+    await getAdminContext(req);
+    const pages = await importKnowledgeBaseMarkdownPages(req.params.versionId, section, req.validatedBody.files, req.requestId);
+    const importedCount = pages.length;
+    const successMessage = `${importedCount} article${importedCount !== 1 ? "s" : ""} imported.`;
+    res.status(201).json({
+      ok: true,
+      importedCount,
+      pages: pages.map((page) => ({
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+        section: page.section,
+      })),
+      redirectUrl: `${knowledgeBaseAdminUrl(req.params.projectId, req.params.versionId, section)}&success=${encodeURIComponent(successMessage)}`,
+    });
   } catch (err) {
     next(err);
   }

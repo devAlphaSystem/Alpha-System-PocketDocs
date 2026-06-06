@@ -346,7 +346,7 @@ Renders the page editor for creating a new page.
 **Auth:** Required  
 **Roles:** Admin, Owner
 
-### `POST /admin/projects/:projectId/versions/:versionId/pages`
+### `POST /admin/projects/:projectId/versions/:versionId/pages/new`
 
 Creates a new page.
 
@@ -366,6 +366,38 @@ Creates a new page.
 | `_csrf` | string | Yes | CSRF token |
 
 **Success:** Redirects to page editor
+
+### `POST /admin/projects/:projectId/versions/:versionId/pages/import`
+
+Bulk-imports Markdown files as pages. Relative folder paths are preserved by creating or reusing folder pages as parents before importing child pages. The server infers each page title from the first Markdown H1, falling back to the filename, and infers each slug from the filename or folder name.
+
+**Auth:** Required  
+**Roles:** Admin, Owner  
+**CSRF:** Yes  
+**Content-Type:** `application/json`
+
+**Body:**
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `files` | array | Yes | At least 1 item; limited by total content size |
+| `files[].filename` | string | Yes | Max 500 characters, optional relative folders, `.md` or `.markdown` |
+| `files[].content` | string | Yes | Max 500,000 characters per file; max 1,500,000 characters total |
+
+**Success (201):**
+```json
+{
+  "ok": true,
+  "importedCount": 2,
+  "pages": [
+    { "id": "abc123def456789", "title": "Getting Started", "slug": "getting-started" },
+    { "id": "def456abc123789", "title": "API Reference", "slug": "api-reference" }
+  ],
+  "redirectUrl": "/admin/projects/proj123/versions/ver123/pages?success=2%20pages%20imported."
+}
+```
+
+**Errors:** 409 when an inferred page slug already exists or a folder slug exists under another parent; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
 
 ### `GET /admin/projects/:projectId/versions/:versionId/pages/:pageId`
 
@@ -523,6 +555,38 @@ Creates a Knowledge Base article.
 | `parent` | string | No | Article ID in the same version + section |
 | `icon` | string | No | Max 50 characters |
 | `_csrf` | string | Yes | CSRF token |
+
+### `POST /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/import`
+
+Bulk-imports Markdown files as Knowledge Base articles in the selected section. Relative folder paths are preserved by creating or reusing folder articles as parents before importing child articles. The server infers each article title from the first Markdown H1, falling back to the filename, and infers each slug from the filename or folder name.
+
+**Auth:** Required  
+**Roles:** Admin, Owner  
+**CSRF:** Yes  
+**Content-Type:** `application/json`
+
+**Body:**
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `files` | array | Yes | At least 1 item; limited by total content size |
+| `files[].filename` | string | Yes | Max 500 characters, optional relative folders, `.md` or `.markdown` |
+| `files[].content` | string | Yes | Max 500,000 characters per file; max 1,500,000 characters total |
+
+**Success (201):**
+```json
+{
+  "ok": true,
+  "importedCount": 2,
+  "pages": [
+    { "id": "kb123def456789", "title": "Reset Password", "slug": "reset-password", "section": "faq" },
+    { "id": "kb456abc123789", "title": "Billing FAQ", "slug": "billing-faq", "section": "faq" }
+  ],
+  "redirectUrl": "/admin/projects/proj123/versions/ver123/knowledge-base?section=faq&success=2%20articles%20imported."
+}
+```
+
+**Errors:** 409 when an inferred article slug already exists in the selected section or a folder slug exists under another parent; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
 
 ### `GET /admin/projects/:projectId/versions/:versionId/knowledge-base/:section/:pageId`
 

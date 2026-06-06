@@ -1174,6 +1174,14 @@ body.fullscreen .editor-content .editor-preview-side {
   #gh-import-btn {
     width: 100%;
   }
+
+  .markdown-import-dialog .dialog-footer {
+    flex-direction: column-reverse;
+  }
+
+  .markdown-import-dialog .dialog-footer .btn {
+    width: 100%;
+  }
 }
 
 @keyframes ph-spin {
@@ -1257,6 +1265,69 @@ body.fullscreen .editor-content .editor-preview-side {
   gap: var(--space-2);
   padding: var(--space-4) var(--space-5);
   border-top: 1px solid var(--surface-border);
+}
+
+.markdown-import-dialog {
+  width: min(640px, 92vw);
+}
+
+.markdown-import-error {
+  margin-bottom: 0;
+}
+
+.markdown-import-summary {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.markdown-import-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 220px;
+  margin: 0;
+  padding: var(--space-2);
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-md);
+  background: var(--surface-0);
+}
+
+.markdown-import-file-list[hidden],
+.markdown-import-summary[hidden],
+.markdown-import-error[hidden] {
+  display: none;
+}
+
+.markdown-import-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-1);
+}
+
+.markdown-import-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.markdown-import-file-size {
+  flex: 0 0 auto;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
 }
 
 .table-actions-col {

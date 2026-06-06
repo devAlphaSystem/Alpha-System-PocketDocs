@@ -97,3 +97,15 @@ export const MAX_DESCRIPTION_LENGTH = 500;
 export const MAX_CONTENT_LENGTH = 500000;
 /** @type {number} Maximum allowed character length for label fields. */
 export const MAX_LABEL_LENGTH = 100;
+
+/**
+ * Defines the server-side total size limit for bulk Markdown page imports.
+ *
+ * These limits sit below the Express body parser cap so validation can return
+ * a structured application error before oversized payloads reach storage.
+ *
+ * @enum {number}
+ */
+export const MARKDOWN_IMPORT = Object.freeze({
+  MAX_TOTAL_CONTENT_LENGTH: 1500000,
+});

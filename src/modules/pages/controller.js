@@ -4,13 +4,13 @@
  * within a project version.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, updatePage, deletePage, reorderPages } from "./service.js";
-import { createPageSchema, updatePageSchema, reorderPagesSchema } from "./validation.js";
+import { listPages, listPagesPaginated, buildPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages } from "./service.js";
+import { createPageSchema, updatePageSchema, reorderPagesSchema, importMarkdownPagesSchema } from "./validation.js";
 import { validate } from "../../middleware/validate.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
-import { ROLES, PROJECT_MODE } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE, MARKDOWN_IMPORT } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
@@ -29,10 +29,22 @@ function isDocsOnly(project) {
   return (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.DOCUMENTATION;
 }
 
+function userCanImport(user) {
+  return user?.role === ROLES.OWNER || user?.role === ROLES.ADMIN;
+}
+
 function assertPageBelongsToVersion(page, versionId) {
   if (page.version !== versionId) {
     throw new NotFoundError("Page");
   }
+}
+
+function validationDetails(error) {
+  return error.issues.map((issue) => ({
+    field: issue.path.join("."),
+    code: issue.code.toUpperCase(),
+    message: issue.message,
+  }));
 }
 
 router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
@@ -69,6 +81,8 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       error: null,
       success: req.query.success || null,
       siteName: env.SITE_NAME,
+      markdownImport: MARKDOWN_IMPORT,
+      extraJs: userCanImport(req.user) ? "/js/markdown-import.js" : null,
     });
   } catch (err) {
     next(err);
@@ -216,6 +230,44 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
     }
     await reorderPages(req.params.versionId, parsed.data.pages, req.requestId);
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
+  try {
+    const parsed = importMarkdownPagesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({
+        error: {
+          code: "VALIDATION_FAILED",
+          message: "Invalid Markdown import data.",
+          details: validationDetails(parsed.error),
+          requestId: req.requestId,
+        },
+      });
+    }
+
+    const version = await getVersion(req.params.versionId);
+    const project = version.expand?.project;
+    if (!supportsDocs(project)) {
+      throw new NotFoundError("Pages");
+    }
+
+    const pages = await importMarkdownPages(req.params.versionId, parsed.data.files, req.requestId);
+    const importedCount = pages.length;
+    const successMessage = `${importedCount} page${importedCount !== 1 ? "s" : ""} imported.`;
+    res.status(201).json({
+      ok: true,
+      importedCount,
+      pages: pages.map((page) => ({
+        id: page.id,
+        title: page.title,
+        slug: page.slug,
+      })),
+      redirectUrl: `/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/pages?success=${encodeURIComponent(successMessage)}`,
+    });
   } catch (err) {
     next(err);
   }

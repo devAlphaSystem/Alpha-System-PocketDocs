@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, KNOWLEDGE_BASE_SECTIONS } from "../../config/constants.js";
+import { importMarkdownPagesSchema } from "../pages/validation.js";
 
 const sectionSchema = z.enum([KNOWLEDGE_BASE_SECTIONS.FAQ, KNOWLEDGE_BASE_SECTIONS.TROUBLESHOOTING]);
 
@@ -35,3 +36,6 @@ export const reorderKnowledgeBasePagesSchema = z.object({
     )
     .min(1),
 });
+
+/** @type {import("zod").ZodObject} Validates bulk Markdown Knowledge Base import payloads. */
+export const importKnowledgeBaseMarkdownPagesSchema = importMarkdownPagesSchema;

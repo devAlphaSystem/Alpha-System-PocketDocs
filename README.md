@@ -14,6 +14,7 @@ PocketDocs supports two database modes:
 - **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
 - **Knowledge Base** — versioned or standalone Frequently Asked Questions and Troubleshooting sections in Markdown
 - **Markdown editor** — EasyMDE with syntax-highlighted live preview and Markdown download
+- **Bulk Markdown import** — create documentation pages or Knowledge Base articles from `.md` or `.markdown` files and folders, preserving hierarchy within the total import size limit
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
 - **Role-based access** — Owner, Admin, and Editor roles with granular permissions

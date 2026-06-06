@@ -87,9 +87,9 @@ src/modules/{feature}/
 | `setup` | First-run owner account creation | Owner registration |
 | `projects` | CRUD for documentation projects and mode-specific flow | Project (name, slug, visibility, mode, owner) |
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
-| `pages` | CRUD for documentation pages, tree ordering | Page (title, slug, content, parent, order) |
+| `pages` | CRUD, bulk Markdown import, and tree ordering for documentation pages | Page (title, slug, content, parent, order) |
 | `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
-| `knowledge-base` | Frequently Asked Questions and Troubleshooting article management | Knowledge Base page (section, title, slug, content, parent, order) |
+| `knowledge-base` | Frequently Asked Questions and Troubleshooting article management with bulk Markdown import | Knowledge Base page (section, title, slug, content, parent, order) |
 | `users` | User management (owner-only) | User (name, email, role) |
 | `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |

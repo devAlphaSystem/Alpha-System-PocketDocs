@@ -3,6 +3,7 @@ import { COLLECTIONS, PAGINATION, KNOWLEDGE_BASE_SECTIONS, KNOWLEDGE_BASE_SECTIO
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 import { buildPageTree } from "../pages/service.js";
+import { buildMarkdownImportHierarchy, formatMarkdownImportPbErrors, formatMarkdownImportSlugList, isPocketBaseUniqueSlugError, normalizeMarkdownImportFiles } from "../pages/import-utils.js";
 
 export const KNOWLEDGE_BASE_SECTION_OPTIONS = Object.freeze([
   { value: KNOWLEDGE_BASE_SECTIONS.FAQ, label: KNOWLEDGE_BASE_SECTION_LABELS[KNOWLEDGE_BASE_SECTIONS.FAQ], icon: "question" },
@@ -153,6 +154,26 @@ function assertParentAllowedFromPages(pages, parentId, currentPageId = "") {
   }
 }
 
+async function rollbackImportedKnowledgeBasePages(createdPages, requestId) {
+  const failures = [];
+
+  for (const page of createdPages) {
+    try {
+      const deleted = await pbDelete(COLLECTIONS.KNOWLEDGE_BASE_PAGES, page.id);
+      if (!deleted.ok) {
+        failures.push(page.id);
+      }
+    } catch (err) {
+      failures.push(page.id);
+      logger.warn("Failed to rollback imported Knowledge Base article", { requestId, pageId: page.id, error: err.message });
+    }
+  }
+
+  if (failures.length > 0) {
+    logger.warn("Knowledge Base Markdown import rollback finished with failures", { requestId, failedCount: failures.length });
+  }
+}
+
 /**
  * Creates a Knowledge Base page in a version section.
  *
@@ -196,6 +217,113 @@ export async function createKnowledgeBasePage(versionId, data, requestId) {
 
   logger.info("Knowledge Base page created", { requestId, pageId: result.data.id, versionId, section });
   return result.data;
+}
+
+/**
+ * Imports Markdown files as Knowledge Base articles, preserving relative folders.
+ *
+ * @param {string} versionId - Version record ID.
+ * @param {string} section - Knowledge Base section.
+ * @param {Array<{ filename: string, content: string }>} files - Markdown file payloads.
+ * @param {string} requestId - Request ID for logs.
+ * @returns {Promise<Array<Object>>} Created Knowledge Base articles.
+ * @throws {ConflictError|ValidationError} If import data or storage writes are invalid.
+ */
+export async function importKnowledgeBaseMarkdownPages(versionId, section, files, requestId) {
+  const normalizedSection = assertKnowledgeBaseSection(section);
+  const normalizedFiles = normalizeMarkdownImportFiles(files);
+  const importPlan = buildMarkdownImportHierarchy(normalizedFiles);
+  const pagesResult = await listKnowledgeBasePages(versionId, normalizedSection);
+  const existingPages = pagesResult.items || [];
+  const existingPageBySlug = new Map(existingPages.map((page) => [page.slug, page]));
+  const existingSlugs = new Set(existingPages.map((page) => page.slug));
+  const existingConflicts = [];
+
+  if (importPlan.duplicateSlugs.length > 0) {
+    throw new ValidationError(`Markdown import contains duplicate article slugs: ${formatMarkdownImportSlugList(importPlan.duplicateSlugs)}.`);
+  }
+
+  for (const file of importPlan.files) {
+    if (existingSlugs.has(file.slug)) {
+      existingConflicts.push(file.slug);
+    }
+  }
+
+  if (existingConflicts.length > 0) {
+    throw new ConflictError(`Knowledge Base articles already exist for these slugs: ${formatMarkdownImportSlugList(existingConflicts)}.`);
+  }
+
+  let nextOrder = existingPages.reduce((max, page) => Math.max(max, page.order || 0), 0) + 1;
+  const createdPages = [];
+  const folderIdByKey = new Map();
+
+  try {
+    for (const folder of importPlan.folders) {
+      const parent = folder.parentKey ? folderIdByKey.get(folder.parentKey) || "" : "";
+      const existing = existingPageBySlug.get(folder.slug);
+
+      if (existing) {
+        if ((existing.parent || "") !== parent) {
+          throw new ConflictError(`Cannot preserve folder hierarchy because the slug ${folder.slug} already exists under another parent.`);
+        }
+        folderIdByKey.set(folder.key, existing.id);
+        continue;
+      }
+
+      const result = await pbCreate(COLLECTIONS.KNOWLEDGE_BASE_PAGES, {
+        version: versionId,
+        section: normalizedSection,
+        title: folder.title,
+        slug: folder.slug,
+        content: "",
+        parent,
+        icon: "",
+        order: nextOrder,
+      });
+
+      if (!result.ok) {
+        const details = formatMarkdownImportPbErrors(result.data);
+        if (result.status === 409 || isPocketBaseUniqueSlugError(result.data)) {
+          throw new ConflictError("A Knowledge Base folder with one of these slugs already exists.");
+        }
+        throw new ValidationError("Failed to import Markdown folders.", details);
+      }
+
+      nextOrder += 1;
+      createdPages.push(result.data);
+      folderIdByKey.set(folder.key, result.data.id);
+    }
+
+    for (const file of importPlan.files) {
+      const result = await pbCreate(COLLECTIONS.KNOWLEDGE_BASE_PAGES, {
+        version: versionId,
+        section: normalizedSection,
+        title: file.title,
+        slug: file.slug,
+        content: file.content,
+        parent: file.parentKey ? folderIdByKey.get(file.parentKey) || "" : "",
+        icon: "",
+        order: nextOrder,
+      });
+
+      if (!result.ok) {
+        const details = formatMarkdownImportPbErrors(result.data);
+        if (result.status === 409 || isPocketBaseUniqueSlugError(result.data)) {
+          throw new ConflictError("A Knowledge Base article with one of these slugs already exists.");
+        }
+        throw new ValidationError("Failed to import Markdown articles.", details);
+      }
+
+      nextOrder += 1;
+      createdPages.push(result.data);
+    }
+  } catch (err) {
+    await rollbackImportedKnowledgeBasePages(createdPages, requestId);
+    throw err;
+  }
+
+  logger.info("Knowledge Base Markdown pages imported", { requestId, versionId, section: normalizedSection, count: createdPages.length });
+  return createdPages;
 }
 
 /**
