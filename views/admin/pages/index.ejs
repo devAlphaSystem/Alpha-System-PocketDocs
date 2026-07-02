@@ -61,15 +61,10 @@
         <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= pg.title %>">
           <div class="version-card-main">
             <div class="version-info">
-              <% if (pg.icon) { %>
-                <i class="ph ph-<%= pg.icon %> page-icon"></i>
-              <% } else { %>
-                <i class="ph ph-<%= sectionIcon %> page-icon"></i>
-              <% } %>
               <h3 class="page-title"><%= pg.title %></h3>
               <span class="page-slug text-muted">/<%= pg.slug %></span>
             </div>
-            <div class="version-actions page-tree-actions">
+            <div class="version-actions">
               <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
               <% if (user.role === 'owner' || user.role === 'admin') { %>
                 <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>/delete" class="inline-form" data-confirm-title="Delete <%= itemLabel %>?" data-confirm-message="Delete this <%= itemLabel %>?" data-confirm-button="Delete" data-confirm-variant="danger">
@@ -91,11 +86,6 @@
           <div class="version-card-main">
             <div class="version-info">
               <div class="page-tree-handle" title="Drag to reorder"><i class="ph ph-dots-six-vertical"></i></div>
-              <% if (node.icon) { %>
-                <i class="ph ph-<%= node.icon %> page-icon"></i>
-              <% } else { %>
-                <i class="ph ph-<%= sectionIcon %> page-icon"></i>
-              <% } %>
               <h3 class="page-title"><%= node.title %></h3>
               <span class="page-slug text-muted">/<%= node.slug %></span>
             </div>

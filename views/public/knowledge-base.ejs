@@ -20,6 +20,12 @@
         <div class="docs-article-header">
           <i class="ph ph-<%= kbPage.icon || (section === 'troubleshooting' ? 'wrench' : 'question') %> docs-page-icon"></i>
           <h1><%= kbPage.title %></h1>
+
+          <% if (kbPage.updated) { %>
+            <p class="docs-updated-date">
+              Last updated <time datetime="<%= kbPage.updated %>"><%= formatLongDateTime(kbPage.updated) %></time>
+            </p>
+          <% } %>
         </div>
         <div class="docs-content prose">
           <%- contentHtml %>

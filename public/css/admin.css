@@ -479,11 +479,6 @@
   cursor: grabbing;
 }
 
-.page-icon {
-  color: var(--text-tertiary);
-  font-size: 1.1em;
-}
-
 .page-title {
   font-size: var(--text-sm);
   font-weight: 500;

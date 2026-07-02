@@ -21,6 +21,12 @@
         <% } %>
 
         <h1><%= page ? page.title : project.name %></h1>
+
+        <% if (page && page.updated) { %>
+          <p class="docs-updated-date">
+            Last updated <time datetime="<%= page.updated %>"><%= formatLongDateTime(page.updated) %></time>
+          </p>
+        <% } %>
       </div>
       <div class="docs-content prose">
         <%- contentHtml %>

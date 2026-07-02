@@ -460,9 +460,23 @@
   gap: var(--space-3);
 }
 
+.docs-article-header h1 {
+  min-width: 0;
+}
+
 .docs-page-icon {
   font-size: 1.6em;
   color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.docs-updated-date {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .docs-toc {
@@ -624,6 +638,17 @@
 
   .docs-article {
     padding: var(--space-6);
+  }
+
+  .docs-article-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .docs-updated-date {
+    width: 100%;
+    margin-left: 0;
+    padding-left: calc(1.6em + var(--space-3));
   }
 }
 

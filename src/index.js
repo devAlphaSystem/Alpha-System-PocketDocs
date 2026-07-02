@@ -20,7 +20,7 @@ import { requestIdMiddleware, requestLoggerMiddleware } from "./middleware/reque
 import { securityHeadersMiddleware } from "./middleware/security-headers.js";
 import { loadUserMiddleware } from "./middleware/auth.js";
 import { errorHandlerMiddleware, notFoundMiddleware } from "./middleware/error-handler.js";
-import { buildPaginationViewModel, formatDate, formatLongDate, normalizeViewAssetList } from "./lib/view-helpers.js";
+import { buildPaginationViewModel, formatDate, formatLongDate, formatLongDateTime, normalizeViewAssetList } from "./lib/view-helpers.js";
 
 import authRoutes from "./modules/auth/controller.js";
 import setupRoutes from "./modules/setup/controller.js";
@@ -154,6 +154,7 @@ app.use((req, res, next) => {
   res.locals.buildPaginationViewModel = buildPaginationViewModel;
   res.locals.formatDate = formatDate;
   res.locals.formatLongDate = formatLongDate;
+  res.locals.formatLongDateTime = formatLongDateTime;
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();

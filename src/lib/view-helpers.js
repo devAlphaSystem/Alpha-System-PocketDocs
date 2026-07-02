@@ -46,6 +46,10 @@ export function formatLongDate(value) {
   return new Date(value).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 }
 
+export function formatLongDateTime(value) {
+  return new Date(value).toLocaleString("en-US", { year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
 function appendQueryParam(params, key, value) {
   if (value !== undefined && value !== null && value !== "") {
     params.push(`${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
