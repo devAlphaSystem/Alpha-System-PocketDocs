@@ -87,6 +87,26 @@
     });
   });
 
+  document.addEventListener("click", function (event) {
+    var fillTrigger = event.target.closest ? event.target.closest("[data-fill-target][data-fill-value]") : null;
+    if (!fillTrigger) return;
+
+    var targetId = fillTrigger.getAttribute("data-fill-target");
+    var target = targetId ? document.getElementById(targetId) : null;
+    if (!target || typeof target.value === "undefined") return;
+
+    event.preventDefault();
+
+    var value = fillTrigger.getAttribute("data-fill-value") || "";
+    target.value = value;
+    target.dispatchEvent(new Event("input", { bubbles: true }));
+    target.focus();
+
+    if (typeof target.setSelectionRange === "function") {
+      target.setSelectionRange(value.length, value.length);
+    }
+  });
+
   function openDialog(dialog) {
     if (!dialog) return;
     if (typeof dialog.showModal === "function") {
@@ -105,6 +125,20 @@
     dialog.removeAttribute("open");
   }
 
+  function requestDialogClose(dialog) {
+    if (!dialog) return;
+    var cancelEvent = new Event("cancel", { cancelable: true });
+    if (!dialog.dispatchEvent(cancelEvent)) return;
+    closeDialog(dialog);
+  }
+
+  function isDialogBackdropClick(dialog, event) {
+    if (!dialog || !dialog.open || event.target !== dialog) return false;
+
+    var rect = dialog.getBoundingClientRect();
+    return event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+  }
+
   document.addEventListener("click", function (event) {
     var openTrigger = event.target.closest ? event.target.closest("[data-dialog-open]") : null;
     if (openTrigger) {
@@ -116,8 +150,25 @@
     var closeTrigger = event.target.closest ? event.target.closest("[data-dialog-close]") : null;
     if (closeTrigger) {
       event.preventDefault();
-      closeDialog(document.getElementById(closeTrigger.getAttribute("data-dialog-close")));
+      requestDialogClose(document.getElementById(closeTrigger.getAttribute("data-dialog-close")));
     }
+  });
+
+  document.querySelectorAll("dialog.admin-dialog").forEach(function (dialog) {
+    dialog.addEventListener("click", function (event) {
+      if (!isDialogBackdropClick(dialog, event)) return;
+      event.preventDefault();
+      requestDialogClose(dialog);
+    });
+  });
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented) return;
+
+    document.querySelectorAll("dialog.admin-dialog[open]").forEach(function (dialog) {
+      if (dialog.contains(event.target)) return;
+      requestDialogClose(dialog);
+    });
   });
 
   document.querySelectorAll("[data-dialog-autoshow]").forEach(function (dialog) {

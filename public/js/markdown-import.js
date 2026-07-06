@@ -198,7 +198,8 @@
     }
   }
 
-  openButton.addEventListener("click", function () {
+  openButton.addEventListener("click", function (event) {
+    event.preventDefault();
     resetDialog();
     if (typeof dialog.showModal === "function") {
       dialog.showModal();

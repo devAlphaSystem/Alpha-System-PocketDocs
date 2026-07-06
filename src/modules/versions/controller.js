@@ -3,7 +3,7 @@
  * @description Express routes for CRUD operations on project versions.
  */
 import { Router } from "express";
-import { listVersions, getVersion, createVersion, updateVersion, deleteVersion } from "./service.js";
+import { listVersions, getVersion, createVersion, updateVersion, deleteVersion, suggestVersionLabels } from "./service.js";
 import { createVersionSchema, updateVersionSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
@@ -30,10 +30,12 @@ router.get("/create", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (
   try {
     const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
     assertVersionManagementSupported(project);
+    const existingVersions = versionsResult.items || [];
     res.render("admin/versions/create", {
       title: `${project.name} - New Version`,
       project,
-      existingVersions: versionsResult.items || [],
+      existingVersions,
+      labelSuggestions: suggestVersionLabels(existingVersions),
       user: req.user,
       csrfToken: res.locals.csrfToken,
       error: null,
@@ -52,10 +54,12 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, 
       const firstIssue = parsed.error.issues[0];
       const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
       assertVersionManagementSupported(project);
+      const existingVersions = versionsResult.items || [];
       return res.status(422).render("admin/versions/create", {
         title: `${project.name} - New Version`,
         project,
-        existingVersions: versionsResult.items || [],
+        existingVersions,
+        labelSuggestions: suggestVersionLabels(existingVersions),
         user: req.user,
         csrfToken: res.locals.csrfToken,
         error: firstIssue.message,
@@ -72,10 +76,12 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, 
     if (err.statusCode === 409 || err.statusCode === 422) {
       const [project, versionsResult] = await Promise.all([getProject(req.params.projectId), listVersions(req.params.projectId)]);
       assertVersionManagementSupported(project);
+      const existingVersions = versionsResult.items || [];
       return res.status(err.statusCode).render("admin/versions/create", {
         title: `${project.name} - New Version`,
         project,
-        existingVersions: versionsResult.items || [],
+        existingVersions,
+        labelSuggestions: suggestVersionLabels(existingVersions),
         user: req.user,
         csrfToken: res.locals.csrfToken,
         error: err.message,
