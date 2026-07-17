@@ -68,24 +68,57 @@ function humanizePathSegment(segment) {
 }
 
 function extractAtxHeading(content) {
-  const match = String(content || "").match(/^\s{0,3}#\s+(.+?)\s*#*\s*$/m);
-  return match ? cleanTitleText(match[1]) : "";
+  const source = String(content || "");
+  const match = source.match(/^(?:\uFEFF)? {0,3}#[ \t]+([^\r\n]+?)[ \t]*#*[ \t]*(?:\r\n|\n|$)/m);
+  const title = match ? cleanTitleText(match[1]) : "";
+
+  if (!title) return null;
+
+  return {
+    title,
+    start: match.index,
+    end: match.index + match[0].length,
+  };
 }
 
 function extractSetextHeading(content) {
-  const lines = String(content || "")
-    .split(/\r?\n/)
-    .slice(0, 80);
+  const source = String(content || "");
+  const lines = source.split(/(?<=\n)/).slice(0, 80);
+  let offset = 0;
 
   for (let index = 0; index < lines.length - 1; index += 1) {
-    const title = cleanTitleText(lines[index]);
-    const underline = lines[index + 1].trim();
+    const title = cleanTitleText(lines[index].replace(/\r?\n$/, ""));
+    const underline = lines[index + 1].replace(/\r?\n$/, "").trim();
     if (title && /^=+\s*$/.test(underline)) {
-      return title;
+      return {
+        title,
+        start: offset,
+        end: offset + lines[index].length + lines[index + 1].length,
+      };
+    }
+
+    offset += lines[index].length;
+  }
+
+  return null;
+}
+
+function extractMarkdownImportHeading(content) {
+  return extractAtxHeading(content) || extractSetextHeading(content);
+}
+
+function removeMarkdownImportHeading(content, heading) {
+  if (!heading) return content;
+
+  let end = heading.end;
+  if (!content.slice(0, heading.start).trim()) {
+    const followingBlankLine = content.slice(end).match(/^[ \t]*(?:\r\n|\n)/);
+    if (followingBlankLine) {
+      end += followingBlankLine[0].length;
     }
   }
 
-  return "";
+  return `${content.slice(0, heading.start)}${content.slice(end)}`;
 }
 
 /**
@@ -119,12 +152,12 @@ function slugifyMarkdownImportValue(value) {
  * Infers a page title from the first Markdown H1, then from the filename.
  *
  * @param {string} filename - Markdown filename.
- * @param {string} content - Markdown content.
+ * @param {{ title: string } | null} heading - H1 metadata extracted from the Markdown content.
  * @returns {string} Page title.
  * @throws {ValidationError} If a safe title cannot be inferred.
  */
-function deriveMarkdownImportTitle(filename, content = "") {
-  const title = extractAtxHeading(content) || extractSetextHeading(content) || humanizeFilename(filename);
+function deriveMarkdownImportTitle(filename, heading) {
+  const title = heading?.title || humanizeFilename(filename);
   if (!title) {
     throw new ValidationError(`Could not infer a page title from ${displayFilename(filename)}.`);
   }
@@ -315,7 +348,8 @@ export function normalizeMarkdownImportFiles(files) {
       throw new ValidationError(`Markdown import content is larger than ${MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH} characters.`);
     }
 
-    const title = deriveMarkdownImportTitle(filename, content);
+    const heading = extractMarkdownImportHeading(content);
+    const title = deriveMarkdownImportTitle(filename, heading);
     const slug = deriveMarkdownImportSlug(filename, title);
     const directories = pathSegments.slice(0, -1).map((segment) => normalizeMarkdownImportDirectory(segment));
 
@@ -323,7 +357,7 @@ export function normalizeMarkdownImportFiles(files) {
       filename: pathSegments.join("/"),
       title,
       slug,
-      content,
+      content: removeMarkdownImportHeading(content, heading),
       directories,
     };
   });
