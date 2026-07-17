@@ -108,7 +108,7 @@
 </div>
 
 <% if (user.role === 'owner' || user.role === 'admin') { %>
-  <dialog id="markdownImportDialog" class="admin-dialog markdown-import-dialog" data-markdown-import-dialog data-import-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/import?section=<%= section %>" data-csrf="<%= csrfToken %>" data-max-total-content="<%= markdownImport.MAX_TOTAL_CONTENT_LENGTH %>">
+  <dialog id="markdownImportDialog" class="admin-dialog markdown-import-dialog" data-markdown-import-dialog data-import-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/import?section=<%= section %>" data-page-editor-base-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages" data-csrf="<%= csrfToken %>" data-max-total-content="<%= markdownImport.MAX_TOTAL_CONTENT_LENGTH %>">
     <div class="dialog-content">
       <div class="dialog-header">
         <h2>Import Markdown</h2>
@@ -126,6 +126,7 @@
           <div class="form-group">
             <label for="markdownImportFolder">Folder</label>
             <input type="file" id="markdownImportFolder" accept=".md,.markdown,text/markdown,text/plain" multiple webkitdirectory directory data-markdown-import-input data-markdown-import-source="folder">
+            <p class="form-hint">Existing pages with matching imported slugs will be updated, including their folder placement.</p>
           </div>
           <div class="markdown-import-summary" data-markdown-import-summary hidden></div>
           <ul class="markdown-import-file-list" data-markdown-import-file-list hidden></ul>

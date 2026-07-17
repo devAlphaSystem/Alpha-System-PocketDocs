@@ -281,13 +281,18 @@ router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async 
     }
 
     await getAdminContext(req);
-    const pages = await importMarkdownPages(req.params.versionId, section, parsed.data.files, req.requestId);
+    const importResult = await importMarkdownPages(req.params.versionId, section, parsed.data.files, req.requestId);
+    const { pages, createdCount, updatedCount, updatedPageIds } = importResult;
     const importedCount = pages.length;
     const sectionOption = getPageSectionOption(section);
-    const successMessage = `${importedCount} ${sectionOption.itemLabel}${importedCount !== 1 ? "s" : ""} imported.`;
+    const importSummary = [createdCount > 0 ? `${createdCount} created` : "", updatedCount > 0 ? `${updatedCount} updated` : ""].filter(Boolean).join(", ");
+    const successMessage = `${importedCount} ${sectionOption.itemLabel}${importedCount !== 1 ? "s" : ""} processed: ${importSummary}.`;
     res.status(201).json({
       ok: true,
       importedCount,
+      createdCount,
+      updatedCount,
+      updatedPageIds,
       pages: pages.map((page) => ({
         id: page.id,
         title: page.title,

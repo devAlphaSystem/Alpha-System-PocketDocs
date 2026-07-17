@@ -11,6 +11,7 @@
   var errorBox = dialog.querySelector("[data-markdown-import-error]");
   var closeButtons = dialog.querySelectorAll("[data-markdown-import-close]");
   var importUrl = dialog.getAttribute("data-import-url") || "";
+  var pageEditorBaseUrl = dialog.getAttribute("data-page-editor-base-url") || "";
   var csrfToken = dialog.getAttribute("data-csrf") || "";
   var maxTotalContent = Number(dialog.getAttribute("data-max-total-content")) || 1500000;
   var markdownExtensionPattern = /\.(md|markdown)$/i;
@@ -80,6 +81,19 @@
     }
   }
 
+  function clearUpdatedPageDrafts(pageIds) {
+    if (!pageEditorBaseUrl || !Array.isArray(pageIds) || typeof window.localStorage === "undefined") return;
+
+    try {
+      pageIds.forEach(function (pageId) {
+        if (!pageId) return;
+        window.localStorage.removeItem("smde_" + pageEditorBaseUrl + "/" + pageId);
+      });
+    } catch (_error) {
+      return;
+    }
+  }
+
   function resetDialog() {
     selectedFiles = [];
     selectedInput = null;
@@ -108,6 +122,14 @@
       dialog.close();
     }
     resetDialog();
+  }
+
+  function closeDialogForProcessing() {
+    if (dialog.open && typeof dialog.close === "function") {
+      dialog.close();
+      return;
+    }
+    dialog.removeAttribute("open");
   }
 
   function renderFileList(files) {
@@ -263,6 +285,7 @@
     }
 
     if (typeof window.showLoadingModal === "function") {
+      closeDialogForProcessing();
       window.showLoadingModal({
         title: "Importing Markdown",
         message: "Please wait while the selected files are imported.",
@@ -286,6 +309,7 @@
       }
 
       var result = await response.json();
+      clearUpdatedPageDrafts(result.updatedPageIds);
       if (typeof window.hideModal === "function") {
         window.hideModal();
       }

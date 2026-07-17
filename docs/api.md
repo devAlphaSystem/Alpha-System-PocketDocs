@@ -369,7 +369,7 @@ Creates a new page.
 
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/import`
 
-Bulk-imports Markdown files as pages. Relative folder paths are preserved by creating or reusing folder pages as parents before importing child pages. The server infers each page title from the first Markdown H1, falling back to the filename, and infers each slug from the filename or folder name.
+Bulk-imports Markdown files as pages. Relative folder paths are preserved by creating or reusing folder pages as parents before importing child pages. The server infers each page title from the first Markdown H1, falling back to the filename, and infers each slug from the filename or folder name. If an inferred page slug already exists in the same version and section, the existing page's title, content, and imported hierarchy are updated while its ID, icon, and order are preserved.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -389,15 +389,18 @@ Bulk-imports Markdown files as pages. Relative folder paths are preserved by cre
 {
   "ok": true,
   "importedCount": 2,
+  "createdCount": 1,
+  "updatedCount": 1,
+  "updatedPageIds": ["def456abc123789"],
   "pages": [
     { "id": "abc123def456789", "title": "Getting Started", "slug": "getting-started" },
     { "id": "def456abc123789", "title": "API Reference", "slug": "api-reference" }
   ],
-  "redirectUrl": "/admin/projects/proj123/versions/ver123/pages?success=2%20pages%20imported."
+  "redirectUrl": "/admin/projects/proj123/versions/ver123/pages?success=2%20pages%20processed%3A%201%20created%2C%201%20updated."
 }
 ```
 
-**Errors:** 409 when an inferred page slug already exists or a folder slug exists under another parent; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
+**Errors:** 409 when a folder slug exists under another parent or a concurrent write creates a slug collision; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
 
 ### `GET /admin/projects/:projectId/versions/:versionId/pages/:pageId`
 

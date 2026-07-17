@@ -45,10 +45,26 @@ function pageFilter(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
   return filter;
 }
 
-async function rollbackImportedPages(createdPages, requestId) {
+async function rollbackMarkdownImport(createdPages, updatedPageSnapshots, requestId) {
   const failures = [];
 
-  for (const page of createdPages) {
+  for (const page of [...updatedPageSnapshots].reverse()) {
+    try {
+      const restored = await pbUpdate(COLLECTIONS.PAGES, page.id, {
+        title: page.title,
+        content: page.content || "",
+        parent: page.parent || "",
+      });
+      if (!restored.ok) {
+        failures.push(page.id);
+      }
+    } catch (err) {
+      failures.push(page.id);
+      logger.warn("Failed to rollback imported page update", { requestId, pageId: page.id, error: err.message });
+    }
+  }
+
+  for (const page of [...createdPages].reverse()) {
     try {
       const deleted = await pbDelete(COLLECTIONS.PAGES, page.id);
       if (!deleted.ok) {
@@ -203,25 +219,15 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
   const pagesResult = await listPages(versionId, normalizedSection);
   const existingPages = pagesResult.items || [];
   const existingPageBySlug = new Map(existingPages.map((page) => [page.slug, page]));
-  const existingSlugs = new Set(existingPages.map((page) => page.slug));
-  const existingConflicts = [];
 
   if (importPlan.duplicateSlugs.length > 0) {
     throw new ValidationError(`Markdown import contains duplicate page slugs: ${formatMarkdownImportSlugList(importPlan.duplicateSlugs)}.`);
   }
 
-  for (const file of importPlan.files) {
-    if (existingSlugs.has(file.slug)) {
-      existingConflicts.push(file.slug);
-    }
-  }
-
-  if (existingConflicts.length > 0) {
-    throw new ConflictError(`Pages already exist for these slugs: ${formatMarkdownImportSlugList(existingConflicts)}.`);
-  }
-
   let nextOrder = existingPages.reduce((max, page) => Math.max(max, page.order || 0), 0) + 1;
   const createdPages = [];
+  const updatedPageSnapshots = [];
+  const importedPages = [];
   const folderIdByKey = new Map();
 
   try {
@@ -258,17 +264,37 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
 
       nextOrder += 1;
       createdPages.push(result.data);
+      importedPages.push(result.data);
       folderIdByKey.set(folder.key, result.data.id);
     }
 
     for (const file of importPlan.files) {
+      const parent = file.parentKey ? folderIdByKey.get(file.parentKey) || "" : "";
+      const existing = existingPageBySlug.get(file.slug);
+
+      if (existing) {
+        const updatedPage = await updatePage(
+          existing.id,
+          {
+            title: file.title,
+            content: file.content,
+            parent,
+          },
+          requestId,
+        );
+
+        updatedPageSnapshots.push(existing);
+        importedPages.push(updatedPage);
+        continue;
+      }
+
       const result = await pbCreate(COLLECTIONS.PAGES, {
         version: versionId,
         section: normalizedSection,
         title: file.title,
         slug: file.slug,
         content: file.content,
-        parent: file.parentKey ? folderIdByKey.get(file.parentKey) || "" : "",
+        parent,
         icon: "",
         order: nextOrder,
       });
@@ -283,14 +309,27 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
 
       nextOrder += 1;
       createdPages.push(result.data);
+      importedPages.push(result.data);
     }
   } catch (err) {
-    await rollbackImportedPages(createdPages, requestId);
+    await rollbackMarkdownImport(createdPages, updatedPageSnapshots, requestId);
     throw err;
   }
 
-  logger.info("Markdown pages imported", { requestId, versionId, section: normalizedSection, count: createdPages.length });
-  return createdPages;
+  logger.info("Markdown pages imported", {
+    requestId,
+    versionId,
+    section: normalizedSection,
+    count: importedPages.length,
+    createdCount: createdPages.length,
+    updatedCount: updatedPageSnapshots.length,
+  });
+  return {
+    pages: importedPages,
+    createdCount: createdPages.length,
+    updatedCount: updatedPageSnapshots.length,
+    updatedPageIds: updatedPageSnapshots.map((page) => page.id),
+  };
 }
 
 export async function updatePage(pageId, data, requestId) {
