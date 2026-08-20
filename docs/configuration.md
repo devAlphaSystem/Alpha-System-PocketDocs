@@ -23,6 +23,8 @@ All environment variables are validated at startup via Zod. Invalid values cause
 | `POCKETBASE_ADMIN_PASSWORD` | string (min 8) | — | **Yes** | PocketBase superuser password. In embedded mode, used to create the superuser. |
 | `POCKETBASE_VERSION` | string | — | No | (Embedded only) Pin a specific PocketBase version (e.g. `0.26.6`). Leave empty to download the latest release. |
 
+In embedded mode, PocketDocs enables the PocketBase Batch Web API during startup with at least 150 requests per transaction and a minimum timeout of 3 seconds. Existing higher limits are preserved. In external mode, enable and size the Batch Web API directly in the PocketBase application settings.
+
 ### Security
 
 | Variable | Type | Default | Required | Description |

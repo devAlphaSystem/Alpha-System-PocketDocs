@@ -61,11 +61,7 @@ const sanitizeOptions = {
 };
 
 function slugifyHeading(text) {
-  return text
-    .toLowerCase()
-    .replace(/&[a-z0-9#]+;/gi, "-")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  return text.toLowerCase().replace(/&[a-z0-9#]+;/gi, "-").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
 function withUniqueSlug(base, seen) {

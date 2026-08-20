@@ -1,4 +1,4 @@
-import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
+import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbBatch, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS, PAGINATION, PAGE_SECTIONS, PAGE_SECTION_LABELS, PAGE_SECTION_ICONS } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
@@ -373,6 +373,76 @@ export async function deletePage(pageId, requestId) {
   }
 
   logger.info("Page deleted", { requestId, pageId, versionId: page.version, section: page.section });
+}
+
+function pageDepth(page, pageMap) {
+  let depth = 0;
+  let parentId = page.parent || "";
+  const seen = new Set([page.id]);
+
+  while (parentId && pageMap.has(parentId) && !seen.has(parentId)) {
+    seen.add(parentId);
+    depth += 1;
+    parentId = pageMap.get(parentId).parent || "";
+  }
+
+  return depth;
+}
+
+function survivingParentId(page, pageMap, selectedPageIds) {
+  let parentId = page.parent || "";
+  const seen = new Set([page.id]);
+
+  while (parentId && selectedPageIds.has(parentId)) {
+    if (seen.has(parentId)) {
+      throw new ValidationError("Page hierarchy contains a cycle.");
+    }
+    seen.add(parentId);
+    parentId = pageMap.get(parentId)?.parent || "";
+  }
+
+  return parentId;
+}
+
+export async function deletePages(versionId, section, pageIds, requestId) {
+  const normalizedSection = assertPageSection(section || PAGE_SECTIONS.DOCUMENTS);
+  const uniquePageIds = [...new Set(pageIds || [])];
+  const pagesResult = await listPages(versionId, normalizedSection);
+  const pageMap = new Map((pagesResult.items || []).map((page) => [page.id, page]));
+
+  if (uniquePageIds.length === 0 || uniquePageIds.some((pageId) => !pageMap.has(pageId))) {
+    throw new ValidationError("Selected pages must belong to this version and section.");
+  }
+
+  const selectedPages = uniquePageIds.map((pageId) => pageMap.get(pageId));
+  selectedPages.sort((left, right) => pageDepth(right, pageMap) - pageDepth(left, pageMap));
+  const selectedPageIds = new Set(uniquePageIds);
+  const reparentOperations = (pagesResult.items || []).filter((page) => !selectedPageIds.has(page.id) && selectedPageIds.has(page.parent)).map((page) => ({
+    method: "update",
+    collection: COLLECTIONS.PAGES,
+    id: page.id,
+    data: { parent: survivingParentId(page, pageMap, selectedPageIds) },
+  }));
+  const deleteOperations = selectedPages.map((page) => ({
+    method: "delete",
+    collection: COLLECTIONS.PAGES,
+    id: page.id,
+  }));
+  const result = await pbBatch([...reparentOperations, ...deleteOperations]);
+
+  if (!result.ok) {
+    throw new ValidationError("Failed to remove the selected pages.");
+  }
+
+  logger.info("Selected pages deleted", {
+    requestId,
+    versionId,
+    section: normalizedSection,
+    count: selectedPages.length,
+    reparentedCount: reparentOperations.length,
+  });
+
+  return selectedPages.length;
 }
 
 function assertReorderDoesNotCreateCycle(pageMap, pageId, parentId) {

@@ -24,10 +24,7 @@
   window.PocketDocs = window.PocketDocs || {};
 
   function slugify(value) {
-    return String(value || "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, "");
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
 
   window.PocketDocs.slugify = slugify;

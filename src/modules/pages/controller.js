@@ -3,8 +3,8 @@
  * @description Express routes for CRUD operations on version content sections.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, buildPageTree, flattenPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
-import { createPageSchema, updatePageSchema, reorderPagesSchema, importMarkdownPagesSchema } from "./validation.js";
+import { listPages, listPagesPaginated, buildPageTree, flattenPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, deletePages, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
+import { createPageSchema, updatePageSchema, reorderPagesSchema, deletePagesSchema, importMarkdownPagesSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
@@ -22,7 +22,7 @@ function isNonVersioned(project) {
   return (project?.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.NON_VERSIONED;
 }
 
-function userCanImport(user) {
+function userCanManagePages(user) {
   return user?.role === ROLES.OWNER || user?.role === ROLES.ADMIN;
 }
 
@@ -125,8 +125,8 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       extraJs.push("/js/sidebar-sort.js");
     }
 
-    if (userCanImport(req.user)) {
-      extraJs.push("/js/markdown-import.js");
+    if (userCanManagePages(req.user)) {
+      extraJs.push("/js/page-selection.js", "/js/markdown-import.js");
     }
 
     res.render("admin/pages/index", {
@@ -301,6 +301,25 @@ router.post("/import", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async 
       })),
       redirectUrl: pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: successMessage }),
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/delete-selected", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
+  try {
+    const parsed = deletePagesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(422).json({ error: { code: "VALIDATION_FAILED", message: parsed.error.issues[0].message } });
+    }
+
+    const section = selectedSection(req);
+    const context = await getAdminContext(req);
+    const removedCount = await deletePages(context.version.id, section, parsed.data.pageIds, req.requestId);
+    const sectionOption = getPageSectionOption(section);
+    const removedLabel = removedCount === 1 ? sectionOption.itemLabel : sectionOption.itemLabelPlural;
+
+    res.redirect(pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: `${removedCount} ${removedLabel} removed.` }));
   } catch (err) {
     next(err);
   }

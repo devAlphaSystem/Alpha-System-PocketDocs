@@ -8,12 +8,10 @@
 
   const links = Array.from(toc.querySelectorAll('a[href^="#"]'));
   const byId = new Map(
-    links
-      .map((link) => {
-        const id = decodeURIComponent(link.getAttribute("href").slice(1));
-        return [id, link];
-      })
-      .filter(([id]) => Boolean(id)),
+    links.map((link) => {
+      const id = decodeURIComponent(link.getAttribute("href").slice(1));
+      return [id, link];
+    }).filter(([id]) => Boolean(id)),
   );
 
   const headings = Array.from(contentRoot.querySelectorAll("h2[id], h3[id], h4[id]"));

@@ -9,10 +9,19 @@
   var successMessage = tree.dataset.sortSuccess || "Pages reordered";
   var errorMessage = tree.dataset.sortError || "Failed to reorder pages";
   var dragItem = null;
+  var dragStartedFromControl = false;
+
+  tree.addEventListener("pointerdown", function (e) {
+    dragStartedFromControl = Boolean(e.target.closest("a, button, input, select, textarea, label, form"));
+  });
 
   tree.addEventListener("dragstart", function (e) {
     var item = e.target.closest(".page-tree-item");
-    if (!item) return;
+    if (!item || dragStartedFromControl) {
+      e.preventDefault();
+      dragStartedFromControl = false;
+      return;
+    }
     dragItem = item;
     item.classList.add("dragging");
     e.dataTransfer.effectAllowed = "move";
@@ -24,6 +33,7 @@
       dragItem.classList.remove("dragging");
       dragItem = null;
     }
+    dragStartedFromControl = false;
     tree.querySelectorAll(".drag-over").forEach(function (el) {
       el.classList.remove("drag-over");
     });
@@ -67,18 +77,16 @@
         "X-CSRF-Token": csrfToken,
       },
       body: JSON.stringify({ pages: pages }),
-    })
-      .then(function (res) {
-        if (!res.ok) throw new Error("Reorder failed");
-        if (typeof window.showToast === "function") {
-          window.showToast(successMessage, "success");
-        }
-      })
-      .catch(function () {
-        if (typeof window.showToast === "function") {
-          window.showToast(errorMessage, "error");
-        }
-        window.location.reload();
-      });
+    }).then(function (res) {
+      if (!res.ok) throw new Error("Reorder failed");
+      if (typeof window.showToast === "function") {
+        window.showToast(successMessage, "success");
+      }
+    }).catch(function () {
+      if (typeof window.showToast === "function") {
+        window.showToast(errorMessage, "error");
+      }
+      window.location.reload();
+    });
   });
 })();

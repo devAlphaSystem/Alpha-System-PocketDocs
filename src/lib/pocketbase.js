@@ -126,14 +126,12 @@ export async function pbList(collection, params = {}) {
   await ensureAdminAuth();
   const start = Date.now();
   try {
-    const result = await getPb()
-      .collection(collection)
-      .getList(params.page || 1, params.perPage || 30, {
-        sort: params.sort,
-        filter: params.filter,
-        expand: params.expand,
-        fields: params.fields,
-      });
+    const result = await getPb().collection(collection).getList(params.page || 1, params.perPage || 30, {
+      sort: params.sort,
+      filter: params.filter,
+      expand: params.expand,
+      fields: params.fields,
+    });
     logger.debug("PocketBase query completed", { operation: "list", collection, duration_ms: Date.now() - start });
     return result;
   } catch (err) {
@@ -268,6 +266,56 @@ export async function pbDelete(collection, id) {
       return { ok: false, status: err.status };
     }
     throw wrapPbError(err, `delete:${collection}:${id}`);
+  }
+}
+
+/**
+ * Executes record updates and deletions in a transactional PocketBase batch.
+ *
+ * @param {Array<{ method: "update"|"delete", collection: string, id: string, data?: Object }>} operations - Ordered write operations.
+ * @returns {Promise<{ ok: boolean, status: number, data: Array<Object>|Object }>} Batch result envelope.
+ * @throws {InfrastructureError|TypeError} If the batch cannot be sent or an operation is invalid.
+ */
+export async function pbBatch(operations) {
+  if (!Array.isArray(operations) || operations.length === 0) {
+    throw new TypeError("PocketBase batch requires at least one operation.");
+  }
+
+  for (const operation of operations) {
+    if (!operation?.collection || !operation.id || !["update", "delete"].includes(operation.method)) {
+      throw new TypeError("Invalid PocketBase batch operation.");
+    }
+  }
+
+  await ensureAdminAuth();
+  const start = Date.now();
+  const batch = getPb().createBatch();
+
+  for (const operation of operations) {
+    const collection = batch.collection(operation.collection);
+    if (operation.method === "update") {
+      collection.update(operation.id, operation.data || {});
+    } else {
+      collection.delete(operation.id);
+    }
+  }
+
+  try {
+    const results = await batch.send();
+    const failed = results.find((result) => result.status >= 400);
+    logger.debug("PocketBase batch completed", { operation: "batch", operationCount: operations.length, duration_ms: Date.now() - start });
+
+    if (failed) {
+      return { ok: false, status: failed.status, data: failed.body };
+    }
+
+    return { ok: true, status: 200, data: results };
+  } catch (err) {
+    logger.debug("PocketBase batch failed", { operation: "batch", operationCount: operations.length, duration_ms: Date.now() - start });
+    if (err.status) {
+      return { ok: false, status: err.status, data: err.data };
+    }
+    throw wrapPbError(err, "batch");
   }
 }
 

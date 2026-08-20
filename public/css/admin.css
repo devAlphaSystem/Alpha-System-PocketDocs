@@ -468,15 +468,25 @@
   background: var(--surface-1);
 }
 
-.page-tree-handle {
-  cursor: grab;
-  color: var(--text-tertiary);
-  display: flex;
-  align-items: center;
+.page-selection-checkbox {
+  width: 20px !important;
+  height: 20px !important;
+  margin: 0;
+  flex: 0 0 auto;
+  cursor: pointer;
 }
 
-.page-tree-handle:active {
-  cursor: grabbing;
+.page-batch-delete-form[hidden] {
+  display: none;
+}
+
+.version-card.page-selected {
+  border-color: color-mix(in srgb, var(--color-primary) 55%, var(--surface-border));
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--surface-0));
+}
+
+.version-card.page-tree-item.page-selected .version-card-main {
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--surface-0));
 }
 
 .page-title {

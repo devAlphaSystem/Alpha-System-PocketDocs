@@ -24,6 +24,13 @@
         <button type="button" class="btn btn-outline" data-markdown-import-open>
           <i class="ph ph-upload-simple"></i> Import Markdown
         </button>
+        <form id="pageBatchDeleteForm" method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/delete-selected" class="inline-form page-batch-delete-form" data-page-batch-delete-form data-item-label="<%= itemLabel %>" data-item-label-plural="<%= itemLabelPlural %>" data-confirm-title="Remove selected <%= itemLabelPlural %>?" data-confirm-message="Remove the selected <%= itemLabelPlural %>? This cannot be undone." data-confirm-button="Remove Selected" data-confirm-variant="danger" hidden>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="section" value="<%= section %>">
+          <button type="submit" class="btn btn-danger">
+            <i class="ph ph-trash"></i> Remove Selected
+          </button>
+        </form>
         <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new?section=<%= section %>" class="btn btn-primary">
           <i class="ph ph-plus"></i> New <%= isDocumentsSection ? 'Page' : 'Article' %>
         </a>
@@ -61,6 +68,9 @@
         <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= pg.title %>">
           <div class="version-card-main">
             <div class="version-info">
+              <% if (user.role === 'owner' || user.role === 'admin') { %>
+                <input type="checkbox" class="page-selection-checkbox" name="pageIds" value="<%= pg.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= itemLabel %> <%= pg.title %>">
+              <% } %>
               <h3 class="page-title"><%= pg.title %></h3>
               <span class="page-slug text-muted">/<%= pg.slug %></span>
             </div>
@@ -85,7 +95,9 @@
         <div class="version-card row-link page-tree-item" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= node.title %>" data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= node.depth %>">
           <div class="version-card-main">
             <div class="version-info">
-              <div class="page-tree-handle" title="Drag to reorder"><i class="ph ph-dots-six-vertical"></i></div>
+              <% if (user.role === 'owner' || user.role === 'admin') { %>
+                <input type="checkbox" class="page-selection-checkbox" name="pageIds" value="<%= node.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= itemLabel %> <%= node.title %>">
+              <% } %>
               <h3 class="page-title"><%= node.title %></h3>
               <span class="page-slug text-muted">/<%= node.slug %></span>
             </div>

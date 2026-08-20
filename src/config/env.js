@@ -2,9 +2,7 @@ import "dotenv/config";
 import { z } from "zod";
 
 function parseTrustProxy(value) {
-  const normalized = String(value || "")
-    .trim()
-    .toLowerCase();
+  const normalized = String(value || "").trim().toLowerCase();
 
   if (!normalized || normalized === "false") {
     return false;
@@ -18,10 +16,7 @@ function parseTrustProxy(value) {
     return Number(normalized);
   }
 
-  const parts = String(value)
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
+  const parts = String(value).split(",").map((entry) => entry.trim()).filter(Boolean);
 
   return parts.length <= 1 ? parts[0] || false : parts;
 }

@@ -34,29 +34,24 @@
 
   function fetchResults(query) {
     var url = "/api/search?project=" + encodeURIComponent(projectSlug) + "&version=" + encodeURIComponent(versionId) + "&q=" + encodeURIComponent(query);
-    fetch(url)
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (data) {
-        if (!data.results || data.results.length === 0) {
-          resultsContainer.innerHTML = '<div class="search-results-item"><span>No results found</span></div>';
-        } else {
-          resultsContainer.innerHTML = data.results
-            .map(function (r) {
-              var safeTitle = escapeHtml(r.title);
-              var safeSlug = escapeHtml(r.slug);
-              var safeMeta = r.sectionLabel ? escapeHtml(r.sectionLabel) + " / " + safeSlug : "/" + safeSlug;
-              var href = r.href ? escapeHtml(r.href) : r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
-              return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>" + safeMeta + "</span></a>";
-            })
-            .join("");
-        }
-        resultsContainer.classList.add("active");
-      })
-      .catch(function () {
-        resultsContainer.classList.remove("active");
-      });
+    fetch(url).then(function (res) {
+      return res.json();
+    }).then(function (data) {
+      if (!data.results || data.results.length === 0) {
+        resultsContainer.innerHTML = '<div class="search-results-item"><span>No results found</span></div>';
+      } else {
+        resultsContainer.innerHTML = data.results.map(function (r) {
+          var safeTitle = escapeHtml(r.title);
+          var safeSlug = escapeHtml(r.slug);
+          var safeMeta = r.sectionLabel ? escapeHtml(r.sectionLabel) + " / " + safeSlug : "/" + safeSlug;
+          var href = r.href ? escapeHtml(r.href) : r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
+          return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>" + safeMeta + "</span></a>";
+        }).join("");
+      }
+      resultsContainer.classList.add("active");
+    }).catch(function () {
+      resultsContainer.classList.remove("active");
+    });
   }
 
   function escapeHtml(str) {

@@ -68,12 +68,7 @@
   var form = textarea.closest("form");
 
   function sanitizeFileName(value) {
-    return String(value || "")
-      .trim()
-      .replace(/[<>:"/\\|?*\x00-\x1F]/g, "")
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^[-.]+|[-.]+$/g, "");
+    return String(value || "").trim().replace(/[<>:"/\\|?*\x00-\x1F]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").replace(/^[-.]+|[-.]+$/g, "");
   }
 
   function resolveDownloadFileName() {

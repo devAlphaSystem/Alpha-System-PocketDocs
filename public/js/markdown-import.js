@@ -53,10 +53,7 @@
   }
 
   function getRelativePath(path, stripRoot) {
-    var segments = String(path || "")
-      .replace(/\\/g, "/")
-      .split("/")
-      .filter(Boolean);
+    var segments = String(path || "").replace(/\\/g, "/").split("/").filter(Boolean);
 
     if (stripRoot && segments.length > 1) {
       segments.shift();

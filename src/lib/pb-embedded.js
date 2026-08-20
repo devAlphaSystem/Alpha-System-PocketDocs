@@ -45,6 +45,7 @@
  *   waitForHealth(options?)       Poll /api/health until ready
  *   buildSafeSchema(options?)     Convert pb_schema.json → db_schema.json
  *   applySchema(options?)         Apply db_schema.json collections to PB
+ *   configureBatchWebApi(options?) Enable the transactional Batch Web API
  *   verifySetup(options?)         Verify health + schema + admin auth
  *   resolveConfig(overrides?)     Resolve config from env + overrides
  */
@@ -76,6 +77,8 @@ const PB_HOST = "127.0.0.1";
 const PORT_MIN = 8090;
 const PORT_MAX = 8190;
 const PORT_FILE_NAME = ".pb_port";
+const BATCH_MIN_REQUESTS = 150;
+const BATCH_MIN_TIMEOUT_SECONDS = 3;
 
 function buildUrl(port) {
   return `http://${PB_HOST}:${port}`;
@@ -806,6 +809,54 @@ async function getAuthenticatedClient(config) {
 }
 
 /**
+ * Ensures that the embedded PocketBase instance can execute transactional
+ * record batches without reducing larger limits configured by an administrator.
+ *
+ * @param {Object} [options] - Config overrides. Can include `pb` (authenticated client).
+ * @returns {Promise<Object>} Effective PocketBase batch settings.
+ */
+export async function configureBatchWebApi(options = {}) {
+  const config = resolveConfig(options);
+  const pb = options.pb || (await getAuthenticatedClient(config));
+
+  let settings;
+  try {
+    settings = await pb.settings.getAll();
+  } catch (err) {
+    throw new Error(`Failed to read PocketBase Batch Web API settings: ${err.message}`);
+  }
+
+  const current = settings.batch || {};
+  const desired = {
+    enabled: true,
+    maxRequests: Math.max(Number(current.maxRequests) || 0, BATCH_MIN_REQUESTS),
+    timeout: Math.max(Number(current.timeout) || 0, BATCH_MIN_TIMEOUT_SECONDS),
+    maxBodySize: Number(current.maxBodySize) || 0,
+  };
+  const alreadyConfigured = current.enabled === true && Number(current.maxRequests) >= desired.maxRequests && Number(current.timeout) >= desired.timeout;
+
+  if (alreadyConfigured) {
+    config.log(`[pb-embedded] Batch Web API ready: ${current.maxRequests} requests, ${current.timeout}s timeout`);
+    return current;
+  }
+
+  let updatedSettings;
+  try {
+    updatedSettings = await pb.settings.update({ batch: desired });
+  } catch (err) {
+    throw new Error(`Failed to enable PocketBase Batch Web API: ${err.message}`);
+  }
+
+  const updated = updatedSettings.batch || {};
+  if (updated.enabled !== true || Number(updated.maxRequests) < BATCH_MIN_REQUESTS || Number(updated.timeout) < BATCH_MIN_TIMEOUT_SECONDS) {
+    throw new Error("PocketBase Batch Web API settings were not applied.");
+  }
+
+  config.log(`[pb-embedded] Batch Web API enabled: ${updated.maxRequests} requests, ${updated.timeout}s timeout`);
+  return updated;
+}
+
+/**
  * Returns an authenticated PocketBase admin client.
  * Reuses the instance from boot() or creates a new one.
  *
@@ -827,7 +878,7 @@ export async function getClient(options = {}) {
  */
 export async function verifySetup(options = {}) {
   const config = resolveConfig(options);
-  const results = { health: false, auth: false, schema: null };
+  const results = { health: false, auth: false, batch: false, schema: null };
 
   try {
     const res = await fetch(`${config.url}/api/health`, {
@@ -846,6 +897,14 @@ export async function verifySetup(options = {}) {
     const pb = await getAuthenticatedClient(config);
     results.auth = true;
     config.log("[pb-embedded] Admin auth: OK");
+
+    try {
+      const settings = await pb.settings.getAll();
+      results.batch = settings.batch?.enabled === true && Number(settings.batch.maxRequests) >= BATCH_MIN_REQUESTS && Number(settings.batch.timeout) >= BATCH_MIN_TIMEOUT_SECONDS;
+      config.log(`[pb-embedded] Batch Web API: ${results.batch ? "OK" : "FAIL"}`);
+    } catch (err) {
+      config.error(`[pb-embedded] Batch Web API verification failed: ${err.message}`);
+    }
 
     try {
       const schema = await readSafeSchemaFile(config.dbSchemaPath);
@@ -871,8 +930,9 @@ export async function verifySetup(options = {}) {
  *   3. Provision superuser account
  *   4. Start PocketBase process
  *   5. Wait for health
- *   6. Apply schema from db_schema.json
- *   7. Verify everything works
+ *   6. Enable the Batch Web API
+ *   7. Apply schema from db_schema.json
+ *   8. Verify everything works
  *
  * @param {Object} [options] - Config overrides.
  * @returns {Promise<import("pocketbase").default>} Authenticated admin PocketBase client.
@@ -922,11 +982,12 @@ export async function boot(options = {}) {
 
   const pb = await getAuthenticatedClient(config);
   _adminClient = pb;
+  await configureBatchWebApi({ ...resolved, pb });
   await applySchema({ ...resolved, pb });
 
   const verification = await verifySetup(resolved);
 
-  if (!verification.health || !verification.auth) {
+  if (!verification.health || !verification.auth || !verification.batch) {
     throw new Error("Boot verification failed. Check logs above.");
   }
 

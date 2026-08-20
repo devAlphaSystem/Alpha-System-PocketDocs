@@ -25,36 +25,41 @@ export const updatePageSchema = z.object({
 
 /** @type {import("zod").ZodObject} Validates a batch page reorder request. */
 export const reorderPagesSchema = z.object({
-  pages: z
-    .array(
-      z.object({
-        id: z.string().min(1).max(15),
-        order: z.number().int().min(0),
-        parent: z.string().max(15).default(""),
-      }),
-    )
-    .min(1),
+  pages: z.array(
+    z.object({
+      id: z.string().min(1).max(15),
+      order: z.number().int().min(0),
+      parent: z.string().max(15).default(""),
+    }),
+  ).min(1),
+});
+
+/** @type {import("zod").ZodObject} Validates selected pages submitted for batch deletion. */
+export const deletePagesSchema = z.object({
+  pageIds: z.preprocess(
+    (value) => {
+      if (Array.isArray(value)) return value;
+      return value ? [value] : [];
+    },
+    z.array(z.string().min(1).max(15)).min(1, "Select at least one page to remove.").max(100),
+  ).transform((pageIds) => [...new Set(pageIds)]),
 });
 
 /** @type {import("zod").ZodObject} Validates bulk Markdown page import payloads. */
-export const importMarkdownPagesSchema = z
-  .object({
-    files: z
-      .array(
-        z.object({
-          filename: z.string().trim().min(1, "Markdown filename is required.").max(500, "Markdown filename is too long."),
-          content: z.string().max(MAX_CONTENT_LENGTH, "Markdown file content is too large."),
-        }),
-      )
-      .min(1, "Select at least one Markdown file to import."),
-  })
-  .superRefine((data, ctx) => {
-    const totalLength = data.files.reduce((sum, file) => sum + file.content.length, 0);
-    if (totalLength > MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["files"],
-        message: `Markdown import content is larger than ${MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH} characters.`,
-      });
-    }
-  });
+export const importMarkdownPagesSchema = z.object({
+  files: z.array(
+    z.object({
+      filename: z.string().trim().min(1, "Markdown filename is required.").max(500, "Markdown filename is too long."),
+      content: z.string().max(MAX_CONTENT_LENGTH, "Markdown file content is too large."),
+    }),
+  ).min(1, "Select at least one Markdown file to import."),
+}).superRefine((data, ctx) => {
+  const totalLength = data.files.reduce((sum, file) => sum + file.content.length, 0);
+  if (totalLength > MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["files"],
+      message: `Markdown import content is larger than ${MARKDOWN_IMPORT.MAX_TOTAL_CONTENT_LENGTH} characters.`,
+    });
+  }
+});

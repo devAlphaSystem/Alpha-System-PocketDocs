@@ -11,21 +11,15 @@ function getHeaderValue(headers, name) {
 }
 
 function splitForwardedHeader(value) {
-  return String(value || "")
-    .split(",")
-    .map((entry) => normalizeIp(entry))
-    .filter(Boolean);
+  return String(value || "").split(",").map((entry) => normalizeIp(entry)).filter(Boolean);
 }
 
 function splitForwardedForHeader(value) {
-  return String(value || "")
-    .split(",")
-    .map((entry) => {
-      const match = entry.match(/(?:^|;)\s*for=(?:"?)([^;"]+)/i);
-      if (!match) return "";
-      return normalizeIp(match[1]);
-    })
-    .filter(Boolean);
+  return String(value || "").split(",").map((entry) => {
+    const match = entry.match(/(?:^|;)\s*for=(?:"?)([^;"]+)/i);
+    if (!match) return "";
+    return normalizeIp(match[1]);
+  }).filter(Boolean);
 }
 
 function isLoopbackIp(ip) {
@@ -67,9 +61,7 @@ function getTrustedProxyHeaderIp(req) {
  * @returns {string} The normalized IP address, or an empty string if invalid.
  */
 export function normalizeIp(ip) {
-  const raw = String(ip || "")
-    .trim()
-    .replace(/^["']|["']$/g, "");
+  const raw = String(ip || "").trim().replace(/^["']|["']$/g, "");
 
   if (!raw || raw.toLowerCase() === "unknown") {
     return "";
