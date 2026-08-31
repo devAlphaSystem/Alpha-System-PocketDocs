@@ -5,7 +5,7 @@
  */
 import { Router } from "express";
 import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, getPublicSectionPages, getPublicSectionPage, searchPages, getSingleProjectVersion, getSingleProjectPage } from "./service.js";
-import { buildPageTree, flattenPageTree, getPageSectionLabel, isKnowledgeBaseSection, PAGE_SECTION_OPTIONS } from "../pages/service.js";
+import { buildPageTree, flattenPageTree, getPageSectionLabel, isKnowledgeBaseSection, isPageContentItem, PAGE_SECTION_OPTIONS } from "../pages/service.js";
 import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 import { ROLES, PROJECT_MODE, PAGE_SECTIONS } from "../../config/constants.js";
@@ -96,11 +96,11 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
     }
 
     const [pagesResult, knowledgeBaseResult, allKnowledgeBaseResult] = await Promise.all([getPublicPages(version.id), getPublicSectionPages(version.id, section), section ? getPublicSectionPages(version.id) : Promise.resolve(null)]);
-    const docsPages = pagesResult.items || [];
+    const docsSidebarItems = pagesResult.items || [];
     const knowledgeBasePages = knowledgeBaseResult.items || [];
     const allKnowledgeBasePages = allKnowledgeBaseResult?.items || knowledgeBasePages;
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(allKnowledgeBasePages);
-    const pageTree = buildPageTree(docsPages);
+    const pageTree = buildPageTree(docsSidebarItems);
     const kbPageTree = buildPageTree(knowledgeBasePages);
     const selectedSection = section || "";
     const sectionLabel = selectedSection ? getPageSectionLabel(selectedSection) : "Knowledge Base";
@@ -191,9 +191,9 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
         });
       }
       const pagesResult = await getPublicPages(version.id);
-      const pages = pagesResult.items || [];
-      const pageTree = buildPageTree(pages);
-      const firstPage = pageTree[0] || pages[0];
+      const sidebarItems = pagesResult.items || [];
+      const pages = flattenPageTree(buildPageTree(sidebarItems)).filter(isPageContentItem);
+      const firstPage = pages[0];
       if (firstPage) {
         return res.redirect(`/docs/${project.slug}/${firstPage.slug}`);
       }
@@ -311,8 +311,9 @@ router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
       throw new NotFoundError("Page");
     }
 
-    const pages = pagesResult.items || [];
-    const pageTree = buildPageTree(pages);
+    const sidebarItems = pagesResult.items || [];
+    const pageTree = buildPageTree(sidebarItems);
+    const pages = flattenPageTree(pageTree).filter(isPageContentItem);
     const contentHtml = renderMarkdown(page.content);
     const headings = extractHeadings(contentHtml);
 
@@ -367,12 +368,12 @@ router.get("/docs/:projectSlug/:versionSlug", async (req, res, next) => {
 
     const [pagesResult, sectionPagesResult] = await Promise.all([getPublicPages(version.id), getPublicSectionPages(version.id)]);
 
-    const pages = pagesResult.items || [];
-    const pageTree = buildPageTree(pages);
+    const sidebarItems = pagesResult.items || [];
+    const pages = flattenPageTree(buildPageTree(sidebarItems)).filter(isPageContentItem);
     const sectionPages = sectionPagesResult.items || [];
 
     if (pages.length > 0) {
-      const firstPage = pageTree[0] || pages[0];
+      const firstPage = pages[0];
       return res.redirect(`/docs/${project.slug}/${version.slug}/${firstPage.slug}`);
     }
 
@@ -507,8 +508,9 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       throw new NotFoundError("Page");
     }
 
-    const pages = pagesResult.items || [];
-    const pageTree = buildPageTree(pages);
+    const sidebarItems = pagesResult.items || [];
+    const pageTree = buildPageTree(sidebarItems);
+    const pages = flattenPageTree(pageTree).filter(isPageContentItem);
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(knowledgeBaseResult.items || []);
     const contentHtml = renderMarkdown(page.content);
     const headings = extractHeadings(contentHtml);

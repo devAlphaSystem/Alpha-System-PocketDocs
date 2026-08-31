@@ -143,6 +143,10 @@
     renderingConfig: {
       codeSyntaxHighlighting: true,
     },
+    onToggleFullScreen: function (isFullscreen) {
+      document.body.classList.toggle("fullscreen", isFullscreen);
+      refreshEditorLayout();
+    },
     minHeight: "400px",
   });
 
@@ -192,19 +196,6 @@
     },
     true,
   );
-
-  var toolbar = editor.gui && editor.gui.toolbar;
-  if (toolbar) {
-    toolbar.addEventListener("click", function (event) {
-      var target = event.target;
-      if (!(target instanceof Element)) return;
-      var button = target.closest("button");
-      if (!button) return;
-      if (button.classList.contains("fullscreen")) {
-        setTimeout(refreshEditorLayout, 0);
-      }
-    });
-  }
 
   window.addEventListener("resize", refreshEditorLayout);
   document.addEventListener("fullscreenchange", refreshEditorLayout);

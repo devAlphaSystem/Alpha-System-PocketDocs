@@ -143,13 +143,14 @@ body.admin-body .editor-content .EasyMDEContainer.sided--no-fullscreen .editor-p
 
 body.admin-body .editor-content .editor-toolbar.fullscreen {
   top: var(--header-height) !important;
-  left: var(--sidebar-width) !important;
-  width: calc(100vw - var(--sidebar-width)) !important;
+  left: 0 !important;
+  width: 100vw !important;
+  border-radius: 0 !important;
   z-index: 190 !important;
 }
 
 body.admin-body .editor-content .editor-toolbar.fullscreen::before {
-  left: var(--sidebar-width) !important;
+  left: 0 !important;
 }
 
 body.admin-body .editor-content .editor-toolbar.fullscreen::after {
@@ -158,44 +159,33 @@ body.admin-body .editor-content .editor-toolbar.fullscreen::after {
 
 body.admin-body .editor-content .CodeMirror-fullscreen {
   top: calc(var(--header-height) + 50px) !important;
-  left: var(--sidebar-width) !important;
+  left: 0 !important;
   right: 0 !important;
-  width: calc(100vw - var(--sidebar-width)) !important;
+  width: 100vw !important;
   height: calc(100vh - var(--header-height) - 50px) !important;
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-left: 0 !important;
+  border-radius: 0 !important;
   z-index: 189 !important;
 }
 
 body.admin-body .editor-content .CodeMirror-sided.CodeMirror-fullscreen {
-  width: calc((100vw - var(--sidebar-width)) / 2) !important;
+  width: 50vw !important;
 }
 
 body.admin-body .editor-content .editor-preview-side.editor-preview-active-side {
   top: calc(var(--header-height) + 50px) !important;
   right: 0 !important;
-  width: calc((100vw - var(--sidebar-width)) / 2) !important;
+  width: 50vw !important;
   height: calc(100vh - var(--header-height) - 50px) !important;
   z-index: 189 !important;
 }
 
-@media (max-width: 768px) {
-  body.admin-body .editor-content .editor-toolbar.fullscreen {
-    left: 0 !important;
-    width: 100vw !important;
-  }
-
-  body.admin-body .editor-content .editor-toolbar.fullscreen::before {
-    left: 0 !important;
-  }
-
-  body.admin-body .editor-content .CodeMirror-fullscreen {
-    left: 0 !important;
-    width: 100vw !important;
-  }
-
-  body.admin-body .editor-content .CodeMirror-sided.CodeMirror-fullscreen,
-  body.admin-body .editor-content .editor-preview-side.editor-preview-active-side {
-    width: 50vw !important;
-  }
+body.admin-body.fullscreen .editor-content .editor-preview-side.editor-preview-active-side {
+  border-right: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
 }
 
 body.admin-body .editor-content .preview-shell.prose code {

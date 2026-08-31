@@ -41,6 +41,18 @@ export const PAGE_SECTIONS = Object.freeze({
 });
 
 /**
+ * Defines the record types that can participate in the documents sidebar order.
+ * Existing records without a value are treated as pages for backwards compatibility.
+ *
+ * @enum {string}
+ */
+export const PAGE_ITEM_TYPES = Object.freeze({
+  PAGE: "page",
+  HEADER: "header",
+  SEPARATOR: "separator",
+});
+
+/**
  * Maps page section values to their public labels.
  *
  * @enum {string}

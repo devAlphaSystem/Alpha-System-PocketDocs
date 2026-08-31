@@ -1,6 +1,8 @@
 import { pbList, pbGetFirstByFilter, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS, VISIBILITY, PAGE_SECTIONS } from "../../config/constants.js";
+import { COLLECTIONS, VISIBILITY, PAGE_SECTIONS, PAGE_ITEM_TYPES } from "../../config/constants.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
+
+const PAGE_CONTENT_FILTER = `(item_type = "" || item_type = "${PAGE_ITEM_TYPES.PAGE}")`;
 
 /**
  * Retrieves the single internal version for a single-version project.
@@ -23,7 +25,7 @@ export async function getSingleProjectVersion(projectId, isAdmin = false) {
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
 export async function getSingleProjectPage(pageSlug, versionId) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && slug = "${pbFilterValue(pageSlug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && ${PAGE_CONTENT_FILTER} && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -91,7 +93,8 @@ export async function getPublicVersionByProjectSlug(projectSlug, versionSlug, is
 }
 
 /**
- * Retrieves all pages for a public version, sorted by order and title.
+ * Retrieves the ordered documents sidebar records for a public version.
+ * The result includes page, header, and separator items.
  *
  * @param {string} versionId - The version record ID.
  * @returns {Promise<Object>} Paginated result containing page items.
@@ -112,7 +115,7 @@ export async function getPublicPages(versionId) {
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
 export async function getPublicPage(versionId, pageSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && slug = "${pbFilterValue(pageSlug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${PAGE_SECTIONS.DOCUMENTS}" && ${PAGE_CONTENT_FILTER} && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -154,7 +157,7 @@ export async function getPublicSectionPages(versionId, section = "") {
  * @returns {Promise<Object|null>} The page record, or `null` if not found.
  */
 export async function getPublicSectionPage(versionId, section, pageSlug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${pbFilterValue(section)}" && slug = "${pbFilterValue(pageSlug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `version = "${pbFilterValue(versionId)}" && section = "${pbFilterValue(section)}" && ${PAGE_CONTENT_FILTER} && slug = "${pbFilterValue(pageSlug)}"`);
 }
 
 /**
@@ -176,6 +179,7 @@ export async function searchPages(projectId, query, versionId = null, isAdmin = 
   if (versionId) {
     filter += ` && version = "${pbFilterValue(versionId)}"`;
   }
+  filter += ` && ${PAGE_CONTENT_FILTER}`;
   filter += ` && (title ~ "${pbFilterValue(safeQuery)}" || slug ~ "${pbFilterValue(safeQuery)}" || content ~ "${pbFilterValue(safeQuery)}")`;
 
   const result = await pbList(COLLECTIONS.PAGES, {

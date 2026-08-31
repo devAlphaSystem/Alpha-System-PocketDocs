@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT, PAGE_SECTIONS } from "../../config/constants.js";
+import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT, PAGE_SECTIONS, PAGE_ITEM_TYPES } from "../../config/constants.js";
 
 const sectionSchema = z.enum([PAGE_SECTIONS.DOCUMENTS, PAGE_SECTIONS.FAQ, PAGE_SECTIONS.TROUBLESHOOTING]);
 
@@ -34,15 +34,34 @@ export const reorderPagesSchema = z.object({
   ).min(1),
 });
 
-/** @type {import("zod").ZodObject} Validates selected pages submitted for batch deletion. */
+/** @type {import("zod").ZodObject} Validates selected content and sidebar items submitted for batch deletion. */
 export const deletePagesSchema = z.object({
   pageIds: z.preprocess(
     (value) => {
       if (Array.isArray(value)) return value;
       return value ? [value] : [];
     },
-    z.array(z.string().min(1).max(15)).min(1, "Select at least one page to remove.").max(100),
+    z.array(z.string().min(1).max(15)).min(1, "Select at least one item to remove.").max(100),
   ).transform((pageIds) => [...new Set(pageIds)]),
+});
+
+/** @type {import("zod").ZodObject} Validates a sidebar header or separator creation request. */
+export const createSidebarItemSchema = z.object({
+  itemType: z.enum([PAGE_ITEM_TYPES.HEADER, PAGE_ITEM_TYPES.SEPARATOR]),
+  title: z.string().trim().max(MAX_TITLE_LENGTH).optional().default(""),
+}).superRefine((data, ctx) => {
+  if (data.itemType === PAGE_ITEM_TYPES.HEADER && !data.title) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["title"],
+      message: "Header title is required.",
+    });
+  }
+});
+
+/** @type {import("zod").ZodObject} Validates a sidebar header update request. */
+export const updateSidebarHeaderSchema = z.object({
+  title: z.string().trim().min(1, "Header title is required.").max(MAX_TITLE_LENGTH),
 });
 
 /** @type {import("zod").ZodObject} Validates bulk Markdown page import payloads. */

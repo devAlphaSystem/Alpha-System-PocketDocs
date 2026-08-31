@@ -35,7 +35,7 @@ import { loadSettings, getSettings } from "./modules/settings/service.js";
 import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
 import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
 import { checkOwnerExists, isOwnerSetupComplete } from "./modules/setup/service.js";
-import { boot as bootEmbeddedPb, stop as stopEmbeddedPb, applySchema, buildSafeSchema } from "./lib/pb-embedded.js";
+import { boot as bootEmbeddedPb, stop as stopEmbeddedPb, applySchema } from "./lib/pb-embedded.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -255,16 +255,6 @@ async function start() {
   }
 
   if (env.POCKETBASE_MODE !== "embedded") {
-    try {
-      await buildSafeSchema({
-        log: (msg) => logger.info(msg),
-        warn: (msg) => logger.warn(msg),
-        error: (msg) => logger.error(msg),
-      });
-    } catch (err) {
-      logger.warn("Could not build safe schema (pb_schema.json may be missing)", { error: err.message });
-    }
-
     try {
       await applySchema({
         pb: pbClient(),

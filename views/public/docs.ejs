@@ -16,10 +16,6 @@
   <main class="docs-main">
     <article class="docs-article">
       <div class="docs-article-header">
-        <% if (page) { %>
-          <i class="ph ph-<%= page.icon || 'file-text' %> docs-page-icon"></i>
-        <% } %>
-
         <h1><%= page ? page.title : project.name %></h1>
 
         <% if (page && page.updated) { %>

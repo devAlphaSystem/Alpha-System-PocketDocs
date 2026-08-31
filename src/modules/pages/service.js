@@ -1,5 +1,6 @@
 import { pbList, pbGetOne, pbGetFirstByFilter, pbCreate, pbUpdate, pbDelete, pbBatch, pbFilterValue } from "../../lib/pocketbase.js";
-import { COLLECTIONS, PAGINATION, PAGE_SECTIONS, PAGE_SECTION_LABELS, PAGE_SECTION_ICONS } from "../../config/constants.js";
+import { randomUUID } from "node:crypto";
+import { COLLECTIONS, PAGINATION, PAGE_SECTIONS, PAGE_SECTION_LABELS, PAGE_SECTION_ICONS, PAGE_ITEM_TYPES } from "../../config/constants.js";
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 import { buildMarkdownImportHierarchy, formatMarkdownImportPbErrors, formatMarkdownImportSlugList, isPocketBaseUniqueSlugError, normalizeMarkdownImportFiles } from "./import-utils.js";
@@ -35,6 +36,23 @@ export function getPageSectionIcon(section) {
 
 export function getPageSectionOption(section) {
   return PAGE_SECTION_OPTIONS.find((option) => option.value === section) || PAGE_SECTION_OPTIONS[0];
+}
+
+export function getPageItemType(page) {
+  return page?.item_type || PAGE_ITEM_TYPES.PAGE;
+}
+
+export function isPageContentItem(page) {
+  return getPageItemType(page) === PAGE_ITEM_TYPES.PAGE;
+}
+
+export function isSidebarNavigationItem(page) {
+  const itemType = getPageItemType(page);
+  return itemType === PAGE_ITEM_TYPES.HEADER || itemType === PAGE_ITEM_TYPES.SEPARATOR;
+}
+
+function pageContentFilter() {
+  return `(item_type = "" || item_type = "${PAGE_ITEM_TYPES.PAGE}")`;
 }
 
 function pageFilter(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
@@ -100,7 +118,7 @@ export async function listAllPages(versionId) {
 export async function listPagesPaginated(versionId, section = PAGE_SECTIONS.DOCUMENTS, page = PAGINATION.DEFAULT_PAGE, search = "") {
   let filter = pageFilter(versionId, section);
   if (search) {
-    filter += ` && (title ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}")`;
+    filter += ` && ${pageContentFilter()} && (title ~ "${pbFilterValue(search)}" || slug ~ "${pbFilterValue(search)}")`;
   }
   return pbList(COLLECTIONS.PAGES, {
     filter,
@@ -108,6 +126,16 @@ export async function listPagesPaginated(versionId, section = PAGE_SECTIONS.DOCU
     page,
     perPage: PAGINATION.DEFAULT_PER_PAGE,
   });
+}
+
+export async function countContentPages(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
+  const result = await pbList(COLLECTIONS.PAGES, {
+    filter: `${pageFilter(versionId, section)} && ${pageContentFilter()}`,
+    page: 1,
+    perPage: 1,
+    fields: "id",
+  });
+  return result.totalItems ?? result.items?.length ?? 0;
 }
 
 export function buildPageTree(pages) {
@@ -152,7 +180,7 @@ export async function getPage(pageId) {
 }
 
 async function getPageBySlug(versionId, section, slug) {
-  return pbGetFirstByFilter(COLLECTIONS.PAGES, `${pageFilter(versionId, section)} && slug = "${pbFilterValue(slug)}"`);
+  return pbGetFirstByFilter(COLLECTIONS.PAGES, `${pageFilter(versionId, section)} && ${pageContentFilter()} && slug = "${pbFilterValue(slug)}"`);
 }
 
 function assertParentAllowedFromPages(pages, parentId, currentPageId = "") {
@@ -160,7 +188,7 @@ function assertParentAllowedFromPages(pages, parentId, currentPageId = "") {
 
   const pageMap = new Map((pages || []).map((page) => [page.id, page]));
   const parent = pageMap.get(parentId);
-  if (!parent) {
+  if (!parent || !isPageContentItem(parent)) {
     throw new ValidationError("Parent page must belong to the same section.");
   }
 
@@ -201,6 +229,7 @@ export async function createPage(versionId, data, requestId) {
     content: data.content || "",
     parent: data.parent || "",
     icon: data.icon || "",
+    item_type: PAGE_ITEM_TYPES.PAGE,
     order: maxOrder + 1,
   });
 
@@ -218,7 +247,7 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
   const importPlan = buildMarkdownImportHierarchy(normalizedFiles);
   const pagesResult = await listPages(versionId, normalizedSection);
   const existingPages = pagesResult.items || [];
-  const existingPageBySlug = new Map(existingPages.map((page) => [page.slug, page]));
+  const existingPageBySlug = new Map(existingPages.filter(isPageContentItem).map((page) => [page.slug, page]));
 
   if (importPlan.duplicateSlugs.length > 0) {
     throw new ValidationError(`Markdown import contains duplicate page slugs: ${formatMarkdownImportSlugList(importPlan.duplicateSlugs)}.`);
@@ -251,6 +280,7 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
         content: "",
         parent,
         icon: "",
+        item_type: PAGE_ITEM_TYPES.PAGE,
         order: nextOrder,
       });
 
@@ -273,15 +303,15 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
       const existing = existingPageBySlug.get(file.slug);
 
       if (existing) {
-        const updatedPage = await updatePage(
-          existing.id,
-          {
-            title: file.title,
-            content: file.content,
-            parent,
-          },
-          requestId,
-        );
+        const updateData = {
+          title: file.title,
+          content: file.content,
+        };
+        if (file.parentKey) {
+          updateData.parent = parent;
+        }
+
+        const updatedPage = await updatePage(existing.id, updateData, requestId);
 
         updatedPageSnapshots.push(existing);
         importedPages.push(updatedPage);
@@ -296,6 +326,7 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
         content: file.content,
         parent,
         icon: "",
+        item_type: PAGE_ITEM_TYPES.PAGE,
         order: nextOrder,
       });
 
@@ -334,6 +365,9 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
 
 export async function updatePage(pageId, data, requestId) {
   const page = await getPage(pageId);
+  if (!isPageContentItem(page)) {
+    throw new NotFoundError("Page");
+  }
   const updateData = { ...data };
   delete updateData.section;
 
@@ -358,8 +392,78 @@ export async function updatePage(pageId, data, requestId) {
   return result.data;
 }
 
+export async function createSidebarNavigationItem(versionId, data, requestId) {
+  const itemType = data.itemType;
+  if (itemType !== PAGE_ITEM_TYPES.HEADER && itemType !== PAGE_ITEM_TYPES.SEPARATOR) {
+    throw new ValidationError("Invalid sidebar item type.");
+  }
+
+  const pagesResult = await listPages(versionId, PAGE_SECTIONS.DOCUMENTS);
+  const items = pagesResult.items || [];
+  const maxOrder = items.reduce((max, item) => Math.max(max, item.order || 0), 0);
+  const title = itemType === PAGE_ITEM_TYPES.HEADER ? data.title.trim() : "Separator";
+  const result = await pbCreate(COLLECTIONS.PAGES, {
+    version: versionId,
+    section: PAGE_SECTIONS.DOCUMENTS,
+    item_type: itemType,
+    title,
+    slug: `sidebar-${itemType}-${randomUUID()}`,
+    content: "",
+    parent: "",
+    icon: "",
+    order: maxOrder + 1,
+  });
+
+  if (!result.ok) {
+    throw new ValidationError("Failed to create sidebar item.");
+  }
+
+  if (result.data.item_type !== itemType) {
+    const cleanup = await pbDelete(COLLECTIONS.PAGES, result.data.id);
+    if (!cleanup.ok) {
+      logger.warn("Failed to remove invalid sidebar item after schema mismatch", { requestId, pageId: result.data.id, versionId, itemType });
+    }
+    throw new ValidationError("PocketDocs could not persist this sidebar item type. Apply the current database schema and try again.");
+  }
+
+  logger.info("Sidebar item created", { requestId, pageId: result.data.id, versionId, itemType });
+  return result.data;
+}
+
+export async function updateSidebarHeader(pageId, title, requestId) {
+  const item = await getPage(pageId);
+  if (item.section !== PAGE_SECTIONS.DOCUMENTS || getPageItemType(item) !== PAGE_ITEM_TYPES.HEADER) {
+    throw new NotFoundError("Sidebar header");
+  }
+
+  const result = await pbUpdate(COLLECTIONS.PAGES, pageId, { title });
+  if (!result.ok) {
+    throw new ValidationError("Failed to update sidebar header.");
+  }
+
+  logger.info("Sidebar header updated", { requestId, pageId, versionId: item.version });
+  return result.data;
+}
+
+export async function deleteSidebarNavigationItem(pageId, requestId) {
+  const item = await getPage(pageId);
+  if (item.section !== PAGE_SECTIONS.DOCUMENTS || !isSidebarNavigationItem(item)) {
+    throw new NotFoundError("Sidebar item");
+  }
+
+  const result = await pbDelete(COLLECTIONS.PAGES, pageId);
+  if (!result.ok) {
+    throw new NotFoundError("Sidebar item");
+  }
+
+  logger.info("Sidebar item deleted", { requestId, pageId, versionId: item.version, itemType: getPageItemType(item) });
+}
+
 export async function deletePage(pageId, requestId) {
   const page = await getPage(pageId);
+  if (!isPageContentItem(page)) {
+    throw new NotFoundError("Page");
+  }
 
   const children = await pbList(COLLECTIONS.PAGES, {
     filter: `parent = "${pbFilterValue(pageId)}"`,
@@ -411,7 +515,7 @@ export async function deletePages(versionId, section, pageIds, requestId) {
   const pageMap = new Map((pagesResult.items || []).map((page) => [page.id, page]));
 
   if (uniquePageIds.length === 0 || uniquePageIds.some((pageId) => !pageMap.has(pageId))) {
-    throw new ValidationError("Selected pages must belong to this version and section.");
+    throw new ValidationError("Selected items must belong to this version and section.");
   }
 
   const selectedPages = uniquePageIds.map((pageId) => pageMap.get(pageId));
@@ -431,10 +535,10 @@ export async function deletePages(versionId, section, pageIds, requestId) {
   const result = await pbBatch([...reparentOperations, ...deleteOperations]);
 
   if (!result.ok) {
-    throw new ValidationError("Failed to remove the selected pages.");
+    throw new ValidationError("Failed to remove the selected items.");
   }
 
-  logger.info("Selected pages deleted", {
+  logger.info("Selected items deleted", {
     requestId,
     versionId,
     section: normalizedSection,
@@ -470,6 +574,12 @@ export async function reorderPages(versionId, section, updates, requestId) {
     }
     if (update.parent && !pageMap.has(update.parent)) {
       throw new ValidationError("Parent page must belong to the same section.");
+    }
+    if (isSidebarNavigationItem(pageMap.get(update.id)) && update.parent) {
+      throw new ValidationError("Sidebar headers and separators must remain top-level.");
+    }
+    if (update.parent && !isPageContentItem(pageMap.get(update.parent))) {
+      throw new ValidationError("Parent page must be a document in the same section.");
     }
     proposedPageMap.set(update.id, { ...pageMap.get(update.id), parent: update.parent || "" });
   }
@@ -536,6 +646,7 @@ export async function clonePages(sourceVersionId, targetVersionId, requestId) {
       content: page.content || "",
       parent: newParent,
       icon: page.icon || "",
+      item_type: getPageItemType(page),
       order: page.order || 0,
     });
     if (cloned.ok) {

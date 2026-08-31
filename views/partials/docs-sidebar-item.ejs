@@ -1,24 +1,31 @@
 <% for (const node of nodes || []) { %>
-  <li class="docs-nav-item<%= activePage && activePage.id === node.id ? ' active' : '' %><%= node.children && node.children.length > 0 ? ' has-children' : '' %>" data-depth="<%= depth %>">
-    <a href="<% if (nonVersionedMode) { %>/docs/<%= project.slug %>/<%= node.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %><% } %>" class="docs-nav-link">
-      <% if (node.icon) { %>
-        <i class="ph ph-<%= node.icon %>"></i>
-      <% } else { %>
-        <i class="ph ph-file-text"></i>
+  <% const itemType = node.item_type || 'page'; %>
+  <% if (itemType === 'header') { %>
+    <li class="docs-nav-heading" data-depth="<%= depth %>"><span><%= node.title %></span></li>
+  <% } else if (itemType === 'separator') { %>
+    <li class="docs-nav-separator" data-depth="<%= depth %>" role="separator" aria-orientation="horizontal"></li>
+  <% } else { %>
+    <li class="docs-nav-item<%= activePage && activePage.id === node.id ? ' active' : '' %><%= node.children && node.children.length > 0 ? ' has-children' : '' %>" data-depth="<%= depth %>">
+      <a href="<% if (nonVersionedMode) { %>/docs/<%= project.slug %>/<%= node.slug %><% } else { %>/docs/<%= project.slug %>/<%= version.slug %>/<%= node.slug %><% } %>" class="docs-nav-link">
+        <% if (node.icon) { %>
+          <i class="ph ph-<%= node.icon %>"></i>
+        <% } else { %>
+          <i class="ph ph-file-text"></i>
+        <% } %>
+        <span><%= node.title %></span>
+      </a>
+      <% if (node.children && node.children.length > 0) { %>
+        <ul class="docs-nav-children">
+          <%- include('./docs-sidebar-item', {
+            nodes: node.children,
+            depth: depth + 1,
+            project,
+            version,
+            activePage,
+            nonVersionedMode
+          }) %>
+        </ul>
       <% } %>
-      <span><%= node.title %></span>
-    </a>
-    <% if (node.children && node.children.length > 0) { %>
-      <ul class="docs-nav-children">
-        <%- include('./docs-sidebar-item', {
-          nodes: node.children,
-          depth: depth + 1,
-          project,
-          version,
-          activePage,
-          nonVersionedMode
-        }) %>
-      </ul>
-    <% } %>
-  </li>
+    </li>
+  <% } %>
 <% } %>

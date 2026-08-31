@@ -3,12 +3,12 @@
  * @description Express routes for CRUD operations on version content sections.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, buildPageTree, flattenPageTree, getPage, createPage, importMarkdownPages, updatePage, deletePage, deletePages, reorderPages, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
-import { createPageSchema, updatePageSchema, reorderPagesSchema, deletePagesSchema, importMarkdownPagesSchema } from "./validation.js";
+import { listPages, listPagesPaginated, countContentPages, buildPageTree, flattenPageTree, getPage, createPage, createSidebarNavigationItem, importMarkdownPages, updatePage, updateSidebarHeader, deletePage, deletePages, deleteSidebarNavigationItem, reorderPages, isPageContentItem, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
+import { createPageSchema, createSidebarItemSchema, updatePageSchema, updateSidebarHeaderSchema, reorderPagesSchema, deletePagesSchema, importMarkdownPagesSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
-import { ROLES, PROJECT_MODE, PAGE_SECTIONS, MARKDOWN_IMPORT } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE, PAGE_SECTIONS, PAGE_ITEM_TYPES, MARKDOWN_IMPORT } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
@@ -111,12 +111,12 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const search = (req.query.search || "").trim();
     const { project, version, nonVersionedMode } = await getAdminContext(req);
-    const pagesResult = await listPagesPaginated(version.id, section, page, search);
+    const [pagesResult, documentCount] = await Promise.all([listPagesPaginated(version.id, section, page, search), section === PAGE_SECTIONS.DOCUMENTS && !search ? countContentPages(version.id, section) : Promise.resolve(null)]);
 
     const pages = pagesResult.items || [];
     const pageTree = search ? [] : buildPageTree(pages);
     const pageTreeItems = search ? [] : flattenPageTree(pageTree);
-    const totalPages = pagesResult.totalItems ?? pages.length;
+    const totalContentItems = documentCount ?? pagesResult.totalItems ?? pages.length;
     const sectionLabel = getPageSectionLabel(section);
     const sectionOption = getPageSectionOption(section);
     const extraJs = [];
@@ -125,13 +125,17 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       extraJs.push("/js/sidebar-sort.js");
     }
 
+    if (section === PAGE_SECTIONS.DOCUMENTS) {
+      extraJs.push("/js/sidebar-navigation.js");
+    }
+
     if (userCanManagePages(req.user)) {
       extraJs.push("/js/page-selection.js", "/js/markdown-import.js");
     }
 
     res.render("admin/pages/index", {
       title: nonVersionedMode ? `${project.name} - ${sectionLabel}` : `${project.name} - ${version.label} - ${sectionLabel}`,
-      headerSubtitle: `${sectionLabel} - ${totalPages} ${sectionOption.itemLabel}${totalPages !== 1 ? "s" : ""}`,
+      headerSubtitle: `${sectionLabel} - ${totalContentItems} ${totalContentItems === 1 ? sectionOption.itemLabel : sectionOption.itemLabelPlural}`,
       headerSearch: {
         action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
         params: { section },
@@ -146,6 +150,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       sectionIcon: getPageSectionIcon(section),
       sectionOption,
       sectionOptions: PAGE_SECTION_OPTIONS,
+      pageItemTypes: PAGE_ITEM_TYPES,
       pages,
       pageTree,
       pageTreeItems,
@@ -153,7 +158,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
-      error: null,
+      error: req.query.error || null,
       success: req.query.success || null,
       siteName: env.SITE_NAME,
       markdownImport: MARKDOWN_IMPORT,
@@ -223,11 +228,65 @@ router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (re
   }
 });
 
+router.post("/sidebar-items", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
+  try {
+    const context = await getAdminContext(req);
+    const parsed = createSidebarItemSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.redirect(303, pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { error: parsed.error.issues[0].message }));
+    }
+
+    const item = await createSidebarNavigationItem(context.version.id, parsed.data, req.requestId);
+    const label = item.item_type === PAGE_ITEM_TYPES.HEADER ? "Header" : "Separator";
+    res.redirect(pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { success: `${label} added to the public sidebar.` }));
+  } catch (err) {
+    if (err.statusCode === 422) {
+      return res.redirect(303, pageAdminUrl(req.params.projectId, req.params.versionId, PAGE_SECTIONS.DOCUMENTS, { error: err.message }));
+    }
+    next(err);
+  }
+});
+
+router.post("/sidebar-items/:itemId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.EDITOR), async (req, res, next) => {
+  try {
+    const context = await getAdminContext(req);
+    const parsed = updateSidebarHeaderSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.redirect(303, pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { error: parsed.error.issues[0].message }));
+    }
+
+    const item = await getPage(req.params.itemId);
+    assertPageBelongsToVersion(item, context.version.id);
+    await updateSidebarHeader(item.id, parsed.data.title, req.requestId);
+    res.redirect(pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { success: "Sidebar header updated." }));
+  } catch (err) {
+    if (err.statusCode === 422) {
+      return res.redirect(303, pageAdminUrl(req.params.projectId, req.params.versionId, PAGE_SECTIONS.DOCUMENTS, { error: err.message }));
+    }
+    next(err);
+  }
+});
+
+router.post("/sidebar-items/:itemId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
+  try {
+    const context = await getAdminContext(req);
+    const item = await getPage(req.params.itemId);
+    assertPageBelongsToVersion(item, context.version.id);
+    await deleteSidebarNavigationItem(item.id, req.requestId);
+    res.redirect(pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { success: "Sidebar item deleted." }));
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.get("/:pageId", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
     const context = await getAdminContext(req);
     const page = await getPage(req.params.pageId);
     assertPageBelongsToVersion(page, context.version.id);
+    if (!isPageContentItem(page)) {
+      throw new NotFoundError("Page");
+    }
     const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
     const pagesResult = await listPages(context.version.id, section);
 
@@ -317,7 +376,7 @@ router.post("/delete-selected", csrfMiddleware, requireProjectAccess(ROLES.ADMIN
     const context = await getAdminContext(req);
     const removedCount = await deletePages(context.version.id, section, parsed.data.pageIds, req.requestId);
     const sectionOption = getPageSectionOption(section);
-    const removedLabel = removedCount === 1 ? sectionOption.itemLabel : sectionOption.itemLabelPlural;
+    const removedLabel = section === PAGE_SECTIONS.DOCUMENTS ? (removedCount === 1 ? "sidebar item" : "sidebar items") : removedCount === 1 ? sectionOption.itemLabel : sectionOption.itemLabelPlural;
 
     res.redirect(pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: `${removedCount} ${removedLabel} removed.` }));
   } catch (err) {
@@ -331,6 +390,9 @@ router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
     const context = await getAdminContext(req);
     const page = await getPage(req.params.pageId);
     assertPageBelongsToVersion(page, context.version.id);
+    if (!isPageContentItem(page)) {
+      throw new NotFoundError("Page");
+    }
     const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
 
     if (!parsed.success) {
@@ -375,6 +437,9 @@ router.post("/:pageId/delete", csrfMiddleware, requireProjectAccess(ROLES.ADMIN)
     const context = await getAdminContext(req);
     const page = await getPage(req.params.pageId);
     assertPageBelongsToVersion(page, context.version.id);
+    if (!isPageContentItem(page)) {
+      throw new NotFoundError("Page");
+    }
     const section = assertPageSection(page.section || PAGE_SECTIONS.DOCUMENTS);
     await deletePage(req.params.pageId, req.requestId);
     res.redirect(pageAdminUrl(req.params.projectId, req.params.versionId, section, { success: "Page deleted." }));

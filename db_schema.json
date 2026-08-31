@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "source": "pb_schema.json",
-  "generatedAt": "2026-08-20T17:53:32.000Z",
+  "generatedAt": "2026-08-31T01:10:24.482Z",
   "collections": [
     {
       "name": "users",
@@ -298,6 +298,17 @@
             "documents",
             "faq",
             "troubleshooting"
+          ]
+        },
+        {
+          "name": "item_type",
+          "type": "select",
+          "required": false,
+          "maxSelect": 1,
+          "values": [
+            "page",
+            "header",
+            "separator"
           ]
         },
         {

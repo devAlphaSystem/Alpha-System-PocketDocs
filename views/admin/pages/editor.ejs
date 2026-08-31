@@ -59,7 +59,7 @@
             <option value="">None (top-level)</option>
             <% if (typeof pages !== 'undefined') { %>
               <% for (const p of pages) { %>
-                <% if (typeof page === 'undefined' || !page || p.id !== page.id) { %>
+                <% if ((!p.item_type || p.item_type === 'page') && (typeof page === 'undefined' || !page || p.id !== page.id)) { %>
                   <option value="<%= p.id %>"<%= selectedParentValue === p.id ? ' selected' : '' %>><%= p.title %></option>
                 <% } %>
               <% } %>

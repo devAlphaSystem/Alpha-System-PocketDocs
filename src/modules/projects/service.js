@@ -3,7 +3,7 @@ import { COLLECTIONS, PAGINATION, PROJECT_MODE } from "../../config/constants.js
 import { NotFoundError, ConflictError, ValidationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
 import { listVersions } from "../versions/service.js";
-import { listAllPages } from "../pages/service.js";
+import { isPageContentItem, listAllPages } from "../pages/service.js";
 import { getChangelog } from "../changelogs/service.js";
 
 /**
@@ -171,7 +171,7 @@ export async function exportProject(projectId) {
       const [pagesResult, changelog] = await Promise.all([listAllPages(version.id), shouldExportChangelog ? getChangelog(version.id) : Promise.resolve(null)]);
       return {
         version,
-        pages: pagesResult.items || [],
+        pages: (pagesResult.items || []).filter(isPageContentItem),
         changelog,
       };
     }),
