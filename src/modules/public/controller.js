@@ -56,6 +56,21 @@ function knowledgeBasePageHref(project, version, page) {
   return `${knowledgeBaseBaseUrl(project, version)}/${page.section}/${page.slug}`;
 }
 
+async function redirectMarkdownPageLink(res, requestedSlug, findPage, pageHref) {
+  const pageSlug = requestedSlug.match(/^(.+)\.md$/i)?.[1];
+  if (!pageSlug) {
+    return false;
+  }
+
+  const page = await findPage(pageSlug);
+  if (!page) {
+    return false;
+  }
+
+  res.redirect(pageHref(page));
+  return true;
+}
+
 function groupKnowledgeBasePages(pages) {
   return ARTICLE_SECTION_OPTIONS.map((option) => {
     const sectionPages = pages.filter((page) => page.section === option.value);
@@ -95,6 +110,19 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
       }
     }
 
+    const selectedSection = section || "";
+    if (pageSlug) {
+      const redirected = await redirectMarkdownPageLink(
+        res,
+        pageSlug,
+        (slug) => getPublicSectionPage(version.id, selectedSection, slug),
+        (page) => knowledgeBasePageHref(project, version, page),
+      );
+      if (redirected) {
+        return;
+      }
+    }
+
     const [pagesResult, knowledgeBaseResult, allKnowledgeBaseResult] = await Promise.all([getPublicPages(version.id), getPublicSectionPages(version.id, section), section ? getPublicSectionPages(version.id) : Promise.resolve(null)]);
     const docsSidebarItems = pagesResult.items || [];
     const knowledgeBasePages = knowledgeBaseResult.items || [];
@@ -102,7 +130,6 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(allKnowledgeBasePages);
     const pageTree = buildPageTree(docsSidebarItems);
     const kbPageTree = buildPageTree(knowledgeBasePages);
-    const selectedSection = section || "";
     const sectionLabel = selectedSection ? getPageSectionLabel(selectedSection) : "Knowledge Base";
 
     let knowledgeBasePage = null;
@@ -305,6 +332,16 @@ router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
       throw new NotFoundError("Page");
     }
 
+    const redirected = await redirectMarkdownPageLink(
+      res,
+      req.params.segment,
+      (slug) => getSingleProjectPage(slug, version.id),
+      (page) => docsPageHref(project, version, page),
+    );
+    if (redirected) {
+      return;
+    }
+
     const [pagesResult, page] = await Promise.all([getPublicPages(version.id), getSingleProjectPage(req.params.segment, version.id)]);
 
     if (!page) {
@@ -501,6 +538,16 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       throw new NotFoundError("Project");
     }
     assertVersioned(project, "Page");
+
+    const redirected = await redirectMarkdownPageLink(
+      res,
+      req.params.pageSlug,
+      (slug) => getPublicPage(version.id, slug),
+      (page) => docsPageHref(project, version, page),
+    );
+    if (redirected) {
+      return;
+    }
 
     const [versionsResult, pagesResult, page, knowledgeBaseResult] = await Promise.all([getPublicVersions(project.id, admin), getPublicPages(version.id), getPublicPage(version.id, req.params.pageSlug), getPublicSectionPages(version.id)]);
 
