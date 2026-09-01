@@ -20,6 +20,13 @@
     var verticalCancelDistance = options.verticalCancelDistance || 20;
     var reverseCancelDistance = options.reverseCancelDistance || 32;
     var gesture = null;
+    var backdrop = document.createElement("button");
+
+    backdrop.type = "button";
+    backdrop.className = "sidebar-backdrop";
+    backdrop.setAttribute("aria-label", "Close navigation");
+    backdrop.hidden = true;
+    sidebar.insertAdjacentElement("afterend", backdrop);
 
     function isOverlayMode() {
       return overlayQuery.matches;
@@ -40,11 +47,15 @@
     function openSidebar() {
       if (!isOverlayMode()) return;
       sidebar.classList.add("open");
+      backdrop.hidden = false;
+      document.body.classList.add("sidebar-overlay-open");
       syncToggleState();
     }
 
     function closeSidebar() {
       sidebar.classList.remove("open");
+      backdrop.hidden = true;
+      document.body.classList.remove("sidebar-overlay-open");
       syncToggleState();
     }
 
@@ -64,6 +75,14 @@
         toggleSidebar();
       });
     }
+
+    backdrop.addEventListener("click", closeSidebar);
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key !== "Escape" || !isOverlayMode() || !isOpen()) return;
+      closeSidebar();
+      if (toggle) toggle.focus();
+    });
 
     document.addEventListener("click", function (event) {
       if (!isOverlayMode() || !isOpen()) return;
@@ -214,6 +233,7 @@
 
   initSwipeSidebar({
     sidebarSelector: ".docs-sidebar",
+    toggleSelector: ".docs-sidebar-toggle",
     overlayMediaQuery: "(max-width: 768px)",
   });
 })();

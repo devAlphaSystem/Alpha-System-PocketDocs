@@ -9,11 +9,15 @@
       (function () {
         try {
           var key = 'pd_theme';
-          var theme = localStorage.getItem(key);
-          if (theme !== 'dark' && theme !== 'light') {
-            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          var preference = localStorage.getItem(key);
+          if (preference !== 'dark' && preference !== 'light' && preference !== 'auto') {
+            preference = 'auto';
           }
+          var theme = preference === 'auto'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : preference;
           document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.setAttribute('data-theme-preference', preference);
         } catch (_e) {
           document.documentElement.setAttribute('data-theme', 'light');
         }
@@ -22,11 +26,11 @@
 
     <title><%= title %> | <%= siteName %></title>
 
-    <link rel="icon" type="image/png" href="/img/logo.png">
+    <link rel="icon" type="image/svg+xml" href="/img/pd-logo.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://unpkg.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
     <link rel="stylesheet" href="<%= assetUrl('/css/admin.css') %>">
@@ -37,22 +41,141 @@
   </head>
 
   <body class="admin-body">
-    <aside class="admin-sidebar" id="adminSidebar">
-      <%- include('../partials/admin-sidebar', { user: typeof currentUser !== 'undefined' ? currentUser : user, currentPath: typeof currentPath !== 'undefined' ? currentPath : '' }) %>
-    </aside>
-    <div class="admin-main">
+    <% const adminUser = typeof currentUser !== 'undefined' ? currentUser : user; %>
+    <% const adminPath = typeof currentPath !== 'undefined' ? currentPath : ''; %>
+    <% const adminHeaderSubtitle = typeof headerSubtitle !== 'undefined' ? headerSubtitle : ''; %>
+    <% const adminHeaderBadge = typeof headerBadge !== 'undefined' ? headerBadge : null; %>
+    <% const adminHeaderSearch = typeof headerSearch !== 'undefined' ? headerSearch : null; %>
+    <% const adminPageListActions = typeof pageListActions !== 'undefined' ? pageListActions : null; %>
+    <% const adminProjects = typeof projects !== 'undefined' ? projects : []; %>
+    <% const adminProject = typeof project !== 'undefined' ? project : null; %>
+    <% const adminPagination = typeof pagination !== 'undefined' ? pagination : null; %>
+    <% const adminSection = adminPath.startsWith('/admin/users') ? 'Users' : adminPath.startsWith('/admin/settings') ? 'Settings' : 'Projects'; %>
+    <% const adminSectionHref = adminSection === 'Users' ? '/admin/users' : adminSection === 'Settings' ? '/admin/settings' : '/admin/projects'; %>
+    <% const adminPageTitle = adminSection === 'Settings' && title === 'Settings' ? 'Application' : title; %>
+
+    <div class="admin-app">
       <header class="admin-topbar">
         <%- include('../partials/admin-header', {
-          user: typeof currentUser !== 'undefined' ? currentUser : user,
-          title: title,
-          headerSubtitle: typeof headerSubtitle !== 'undefined' ? headerSubtitle : '',
-          headerBadge: typeof headerBadge !== 'undefined' ? headerBadge : null,
-          headerSearch: typeof headerSearch !== 'undefined' ? headerSearch : null
+          user: adminUser,
+          currentPath: adminPath
         }) %>
       </header>
-      <main class="admin-content">
-        <%- body %>
-      </main>
+
+      <div class="admin-page">
+        <aside class="admin-sidebar" id="adminSidebar">
+          <%- include('../partials/admin-sidebar', {
+            user: adminUser,
+            currentPath: adminPath,
+            title: title,
+            headerSearch: adminHeaderSearch,
+            projects: adminProjects,
+            project: adminProject
+          }) %>
+        </aside>
+
+        <div class="admin-main">
+          <main class="admin-content">
+            <header class="admin-page-header">
+              <button type="button" class="sidebar-toggle header-action" aria-label="Toggle navigation" aria-controls="adminSidebar" aria-expanded="false">
+                <i class="ph ph-list"></i>
+              </button>
+
+              <nav class="admin-breadcrumbs" aria-label="Breadcrumb">
+                <% if (adminPageTitle !== adminSection) { %>
+                  <a href="<%= adminSectionHref %>"><%= adminSection %></a>
+                <% } %>
+                <span><%= adminPageTitle %></span>
+              </nav>
+
+              <% if (adminPageListActions) { %>
+                <div class="admin-page-context-actions">
+                  <% if (adminPageListActions.editProjectUrl) { %>
+                    <a href="<%= adminPageListActions.editProjectUrl %>" class="admin-page-icon-action" aria-label="Edit project" title="Edit project" data-drawer-url="<%= adminPageListActions.editProjectUrl %>" data-drawer-title="Edit Project">
+                      <i class="ph ph-gear" aria-hidden="true"></i>
+                    </a>
+                  <% } %>
+
+                  <a href="<%= adminPageListActions.publicUrl %>" class="admin-page-icon-action" aria-label="View public" title="View public" target="_blank" rel="noopener">
+                    <i class="ph ph-arrow-square-out" aria-hidden="true"></i>
+                  </a>
+
+                  <% if (adminPageListActions.showImportAction) { %>
+                    <button type="button" class="admin-page-icon-action" aria-label="Import Markdown" title="Import Markdown" data-markdown-import-open>
+                      <i class="ph ph-upload-simple" aria-hidden="true"></i>
+                    </button>
+                  <% } %>
+
+                  <% if (adminPageListActions.exportProjectUrl) { %>
+                    <a href="<%= adminPageListActions.exportProjectUrl %>" class="admin-page-icon-action" aria-label="Download ZIP" title="Download ZIP" data-download-link data-download-title="Preparing ZIP export" data-download-message="We are packaging this project's Markdown content. Your download will begin shortly.">
+                      <i class="ph ph-download-simple" aria-hidden="true"></i>
+                    </a>
+                  <% } %>
+                </div>
+              <% } %>
+
+              <% if (adminPath === '/admin/projects' && adminUser && (adminUser.role === 'owner' || adminUser.role === 'admin')) { %>
+                <div class="admin-page-actions">
+                  <a href="/" class="btn btn-preview" target="_blank" rel="noopener">
+                    <i class="ph ph-arrow-square-out"></i>
+                    <span>View public</span>
+                  </a>
+                  <a href="/admin/projects/create" class="btn btn-primary" data-drawer-url="/admin/projects/create" data-drawer-title="New Project">
+                    <i class="ph ph-plus"></i>
+                    <span>New project</span>
+                  </a>
+                </div>
+              <% } else if (adminPath === '/admin/users' && adminUser && adminUser.role === 'owner') { %>
+                <div class="admin-page-actions">
+                  <button type="button" class="btn btn-primary" data-dialog-open="createUserModal">
+                    <i class="ph ph-plus"></i>
+                    <span>New user</span>
+                  </button>
+                </div>
+              <% } else if (adminPageListActions && adminPageListActions.create) { %>
+                <div class="admin-page-actions pages-header-actions">
+                  <a href="<%= adminPageListActions.create.url %>" class="btn btn-primary" data-drawer-url="<%= adminPageListActions.create.url %>" data-drawer-title="New <%= adminPageListActions.create.label %>">
+                    <i class="ph ph-plus"></i>
+                    <span>New <%= adminPageListActions.create.label %></span>
+                  </a>
+                </div>
+              <% } %>
+
+              <% if ((adminHeaderSubtitle || (adminHeaderBadge && adminHeaderBadge.text)) && adminPath !== '/admin/projects' && adminPath !== '/admin/users') { %>
+                <div class="admin-page-meta">
+                  <% if (adminHeaderSubtitle) { %>
+                    <span class="header-subtitle"><%= adminHeaderSubtitle %></span>
+                  <% } %>
+                  <% if (adminHeaderBadge && adminHeaderBadge.text) { %>
+                    <span class="badge badge-<%= adminHeaderBadge.variant || 'draft' %>"><%= adminHeaderBadge.text %></span>
+                  <% } %>
+                </div>
+              <% } %>
+            </header>
+
+            <div class="admin-view">
+              <%- body %>
+            </div>
+
+            <footer class="admin-footer">
+              <% if (adminPagination && Number.isFinite(Number(adminPagination.totalItems))) { %>
+                <span class="admin-footer-total">Total: <%= adminPagination.totalItems %></span>
+              <% } %>
+              <div class="admin-footer-credits">
+                <a href="https://docs.alphasystem.dev/docs/pocketdocs" target="_blank" rel="noopener">
+                  <i class="ph ph-book-open-text"></i>
+                  <span>Docs</span>
+                </a>
+                <span class="admin-footer-separator" aria-hidden="true"></span>
+                <span>
+                  <i class="ph ph-file-text"></i>
+                  <%= siteName %><% if (typeof appVersion !== 'undefined' && appVersion) { %> v<%= appVersion %><% } %>
+                </span>
+              </div>
+            </footer>
+          </main>
+        </div>
+      </div>
     </div>
 
     <%- include('../partials/toast') %>

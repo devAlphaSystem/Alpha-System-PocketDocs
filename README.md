@@ -2,7 +2,7 @@
 
 Self-hosted documentation platform with versioning, powered by [PocketBase](https://pocketbase.io/).
 
-PocketDocs lets teams create, organize, and publish documentation and Knowledge Base content for multiple projects with versioned or Non-Versioned modes, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor with live preview and role-based access control.
+PocketDocs lets teams create, organize, and publish documentation and Knowledge Base content for multiple projects with versioned or Non-Versioned modes, nested page trees, changelogs, and full-text search. The admin panel provides a Markdown editor and role-based access control.
 
 PocketDocs supports two database modes:
 - External mode: connect to your own PocketBase instance.
@@ -11,17 +11,18 @@ PocketDocs supports two database modes:
 ## Features
 
 - **Flexible project modes** — choose versioned or Non-Versioned projects
-- **Nested page tree** — drag-and-drop ordering with parent-child hierarchy
+- **Nested page tree** — drag-and-drop ordering with parent-child hierarchy, sidebar headers, and separators
 - **Knowledge Base** — Frequently Asked Questions and Troubleshooting sections in Markdown alongside documents
-- **Markdown editor** — EasyMDE with syntax-highlighted live preview and Markdown download
+- **Markdown editor** — EasyMDE with autosave, fullscreen editing, and Markdown download
 - **Bulk Markdown import** — create or update documentation pages and Knowledge Base articles from `.md` or `.markdown` files and folders, preserving hierarchy within the total import size limit
 - **Mermaid diagrams** — native rendering of Mermaid diagram blocks in published docs
 - **Full-text search** — instant search across all public pages
 - **Role-based access** — Owner, Admin, and Editor roles with granular permissions
 - **Changelogs** — per-version changelog with optional publish date
 - **Public & private projects** — control visibility per project
+- **Public branding** — customize the homepage title, subtitle, and public site icon from the admin panel
 - **IP restriction** — restrict admin access to specific IP addresses
-- **Theming** — built-in light/dark mode toggle
+- **Theming** — light, dark, and automatic system color schemes
 - **ZIP export** — download project content as Markdown files in a single ZIP archive
 - **Keyboard shortcuts** — Ctrl+S / Cmd+S saves the current admin form from anywhere on the page
 - **Self-hosted** — runs on your infrastructure; data stays with you
@@ -29,7 +30,7 @@ PocketDocs supports two database modes:
 ## Project Modes
 
 - **Versioned mode** — classic release-based documentation with multiple versions, version switcher, per-version changelog, and per-version Documents/FAQ/Troubleshooting sections
-- **Non-Versioned mode** — one public content stream with Documents, Frequently Asked Questions, and Troubleshooting tabs backed by one internal default version
+- **Non-Versioned mode** — one public content stream with Documents, Frequently Asked Questions, and Troubleshooting sections backed by one internal default version
 
 ## Tech Stack
 
@@ -93,13 +94,13 @@ pocketdocs/
 │       ├── pages/            # Documents, FAQ, and Troubleshooting pages
 │       ├── projects/         # Project management
 │       ├── public/           # Public-facing routes & search API
-│       ├── settings/         # Site settings & IP restriction
+│       ├── settings/         # Public branding & IP restriction
 │       ├── setup/            # Initial owner registration
 │       ├── users/            # User management
 │       └── versions/         # Version management
 ├── views/                    # EJS templates (admin + public layouts)
 ├── public/                   # Static assets (CSS, JS, images)
-├── data/                     # Runtime configuration files (site settings, IP rules)
+├── data/                     # IP restriction and embedded PocketBase runtime files
 ├── db_schema.json            # Safe PocketBase schema (applied automatically on startup)
 └── .env.example              # Environment variable template
 ```
@@ -111,7 +112,7 @@ pocketdocs/
 | [Setup & Installation](docs/setup.md) | Prerequisites, detailed install steps, troubleshooting |
 | [Architecture Overview](docs/architecture.md) | System design, data flow, component responsibilities |
 | [API Reference](docs/api.md) | All endpoints with request/response examples |
-| [Configuration](docs/configuration.md) | Environment variables & runtime config files |
+| [Configuration](docs/configuration.md) | Environment variables, public branding, and runtime settings |
 
 ## Scripts
 

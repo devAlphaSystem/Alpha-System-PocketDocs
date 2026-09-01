@@ -33,9 +33,7 @@ const envSchema = z.object({
   POCKETBASE_ADMIN_PASSWORD: z.string().min(8),
   POCKETBASE_VERSION: z.string().optional().default(""),
 
-  SESSION_SECRET: z.string().min(32),
   CSRF_SECRET: z.string().min(32),
-  COOKIE_DOMAIN: z.string().optional().default(""),
 
   LOG_LEVEL: z.enum(["error", "warn", "info", "http", "debug"]).default("info"),
 

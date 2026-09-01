@@ -98,6 +98,11 @@ router.get("/:versionId/edit", csrfMiddleware, requireProjectAccess(), async (re
     const version = await getVersion(req.params.versionId);
     const project = version.expand?.project;
     assertVersionManagementSupported(project);
+
+    if (!req.xhr) {
+      return res.redirect(303, `/admin/projects/${project.id}`);
+    }
+
     res.render("admin/versions/edit", {
       title: `${project.name} - ${version.label}`,
       project,
@@ -122,6 +127,11 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
       const version = await getVersion(req.params.versionId);
       const project = version.expand?.project;
       assertVersionManagementSupported(project);
+
+      if (!req.xhr) {
+        return res.redirect(303, `/admin/projects/${project.id}`);
+      }
+
       return res.status(422).render("admin/versions/edit", {
         title: `${project.name} - ${version.label}`,
         project,
@@ -138,12 +148,17 @@ router.post("/:versionId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROL
     const version = await getVersion(req.params.versionId);
     assertVersionManagementSupported(version.expand?.project);
     await updateVersion(req.params.versionId, parsed.data, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/edit?success=Version updated.`);
+    res.redirect(`/admin/projects/${req.params.projectId}?success=Version updated.`);
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const version = await getVersion(req.params.versionId);
       const project = version.expand?.project;
       assertVersionManagementSupported(project);
+
+      if (!req.xhr) {
+        return res.redirect(303, `/admin/projects/${project.id}`);
+      }
+
       return res.status(err.statusCode).render("admin/versions/edit", {
         title: `${project.name} - ${version.label}`,
         project,

@@ -6,12 +6,11 @@
 import { Router } from "express";
 import { listPublicProjects, getPublicProject, getPublicVersions, getPublicVersionByProjectSlug, getPublicPages, getPublicPage, getPublicChangelog, getPublicSectionPages, getPublicSectionPage, searchPages, getSingleProjectVersion, getSingleProjectPage } from "./service.js";
 import { buildPageTree, flattenPageTree, getPageSectionLabel, isKnowledgeBaseSection, isPageContentItem, PAGE_SECTION_OPTIONS } from "../pages/service.js";
-import { renderMarkdown, extractHeadings } from "../../lib/markdown.js";
+import { renderMarkdown, renderInlineMarkdown, extractInlineMarkdownText, extractHeadings } from "../../lib/markdown.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 import { ROLES, PROJECT_MODE, PAGE_SECTIONS } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../lib/logger.js";
-import { createHash } from "node:crypto";
 
 const router = Router();
 const ARTICLE_SECTION_OPTIONS = PAGE_SECTION_OPTIONS.filter((option) => option.value !== PAGE_SECTIONS.DOCUMENTS);
@@ -144,13 +143,6 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
 
       contentHtml = renderMarkdown(knowledgeBasePage.content);
       headings = extractHeadings(contentHtml);
-
-      const etagSource = `${knowledgeBasePage.id}:${knowledgeBasePage.updated}`;
-      const etag = `"${createHash("md5").update(etagSource).digest("hex")}"`;
-      res.setHeader("ETag", etag);
-      if (req.headers["if-none-match"] === etag) {
-        return res.status(304).end();
-      }
     }
 
     res.render("public/knowledge-base", {
@@ -159,24 +151,19 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
       version,
       versions,
       pageTree,
-      page: null,
       nonVersionedMode: isNonVersioned(project),
       supportsKnowledgeBase: true,
       kbBaseUrl: knowledgeBaseBaseUrl(project, version),
       knowledgeBaseSectionCounts,
       section: selectedSection,
       sectionLabel,
-      sectionOptions: ARTICLE_SECTION_OPTIONS,
       sectionGroups: selectedSection ? [] : groupKnowledgeBasePages(knowledgeBasePages),
-      kbPages: knowledgeBasePages,
-      kbPageTree,
       kbPageItems: flattenPageTree(kbPageTree),
       kbPage: knowledgeBasePage,
       contentHtml,
       headings,
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
-      user: req.user || null,
     });
   } catch (err) {
     next(err);
@@ -187,12 +174,20 @@ router.get("/", async (req, res, next) => {
   try {
     const admin = isAdminUser(req);
     const result = await listPublicProjects(admin);
+    const heroTitle = res.locals.siteSettings.heroTitle;
+    const heroTitleHtml = renderInlineMarkdown(heroTitle);
+    const headerTitleHtml = renderInlineMarkdown(heroTitle, { allowLinks: false });
+    const headerTitleText = extractInlineMarkdownText(heroTitle);
+    const heroSubtitleHtml = renderInlineMarkdown(res.locals.siteSettings.heroSubtitle);
     res.render("public/home", {
-      title: env.SITE_NAME,
+      title: headerTitleText,
       projects: result.items || [],
+      heroTitleHtml,
+      heroSubtitleHtml,
+      headerTitleHtml,
+      headerTitleText,
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
-      user: req.user || null,
     });
   } catch (err) {
     next(err);
@@ -214,7 +209,6 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
           defaultVersion: null,
           siteName: env.SITE_NAME,
           siteUrl: env.SITE_URL,
-          user: req.user || null,
         });
       }
       const pagesResult = await getPublicPages(version.id);
@@ -239,7 +233,6 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
         defaultVersion: null,
         siteName: env.SITE_NAME,
         siteUrl: env.SITE_URL,
-        user: req.user || null,
       });
     }
 
@@ -255,7 +248,6 @@ router.get("/docs/:projectSlug", async (req, res, next) => {
         defaultVersion: null,
         siteName: env.SITE_NAME,
         siteUrl: env.SITE_URL,
-        user: req.user || null,
       });
     }
 
@@ -354,13 +346,6 @@ router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
     const contentHtml = renderMarkdown(page.content);
     const headings = extractHeadings(contentHtml);
 
-    const etagSource = `${page.id}:${page.updated}`;
-    const etag = `"${createHash("md5").update(etagSource).digest("hex")}"`;
-    res.setHeader("ETag", etag);
-    if (req.headers["if-none-match"] === etag) {
-      return res.status(304).end();
-    }
-
     const pageIndex = pages.findIndex((p) => p.id === page.id);
     const prevPage = pageIndex > 0 ? pages[pageIndex - 1] : null;
     const nextPage = pageIndex < pages.length - 1 ? pages[pageIndex + 1] : null;
@@ -371,7 +356,6 @@ router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
       version,
       versions: [],
       page,
-      pages,
       pageTree,
       contentHtml,
       headings,
@@ -383,7 +367,6 @@ router.get("/docs/:projectSlug/:segment", async (req, res, next) => {
       knowledgeBaseSectionCounts: countKnowledgeBaseSections((await getPublicSectionPages(version.id)).items || []),
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
-      user: req.user || null,
     });
   } catch (err) {
     next(err);
@@ -519,7 +502,6 @@ router.get("/docs/:projectSlug/:versionSlug/changelog", async (req, res, next) =
       contentHtml,
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
-      user: req.user || null,
     });
   } catch (err) {
     next(err);
@@ -562,13 +544,6 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
     const contentHtml = renderMarkdown(page.content);
     const headings = extractHeadings(contentHtml);
 
-    const etagSource = `${page.id}:${page.updated}`;
-    const etag = `"${createHash("md5").update(etagSource).digest("hex")}"`;
-    res.setHeader("ETag", etag);
-    if (req.headers["if-none-match"] === etag) {
-      return res.status(304).end();
-    }
-
     const pageIndex = pages.findIndex((p) => p.id === page.id);
     const prevPage = pageIndex > 0 ? pages[pageIndex - 1] : null;
     const nextPage = pageIndex < pages.length - 1 ? pages[pageIndex + 1] : null;
@@ -579,7 +554,6 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       version,
       versions: versionsResult.items || [],
       page,
-      pages,
       pageTree,
       contentHtml,
       headings,
@@ -591,7 +565,6 @@ router.get("/docs/:projectSlug/:versionSlug/:pageSlug", async (req, res, next) =
       knowledgeBaseSectionCounts,
       siteName: env.SITE_NAME,
       siteUrl: env.SITE_URL,
-      user: req.user || null,
     });
   } catch (err) {
     next(err);

@@ -32,12 +32,9 @@ export function errorHandlerMiddleware(err, req, res, _next) {
     if (req.accepts("html") && !req.xhr && !req.path.startsWith("/api/")) {
       return res.status(statusCode).render("error", {
         layout: false,
-        title: "Error",
         statusCode,
         message: body.error.message,
-        code: body.error.code,
         requestId: req.requestId,
-        user: req.user || null,
         siteName: env.SITE_NAME,
       });
     }
@@ -50,12 +47,9 @@ export function errorHandlerMiddleware(err, req, res, _next) {
   if (req.accepts("html") && !req.xhr && !req.path.startsWith("/api/")) {
     return res.status(statusCode).render("error", {
       layout: false,
-      title: "Error",
       statusCode,
       message: "An unexpected error occurred. Please try again later.",
-      code: "INTERNAL_ERROR",
       requestId: req.requestId,
-      user: req.user || null,
       siteName: env.SITE_NAME,
     });
   }

@@ -6,13 +6,13 @@ All endpoints are served by the Express application. Admin endpoints require aut
 
 - **Content-Type**: `application/x-www-form-urlencoded` for form submissions, `application/json` for API responses
 - **Authentication**: Cookie `pd_auth` containing a PocketBase JWT token
-- **CSRF**: State-changing requests (POST/PUT/DELETE) require a `_csrf` field in the body or `x-csrf-token` header, matching the signed `pd_csrf` cookie
+- **CSRF**: Routes protected by CSRF middleware require a `_csrf` body field or `x-csrf-token` header containing the HMAC-SHA256 signature derived from the httpOnly `pd_csrf` cookie
 - **Validation errors** return HTTP 422 with field-level details
 - **Slugs** must match `^[a-z0-9]+(?:-[a-z0-9]+)*$` (lowercase alphanumeric with hyphens)
 
 ## Error Response Format
 
-All errors follow a consistent envelope:
+JSON error responses use a consistent envelope. Browser-facing routes can render an HTML error page or redirect instead.
 
 ```json
 {
@@ -36,9 +36,9 @@ All errors follow a consistent envelope:
 | 403 | `IP_RESTRICTED` | Client IP not in allowlist |
 | 404 | `RESOURCE_NOT_FOUND` | Resource does not exist |
 | 409 | `CONFLICT` | Duplicate resource (e.g. slug already taken) |
-| 422 | `DOMAIN_ERROR` | Business rule violation |
 | 429 | `RATE_LIMITED` | Too many requests |
 | 500 | `INTERNAL_ERROR` | Unexpected server error |
+| 500 | `INFRASTRUCTURE_ERROR` | Internal database or filesystem failure |
 | 502 | `EXTERNAL_SERVICE_ERROR` | Upstream service failure |
 
 ---
@@ -75,6 +75,22 @@ Returns server health status and PocketBase connectivity.
 
 ---
 
+## Site Icon
+
+### `GET /site-icon`
+
+Returns the custom public site icon stored in PocketBase, or the bundled PocketDocs SVG when no custom icon is configured. The custom icon response uses a versioned URL and long-lived immutable caching.
+
+**Auth:** None
+
+### `GET /favicon.ico`
+
+Returns the same current site icon without long-lived caching, for browser favicon discovery.
+
+**Auth:** None
+
+---
+
 ## Setup
 
 ### `GET /setup`
@@ -101,7 +117,7 @@ Creates the initial owner account. Only available when no owner exists.
 
 **Success:** Sets `pd_auth` cookie, redirects to `/admin`
 
-**Errors:** 400 (validation), 409 (owner already exists)
+**Errors:** 422 (validation), 409 (owner already exists)
 
 ---
 
@@ -130,7 +146,7 @@ Authenticates a user with email and password.
 
 **Success:** Sets `pd_auth` cookie (httpOnly, secure in production, sameSite: strict, 7-day expiry), redirects to `/admin`
 
-**Errors:** 400 (validation), 401 (invalid credentials)
+**Errors:** 422 (validation), 401 (invalid credentials)
 
 ### `POST /auth/logout`
 
@@ -138,11 +154,7 @@ Clears the auth session.
 
 **Auth:** None (cookie is cleared regardless)
 
-**Body:**
-
-| Field | Type | Required |
-|-------|------|----------|
-| `_csrf` | string | Yes |
+**CSRF:** No
 
 **Success:** Clears `pd_auth` cookie, redirects to `/auth/login`
 
@@ -164,8 +176,9 @@ Lists all projects accessible to the current user, paginated.
 | Param | Type | Default | Constraints |
 |-------|------|---------|-------------|
 | `page` | integer | 1 | ≥ 1 |
+| `search` | string | empty | Filters project name or slug |
 
-**Response:** Renders project list page. Owners and admins see all projects; editors see only assigned projects.
+**Response:** Renders the filtered, paginated project list available to authenticated users.
 
 ### `GET /admin/projects/create`
 
@@ -195,13 +208,15 @@ Creates a new project.
 
 **Success:** Redirects to `/admin/projects/:projectId`
 
-**Errors:** 400 (validation), 409 (slug taken)
+**Errors:** 422 (validation), 409 (slug taken)
 
 ### `GET /admin/projects/:projectId`
 
 Shows project details and its versions.
 
-For Non-Versioned projects, this route redirects to the pages list of the internal default version with Documents/FAQ/Troubleshooting tabs.
+For Non-Versioned projects, this route redirects to the pages list of the internal default version with Documents/FAQ/Troubleshooting section navigation.
+
+For Versioned projects, `page` selects the paginated version result and `search` filters version labels and slugs.
 
 **Auth:** Required  
 **Roles:** Owner, Admin, Editor (with project access)
@@ -334,21 +349,29 @@ All page routes require authentication and project access. Routes under `/admin/
 
 ### `GET /admin/projects/:projectId/versions/:versionId/pages`
 
-Lists all pages for the version, displayed as a nested tree.
+Lists one content section. Without a search term, each section is displayed as an ordered hierarchy; Documents can also contain sidebar headers and separators. Search results are flat. The admin interface progressively appends subsequent result pages through **Load more**.
 
 **Auth:** Required  
 **Roles:** All (with project access)
 
+**Query:**
+
+| Param | Type | Default | Constraints |
+|-------|------|---------|-------------|
+| `section` | string | `documents` | `documents`, `faq`, or `troubleshooting` |
+| `page` | integer | 1 | ≥ 1 |
+| `search` | string | empty | Filters titles and slugs; matching results are shown as a flat list |
+
 ### `GET /admin/projects/:projectId/versions/:versionId/pages/new`
 
-Renders the page editor for creating a new page.
+Renders the unified item editor. Documents can create a page, sidebar header, or sidebar separator; FAQ and Troubleshooting create articles.
 
 **Auth:** Required  
 **Roles:** Admin, Owner
 
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/new`
 
-Creates a new page.
+Creates a page/article or, for the Documents section, a sidebar header or separator.
 
 **Auth:** Required  
 **Roles:** Admin, Owner  
@@ -358,14 +381,16 @@ Creates a new page.
 
 | Field | Type | Required | Constraints |
 |-------|------|----------|-------------|
-| `title` | string | Yes | 1–200 characters |
-| `slug` | string | Yes | 1–120 characters, slug pattern |
-| `content` | string | No | Max 500,000 characters |
-| `parent` | string | No | Page ID (max 15 chars), empty string for root |
-| `icon` | string | No | Max 50 characters |
+| `section` | string | No | `documents`, `faq`, or `troubleshooting`; default `documents` |
+| `itemType` | string | No | `page` (default), `header`, or `separator`; non-page values apply only to Documents |
+| `title` | string | Conditional | 1–200 characters; required for pages/articles and headers, optional for separators |
+| `slug` | string | Page/article only | 1–120 characters, slug pattern |
+| `content` | string | No | Page/article only; max 500,000 characters |
+| `parent` | string | No | Page/article only; page ID (max 15 chars), empty string for root |
+| `icon` | string | No | Page/article only; max 50 characters |
 | `_csrf` | string | Yes | CSRF token |
 
-**Success:** Redirects to page editor
+**Success:** Pages/articles redirect to the page editor. Headers and separators redirect to the Documents list.
 
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/import`
 
@@ -393,14 +418,56 @@ Bulk-imports Markdown files as pages. Relative folder paths are preserved by cre
   "updatedCount": 1,
   "updatedPageIds": ["def456abc123789"],
   "pages": [
-    { "id": "abc123def456789", "title": "Getting Started", "slug": "getting-started" },
-    { "id": "def456abc123789", "title": "API Reference", "slug": "api-reference" }
+    { "id": "abc123def456789", "title": "Getting Started", "slug": "getting-started", "section": "documents" },
+    { "id": "def456abc123789", "title": "API Reference", "slug": "api-reference", "section": "documents" }
   ],
   "redirectUrl": "/admin/projects/proj123/versions/ver123/pages?success=2%20pages%20processed%3A%201%20created%2C%201%20updated."
 }
 ```
 
 **Errors:** 409 when a folder slug exists under another parent or a concurrent write creates a slug collision; 422 for invalid files, duplicate imported slugs, unsupported extensions, path traversal, or oversized content.
+
+### `POST /admin/projects/:projectId/versions/:versionId/pages/delete-selected`
+
+Deletes selected content or sidebar items from one section.
+
+**Auth:** Required
+
+**Roles:** Admin, Owner
+
+**CSRF:** Yes
+
+**Body:**
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `pageIds` | string or array | Yes | 1–100 record IDs, each up to 15 characters; duplicates are ignored |
+| `section` | string | No | `documents`, `faq`, or `troubleshooting`; default `documents` |
+| `_csrf` | string | Yes | CSRF token |
+
+**Success:** Redirects to the selected section with the number of removed items.
+
+### `POST /admin/projects/:projectId/versions/:versionId/pages/sidebar-items/:itemId`
+
+Updates the title of an existing Documents sidebar header.
+
+**Auth:** Required
+
+**Roles:** Admin, Editor, Owner
+
+**CSRF:** Yes
+
+**Body:** `title` (required, 1–200 characters) and `_csrf`.
+
+### `POST /admin/projects/:projectId/versions/:versionId/pages/sidebar-items/:itemId/delete`
+
+Deletes an existing Documents sidebar header or separator.
+
+**Auth:** Required
+
+**Roles:** Admin, Owner
+
+**CSRF:** Yes
 
 ### `GET /admin/projects/:projectId/versions/:versionId/pages/:pageId`
 
@@ -417,7 +484,19 @@ Updates an existing page.
 **Roles:** Admin, Editor, Owner  
 **CSRF:** Yes
 
-**Body:** Same fields as create (all optional — partial update). Also accepts `order` (integer, ≥ 0).
+**Body:**
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| `title` | string | No | 1–200 characters |
+| `slug` | string | No | 1–120 characters, slug pattern |
+| `content` | string | No | Max 500,000 characters |
+| `parent` | string | No | Page ID (max 15 characters) or empty string |
+| `icon` | string | No | Max 50 characters |
+| `order` | integer | No | ≥ 0 |
+| `_csrf` | string | Yes | CSRF token |
+
+`section` and `itemType` are not updateable.
 
 **Success:** Redirects to page editor
 
@@ -430,26 +509,6 @@ Deletes a page.
 **CSRF:** Yes
 
 **Success:** Redirects to pages list
-
-### `POST /admin/projects/:projectId/versions/:versionId/pages/preview`
-
-Returns rendered Markdown as HTML (for live editor preview).
-
-**Auth:** Required  
-**Roles:** All (with project access)
-
-**Body:**
-
-| Field | Type | Required |
-|-------|------|----------|
-| `content` | string | Yes |
-
-**Response (JSON):**
-```json
-{
-  "html": "<h1>Rendered Markdown</h1><p>Content here...</p>"
-}
-```
 
 ### `POST /admin/projects/:projectId/versions/:versionId/pages/reorder`
 
@@ -469,7 +528,7 @@ Reorders pages and updates parent relationships.
 | `pages[].parent` | string | No | Page ID or empty string |
 | `_csrf` | string | Yes | CSRF token |
 
-**Success:** JSON `{ success: true }`
+**Success:** JSON `{ "ok": true }`
 
 ---
 
@@ -501,15 +560,6 @@ Creates or updates the changelog for the version (upsert).
 
 **Success:** Redirects to changelog editor
 
-### `POST /admin/projects/:projectId/versions/:versionId/changelog/preview`
-
-Returns rendered Markdown as HTML.
-
-**Auth:** Required  
-**Roles:** All (with project access)
-
-**Body / Response:** Same as page preview.
-
 ---
 
 ## Content Sections
@@ -526,6 +576,7 @@ The existing page routes support all sections:
 | `GET /admin/projects/:projectId/versions/:versionId/pages/new?section=faq` | Renders the editor for that section |
 | `POST /admin/projects/:projectId/versions/:versionId/pages/new?section=faq` | Creates a page/article in that section |
 | `POST /admin/projects/:projectId/versions/:versionId/pages/import?section=faq` | Imports Markdown into that section |
+| `POST /admin/projects/:projectId/versions/:versionId/pages/delete-selected?section=faq` | Deletes selected articles from that section |
 | `POST /admin/projects/:projectId/versions/:versionId/pages/reorder?section=faq` | Reorders pages/articles in that section |
 | `GET /admin/projects/:projectId/versions/:versionId/pages/:pageId` | Edits an existing page/article |
 | `POST /admin/projects/:projectId/versions/:versionId/pages/:pageId` | Updates an existing page/article |
@@ -551,10 +602,11 @@ Lists all users, paginated.
 | Param | Type | Default |
 |-------|------|---------|
 | `page` | integer | 1 |
+| `search` | string | empty; filters name or email |
 
 ### `GET /admin/users/:id/edit`
 
-Re-renders the users list with the specified user loaded for editing (modal).
+Renders the users list with the specified user loaded for editing.
 
 **Auth:** Required  
 **Roles:** Owner
@@ -564,6 +616,7 @@ Re-renders the users list with the specified user loaded for editing (modal).
 | Param | Type | Default |
 |-------|------|---------|
 | `page` | integer | 1 |
+| `search` | string | empty; filters name or email |
 
 ### `POST /admin/users/create`
 
@@ -586,7 +639,7 @@ Creates a new user.
 
 **Success:** Redirects to users list
 
-**Errors:** 400 (validation), 409 (email taken)
+**Errors:** 422 (validation), 409 (email taken)
 
 ### `POST /admin/users/:id/update`
 
@@ -642,10 +695,11 @@ Updates site settings and (optionally) IP restriction rules.
 
 | Field | Type | Required | Constraints | Notes |
 |-------|------|----------|-------------|-------|
-| `heroWord1` | string | Yes | 1–50 characters | Home page hero word 1 |
-| `heroWord2` | string | Yes | 1–50 characters | Home page hero word 2 |
-| `heroSubtitle` | string | No | Max 300 characters | Home page subtitle |
-| `enabled` | string | No | `enable` or `disable` | IP restriction toggle (Owner only) |
+| `heroTitle` | string | Yes | 1–200 characters | Sanitized inline Markdown; controls homepage hero, public homepage header, and browser title |
+| `heroSubtitle` | string | No | Max 300 characters | Sanitized inline Markdown shown below the homepage title |
+| `siteIcon` | string | No | Base64 data URL for PNG, JPEG, WebP, or safe SVG; decoded file ≤ 256 KB | Replaces the current PocketBase-backed site icon |
+| `removeSiteIcon` | string | No | `true` or `false` (default) | Restores the bundled PocketDocs icon when `true` and no replacement icon is supplied |
+| `enabled` | string | Owner only | `enable` or `disable` | Required when an Owner updates settings; omitted for Admin requests |
 | `allowedIps` | string | No | Max 5,000 characters | Newline-separated IP allowlist (Owner only) |
 | `_csrf` | string | Yes | CSRF token | |
 
@@ -657,7 +711,7 @@ Updates site settings and (optionally) IP restriction rules.
 
 ### `GET /`
 
-Home page showing all public projects.
+Home page showing all public projects. Its hero title, subtitle, public header title, browser title, and public site icon come from the PocketBase `site_settings` records. The footer branding remains PocketDocs.
 
 **Auth:** None
 
@@ -787,7 +841,7 @@ Full-text search across public Documents, FAQ, and Troubleshooting pages.
 
 | Scope | Window | Max Requests | Applies To |
 |-------|--------|-------------|------------|
-| General | 15 minutes | 100 (configurable) | All routes |
+| General | 15 minutes | 100 (configurable) | Public home, documentation, and search routes |
 | Auth | 15 minutes | 10 (configurable) | `/auth/*`, `/setup` |
 
 Rate-limited responses return HTTP 429:

@@ -1,14 +1,4 @@
-<div class="form-page">
-  <div class="page-header">
-    <div>
-      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
-    </div>
-    <button type="button" class="btn btn-primary" data-dialog-open="createUserModal">
-      <i class="ph ph-user-plus"></i>
-      New User
-    </button>
-  </div>
-
+<div class="form-page users-page">
   <% if (typeof error !== 'undefined' && error) { %>
     <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
@@ -19,20 +9,24 @@
 
   <% if (users.length === 0) { %>
     <div class="empty-state">
-      <div class="empty-icon"><i class="ph ph-users"></i></div>
-      <h2>No users yet</h2>
-      <p>Create your first user account.</p>
+      <% if (typeof search !== 'undefined' && search) { %>
+        <h2>No matching users</h2>
+        <p>No users found for "<%= search %>". <a href="/admin/users">Clear search</a></p>
+      <% } else { %>
+        <h2>No users yet</h2>
+        <p>Create your first user account.</p>
+      <% } %>
     </div>
   <% } else { %>
-    <div class="table-wrap">
-      <table class="data-table">
+    <div class="table-wrap pb-table-wrap">
+      <table class="data-table pb-data-table">
         <thead>
           <tr>
             <th>Name</th>
             <th>Email</th>
             <th>Role</th>
             <th>Created</th>
-            <th class="table-actions-col">Actions</th>
+            <th class="table-actions-col"></th>
           </tr>
         </thead>
         <tbody>
@@ -40,8 +34,7 @@
             <tr>
               <td>
                 <div class="table-project-cell">
-                  <div class="table-avatar-placeholder"><%= (u.name || u.email).charAt(0).toUpperCase() %></div>
-                  <strong><%= u.name || '—' %></strong>
+                  <span><%= u.name || '—' %></span>
                   <% if (u.id === user.id) { %>
                     <span class="badge badge-public">you</span>
                   <% } %>
@@ -52,13 +45,13 @@
               <td><%= formatDate(u.created) %></td>
               <td class="table-actions-col">
                 <% if (u.role !== 'owner') { %>
-                  <a href="/admin/users/<%= u.id %>/edit" class="btn btn-outline btn-sm" title="Edit user">
+                  <a href="/admin/users/<%= u.id %>/edit" class="btn btn-row-action" title="Edit user" data-drawer-url="/admin/users/<%= u.id %>/edit" data-drawer-title="Edit User" aria-label="Edit <%= u.name || u.email %>">
                     <i class="ph ph-pencil-simple"></i>
                   </a>
                   <% if (u.id !== user.id) { %>
                     <form method="POST" action="/admin/users/<%= u.id %>/delete" class="inline-form" data-confirm-title="Delete user?" data-confirm-message="Delete this user account? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger">
                       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                      <button type="submit" class="btn btn-outline btn-sm btn-danger" title="Delete user">
+                      <button type="submit" class="btn btn-row-action btn-danger-text" title="Delete user" aria-label="Delete <%= u.name || u.email %>">
                         <i class="ph ph-trash"></i>
                       </button>
                     </form>
@@ -70,6 +63,8 @@
         </tbody>
       </table>
     </div>
+
+    <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
   <% } %>
 </div>
 
@@ -109,7 +104,7 @@
         </div>
       </div>
       <div class="dialog-footer">
-        <button type="button" class="btn btn-outline" data-dialog-close="createUserModal">Cancel</button>
+        <button type="button" class="btn btn-ghost" data-dialog-close="createUserModal">Close</button>
         <button type="submit" class="btn btn-primary"><i class="ph ph-user-plus"></i> Create User</button>
       </div>
     </form>
@@ -153,7 +148,7 @@
           </div>
         </div>
         <div class="dialog-footer">
-          <a href="/admin/users" class="btn btn-outline">Cancel</a>
+          <a href="/admin/users" class="btn btn-ghost">Close</a>
           <button type="submit" class="btn btn-primary"><i class="ph ph-floppy-disk"></i> Save Changes</button>
         </div>
       </form>

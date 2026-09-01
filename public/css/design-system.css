@@ -100,7 +100,7 @@
   --transition-slow: 300ms ease;
 
   --sidebar-width: 280px;
-  --docs-toc-width: 240px;
+  --docs-toc-width: 280px;
   --header-height: 72px;
   --max-content-width: 780px;
 
@@ -663,24 +663,6 @@ input[type="color"] {
   margin-left: var(--space-1);
 }
 
-.input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-wrap > i {
-  position: absolute;
-  left: var(--space-3);
-  color: var(--text-tertiary);
-  pointer-events: none;
-  font-size: 1.1em;
-}
-
-.input-wrap > input {
-  padding-left: var(--space-8);
-}
-
 .input-prefix-wrap {
   display: flex;
   align-items: stretch;
@@ -727,19 +709,6 @@ input[type="color"] {
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xs);
-}
-
-.card-header {
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--surface-border);
-}
-
-.card-header h3 {
-  font-size: var(--text-base);
-}
-
-.card-body {
-  padding: var(--space-5);
 }
 
 .form-section {
@@ -873,31 +842,6 @@ input[type="color"] {
   gap: var(--space-3);
 }
 
-.table-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  object-fit: cover;
-}
-
-.table-avatar-placeholder {
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-inverse);
-  font-weight: 700;
-  font-size: var(--text-sm);
-  flex-shrink: 0;
-  background: var(--color-primary);
-}
-
-.table-user-cell .text-muted {
-  font-size: var(--text-xs);
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -957,16 +901,6 @@ input[type="color"] {
   margin-bottom: var(--space-1);
 }
 
-.page-header.sub-header {
-  padding-top: var(--space-1);
-  border-bottom: unset;
-  margin-bottom: var(--space-4);
-}
-
-.page-header.sub-header h2 {
-  font-size: var(--text-xl);
-}
-
 .subtitle {
   font-size: var(--text-sm);
   color: var(--text-secondary);
@@ -992,11 +926,6 @@ input[type="color"] {
 
 .inline-form {
   display: inline-flex;
-}
-
-.inline-add-form .form-group {
-  margin-bottom: 0;
-  flex: 1;
 }
 
 .text-muted {
@@ -1286,6 +1215,7 @@ input[type="color"] {
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0;
   }
 

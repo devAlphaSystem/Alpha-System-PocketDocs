@@ -1,16 +1,6 @@
 <div class="projects-page">
-  <div class="page-header page-header-compact">
-    <% if (user.role === 'owner' || user.role === 'admin') { %>
-      <a href="/admin/projects/create" class="btn btn-primary">
-        <i class="ph ph-plus"></i>
-        New Project
-      </a>
-    <% } %>
-  </div>
-
   <% if (projects.length === 0) { %>
     <div class="empty-state">
-      <div class="empty-icon"><i class="ph ph-folders"></i></div>
       <% if (typeof search !== 'undefined' && search) { %>
         <h2>No matching projects</h2>
         <p>No projects found for "<%= search %>". <a href="/admin/projects">Clear search</a></p>
@@ -20,14 +10,15 @@
       <% } %>
     </div>
   <% } else { %>
-    <div class="table-wrap">
-      <table class="data-table">
+    <div class="table-wrap pb-table-wrap">
+      <table class="data-table pb-data-table">
         <thead>
           <tr>
             <th>Project</th>
             <th>Slug</th>
             <th>Visibility</th>
             <th>Created</th>
+            <th class="pb-arrow-column"></th>
           </tr>
         </thead>
         <tbody>
@@ -35,17 +26,13 @@
             <tr class="row-link" data-row-link="/admin/projects/<%= proj.id %>" tabindex="0" aria-label="Open project <%= proj.name %>">
               <td>
                 <div class="table-project-cell">
-                  <% if (proj.logo) { %>
-                    <img src="<%= sitePbUrl %>/api/files/projects/<%= proj.id %>/<%= proj.logo %>" alt="" class="table-avatar">
-                  <% } else { %>
-                    <div class="table-avatar-placeholder"><%= proj.name.charAt(0).toUpperCase() %></div>
-                  <% } %>
-                  <strong><%= proj.name %></strong>
+                  <span><%= proj.name %></span>
                 </div>
               </td>
               <td><code><%= proj.slug %></code></td>
               <td><span class="badge badge-<%= proj.visibility %>"><%= proj.visibility %></span></td>
               <td><%= formatDate(proj.created) %></td>
+              <td class="pb-arrow-column"><i class="ph ph-arrow-right"></i></td>
             </tr>
           <% } %>
         </tbody>

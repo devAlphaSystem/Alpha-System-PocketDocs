@@ -77,27 +77,36 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
   try {
     const search = (req.query.search || "").trim();
     const project = await getProject(req.params.projectId);
+    const projectMode = project.mode || PROJECT_MODE.VERSIONED;
+    const canManageProject = req.user.role === ROLES.OWNER || req.user.role === ROLES.ADMIN;
+    const pageListActions = {
+      publicUrl: `/docs/${project.slug}`,
+      editProjectUrl: canManageProject ? `/admin/projects/${project.id}/edit` : null,
+      create:
+        canManageProject && projectMode === PROJECT_MODE.VERSIONED
+          ? {
+              url: `/admin/projects/${project.id}/versions/create`,
+              label: "Version",
+            }
+          : null,
+    };
 
-    if ((project.mode || PROJECT_MODE.VERSIONED) === PROJECT_MODE.NON_VERSIONED) {
+    if (projectMode === PROJECT_MODE.NON_VERSIONED) {
       const versionsResult = await listVersions(project.id);
       const defaultVersion = versionsResult.items?.[0];
       if (!defaultVersion) {
         return res.render("admin/projects/show", {
           title: project.name,
-          headerSubtitle: `/${project.slug}`,
-          headerBadge: { text: project.visibility, variant: project.visibility },
+          pageListActions,
           project,
-          projectMode: project.mode,
           defaultVersion: null,
           pages: [],
-          pageTree: [],
           pagination: { page: 1, totalPages: 1, totalItems: 0 },
           search,
           user: req.user,
           csrfToken: res.locals.csrfToken,
           success: req.query.success || null,
           siteName: env.SITE_NAME,
-          sitePbUrl: env.POCKETBASE_URL,
         });
       }
 
@@ -117,11 +126,7 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
     const versionsResult = await listVersionsPaginated(project.id, page, search);
     res.render("admin/projects/show", {
       title: project.name,
-      headerSubtitle: `/${project.slug}`,
-      headerBadge: {
-        text: project.visibility,
-        variant: project.visibility,
-      },
+      pageListActions,
       headerSearch: {
         action: `/admin/projects/${project.id}`,
         placeholder: "Search versions...",
@@ -135,7 +140,6 @@ router.get("/:projectId", csrfMiddleware, requireProjectAccess(), async (req, re
       csrfToken: res.locals.csrfToken,
       success: req.query.success || null,
       siteName: env.SITE_NAME,
-      sitePbUrl: env.POCKETBASE_URL,
     });
   } catch (err) {
     next(err);

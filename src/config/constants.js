@@ -85,6 +85,7 @@ export const COLLECTIONS = Object.freeze({
   VERSIONS: "versions",
   PAGES: "pages",
   CHANGELOGS: "changelogs",
+  SITE_SETTINGS: "site_settings",
 });
 
 /**

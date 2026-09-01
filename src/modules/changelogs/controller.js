@@ -31,6 +31,10 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
     const project = version.expand?.project;
     assertChangelogSupported(project);
 
+    if (!req.xhr) {
+      return res.redirect(303, `/admin/projects/${project.id}`);
+    }
+
     res.render("admin/changelogs/editor", {
       title: `${project.name} - ${version.label} - Changelog`,
       project,
@@ -54,7 +58,7 @@ router.post("/", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), validate(upd
     const version = await getVersion(req.params.versionId);
     assertChangelogSupported(version.expand?.project);
     await upsertChangelog(req.params.versionId, req.validatedBody, req.requestId);
-    res.redirect(`/admin/projects/${req.params.projectId}/versions/${req.params.versionId}/changelog?success=Changelog saved.`);
+    res.redirect(`/admin/projects/${req.params.projectId}?success=Changelog saved.`);
   } catch (err) {
     next(err);
   }

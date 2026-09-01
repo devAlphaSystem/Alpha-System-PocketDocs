@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "source": "pb_schema.json",
-  "generatedAt": "2026-08-31T01:10:24.482Z",
+  "generatedAt": "2026-09-01T02:46:46.876Z",
   "collections": [
     {
       "name": "users",
@@ -51,6 +51,65 @@
       ],
       "authRule": "",
       "manageRule": null
+    },
+    {
+      "name": "site_settings",
+      "type": "base",
+      "listRule": null,
+      "viewRule": null,
+      "createRule": null,
+      "updateRule": null,
+      "deleteRule": null,
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_site_settings_key` ON `site_settings` (`key`)"
+      ],
+      "fields": [
+        {
+          "name": "key",
+          "type": "text",
+          "required": true,
+          "min": 1,
+          "max": 50,
+          "pattern": "^[a-z0-9_-]+$",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "required": false,
+          "min": 0,
+          "max": 500,
+          "pattern": "",
+          "autogeneratePattern": ""
+        },
+        {
+          "name": "icon",
+          "type": "file",
+          "required": false,
+          "maxSelect": 1,
+          "maxSize": 262144,
+          "mimeTypes": [
+            "image/jpeg",
+            "image/png",
+            "image/svg+xml",
+            "image/webp"
+          ],
+          "protected": false,
+          "thumbs": []
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": false
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "onCreate": true,
+          "onUpdate": true
+        }
+      ]
     },
     {
       "name": "projects",

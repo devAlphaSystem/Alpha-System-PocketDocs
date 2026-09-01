@@ -1,50 +1,12 @@
 <% const isDocumentsSection = section === 'documents'; %>
 <% const itemLabel = sectionOption.itemLabel || (isDocumentsSection ? 'page' : 'article'); %>
 <% const itemLabelPlural = sectionOption.itemLabelPlural || itemLabel + 's'; %>
-<% const selectionItemLabel = isDocumentsSection ? 'sidebar item' : itemLabel; %>
-<% const selectionItemLabelPlural = isDocumentsSection ? 'sidebar items' : itemLabelPlural; %>
 <% const isSearching = typeof search !== 'undefined' && search; %>
 <% const treeItems = typeof pageTreeItems !== 'undefined' ? pageTreeItems : []; %>
+<% const batchDeleteAction = typeof pageListActions !== 'undefined' ? pageListActions.batchDelete : null; %>
+<% const loadMoreModel = buildPaginationViewModel({ pagination, search: typeof search !== 'undefined' ? search : '', queryParams: { section } }); %>
 
 <div class="pages-page">
-  <div class="page-header">
-    <div>
-      <% if (typeof nonVersionedMode !== 'undefined' && nonVersionedMode) { %>
-        <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
-      <% } else { %>
-        <a href="/admin/projects/<%= project.id %>" class="back-link"><i class="ph ph-arrow-left"></i> Versions</a>
-      <% } %>
-    </div>
-    <div class="header-actions">
-      <a href="<%= publicSectionUrl %>" class="btn btn-outline" target="_blank"><i class="ph ph-arrow-square-out"></i> View Public</a>
-      
-      <% if ((user.role === 'owner' || user.role === 'admin') && (typeof nonVersionedMode !== 'undefined' && nonVersionedMode)) { %>
-        <a href="/admin/projects/<%= project.id %>/edit" class="btn btn-outline"><i class="ph ph-pencil"></i> Edit</a>
-      <% } %>
-
-      <% if (user.role === 'owner' || user.role === 'admin') { %>
-        <% if (isDocumentsSection) { %>
-          <button type="button" class="btn btn-outline" data-dialog-open="createSidebarItemDialog">
-            <i class="ph ph-list-plus"></i> Add Sidebar Item
-          </button>
-        <% } %>
-        <button type="button" class="btn btn-outline" data-markdown-import-open>
-          <i class="ph ph-upload-simple"></i> Import Markdown
-        </button>
-        <form id="pageBatchDeleteForm" method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/delete-selected" class="inline-form page-batch-delete-form" data-page-batch-delete-form data-item-label="<%= selectionItemLabel %>" data-item-label-plural="<%= selectionItemLabelPlural %>" data-confirm-title="Remove selected <%= selectionItemLabelPlural %>?" data-confirm-message="Remove the selected <%= selectionItemLabelPlural %>? This cannot be undone." data-confirm-button="Remove Selected" data-confirm-variant="danger" hidden>
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <input type="hidden" name="section" value="<%= section %>">
-          <button type="submit" class="btn btn-danger">
-            <i class="ph ph-trash"></i> Remove Selected
-          </button>
-        </form>
-        <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/new?section=<%= section %>" class="btn btn-primary">
-          <i class="ph ph-plus"></i> New <%= isDocumentsSection ? 'Page' : 'Article' %>
-        </a>
-      <% } %>
-    </div>
-  </div>
-
   <% if (typeof success !== 'undefined' && success) { %>
     <div class="alert alert-success"><i class="ph ph-check-circle"></i> <%= success %></div>
   <% } %>
@@ -53,18 +15,8 @@
     <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
 
-  <div class="settings-tabs-nav knowledge-base-tabs-nav" role="tablist" aria-label="Content sections">
-    <% for (const option of sectionOptions) { %>
-      <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages?section=<%= option.value %>" class="settings-tab-btn" role="tab" aria-selected="<%= option.value === section ? 'true' : 'false' %>" tabindex="<%= option.value === section ? '0' : '-1' %>">
-        <i class="ph ph-<%= option.icon %>"></i>
-        <span><%= option.label %></span>
-      </a>
-    <% } %>
-  </div>
-
   <% if (pages.length === 0) { %>
     <div class="empty-state small">
-      <div class="empty-icon"><i class="ph ph-<%= sectionIcon %>"></i></div>
       <% if (isSearching) { %>
         <h3>No matching <%= itemLabelPlural %></h3>
         <p>No <%= sectionLabel %> <%= itemLabelPlural %> found for "<%= search %>". <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages?section=<%= section %>">Clear search</a></p>
@@ -74,23 +26,23 @@
       <% } %>
     </div>
   <% } else if (isSearching) { %>
-    <div class="versions-list">
+    <div class="versions-list pb-record-list" id="pageSearchResults" data-load-more-list>
       <% for (const pg of pages) { %>
-        <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= pg.title %>">
+        <div class="version-card row-link" data-load-more-item="<%= pg.id %>" data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" data-drawer-title="Edit <%= isDocumentsSection ? 'Page' : 'Article' %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= pg.title %>">
           <div class="version-card-main">
             <div class="version-info">
               <% if (user.role === 'owner' || user.role === 'admin') { %>
-                <input type="checkbox" class="page-selection-checkbox" name="pageIds" value="<%= pg.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= itemLabel %> <%= pg.title %>">
+                <input type="checkbox" class="pb-checkbox" name="pageIds" value="<%= pg.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= itemLabel %> <%= pg.title %>">
               <% } %>
               <h3 class="page-title"><%= pg.title %></h3>
               <span class="page-slug text-muted">/<%= pg.slug %></span>
             </div>
             <div class="version-actions">
-              <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
+              <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" class="btn btn-row-action" title="Edit" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>" data-drawer-title="Edit <%= isDocumentsSection ? 'Page' : 'Article' %>" aria-label="Edit <%= pg.title %>"><i class="ph ph-pencil"></i></a>
               <% if (user.role === 'owner' || user.role === 'admin') { %>
                 <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= pg.id %>/delete" class="inline-form" data-confirm-title="Delete <%= itemLabel %>?" data-confirm-message="Delete this <%= itemLabel %>?" data-confirm-button="Delete" data-confirm-variant="danger">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
+                  <button type="submit" class="btn btn-row-action btn-danger-text" title="Delete" aria-label="Delete <%= pg.title %>"><i class="ph ph-trash"></i></button>
                 </form>
               <% } %>
             </div>
@@ -99,17 +51,16 @@
       <% } %>
     </div>
 
-    <%- include('../../partials/pagination', { pagination, search, queryParams: { section } }) %>
   <% } else { %>
-    <div class="versions-list pages-tree" id="pagesTree" data-sortable-tree data-reorder-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/reorder?section=<%= section %>" data-csrf="<%= csrfToken %>" data-sort-success="<%= sectionLabel %> reordered" data-sort-error="Failed to reorder <%= sectionLabel %>">
+    <div class="versions-list pages-tree pb-record-list" id="pagesTree" data-load-more-list data-sortable-tree data-reorder-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/reorder?section=<%= section %>" data-csrf="<%= csrfToken %>" data-sort-success="<%= sectionLabel %> reordered" data-sort-error="Failed to reorder <%= sectionLabel %>">
       <% for (const node of treeItems) { %>
         <% const nodeItemType = node.item_type || pageItemTypes.PAGE; %>
         <% const isNavigationItem = nodeItemType !== pageItemTypes.PAGE; %>
-        <div class="version-card page-tree-item<%= isNavigationItem ? ' sidebar-navigation-card sidebar-navigation-' + nodeItemType : ' row-link' %>"<% if (!isNavigationItem) { %> data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= node.title %>"<% } else { %> aria-label="Sidebar <%= nodeItemType %><%= nodeItemType === pageItemTypes.HEADER ? ' ' + node.title : '' %>"<% } %> data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= node.depth %>">
+        <div class="version-card page-tree-item<%= isNavigationItem ? ' sidebar-navigation-card sidebar-navigation-' + nodeItemType : ' row-link' %>" data-load-more-item="<%= node.id %>"<% if (!isNavigationItem) { %> data-row-link="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" data-drawer-title="Edit <%= isDocumentsSection ? 'Page' : 'Article' %>" tabindex="0" aria-label="Open <%= itemLabel %> <%= node.title %>"<% } else { %> aria-label="Sidebar <%= nodeItemType %><%= nodeItemType === pageItemTypes.HEADER ? ' ' + node.title : '' %>"<% } %> data-id="<%= node.id %>" data-order="<%= node.order %>" data-parent="<%= node.parent || '' %>" draggable="true" style="--depth: <%= node.depth %>">
           <div class="version-card-main">
             <div class="version-info">
               <% if (user.role === 'owner' || user.role === 'admin') { %>
-                <input type="checkbox" class="page-selection-checkbox" name="pageIds" value="<%= node.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= isNavigationItem ? 'sidebar ' + nodeItemType : itemLabel %> <%= node.title %>">
+                <input type="checkbox" class="pb-checkbox" name="pageIds" value="<%= node.id %>" form="pageBatchDeleteForm" data-page-select aria-label="Select <%= isNavigationItem ? 'sidebar ' + nodeItemType : itemLabel %> <%= node.title %>">
               <% } %>
               <% if (nodeItemType === pageItemTypes.HEADER) { %>
                 <i class="ph ph-text-h sidebar-navigation-icon"></i>
@@ -126,16 +77,16 @@
             </div>
             <div class="version-actions page-tree-actions">
               <% if (nodeItemType === pageItemTypes.PAGE) { %>
-                <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" class="btn btn-outline" title="Edit"><i class="ph ph-pencil"></i> Edit</a>
+                <a href="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" class="btn btn-row-action" title="Edit" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= node.id %>" data-drawer-title="Edit <%= isDocumentsSection ? 'Page' : 'Article' %>" aria-label="Edit <%= node.title %>"><i class="ph ph-pencil"></i></a>
               <% } else if (nodeItemType === pageItemTypes.HEADER) { %>
-                <button type="button" class="btn btn-outline" data-dialog-open="editSidebarHeaderDialog" data-sidebar-header-edit data-edit-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/sidebar-items/<%= node.id %>" data-header-title="<%= node.title %>"><i class="ph ph-pencil"></i> Edit</button>
+                <button type="button" class="btn btn-row-action" data-dialog-open="editSidebarHeaderDialog" data-sidebar-header-edit data-edit-url="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/sidebar-items/<%= node.id %>" data-header-title="<%= node.title %>" title="Edit" aria-label="Edit <%= node.title %>"><i class="ph ph-pencil"></i></button>
               <% } else if (nodeItemType === pageItemTypes.SEPARATOR) { %>
-                <span class="btn btn-outline sidebar-navigation-edit-spacer" aria-hidden="true"><i class="ph ph-pencil"></i> Edit</span>
+                <span class="btn btn-row-action sidebar-navigation-edit-spacer" aria-hidden="true"><i class="ph ph-pencil"></i></span>
               <% } %>
               <% if (user.role === 'owner' || user.role === 'admin') { %>
                 <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/<%= isNavigationItem ? 'sidebar-items/' + node.id + '/delete' : node.id + '/delete' %>" class="inline-form" data-confirm-title="Delete <%= isNavigationItem ? 'sidebar ' + nodeItemType : itemLabel %>?" data-confirm-message="Delete this <%= isNavigationItem ? 'sidebar ' + nodeItemType : itemLabel %>?" data-confirm-button="Delete" data-confirm-variant="danger">
                   <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-outline btn-danger-text" title="Delete"><i class="ph ph-trash"></i> Delete</button>
+                  <button type="submit" class="btn btn-row-action btn-danger-text" title="Delete" aria-label="Delete <%= node.title %>"><i class="ph ph-trash"></i></button>
                 </form>
               <% } %>
             </div>
@@ -144,7 +95,27 @@
       <% } %>
     </div>
 
-    <%- include('../../partials/pagination', { pagination, search: '', queryParams: { section } }) %>
+  <% } %>
+
+  <% if (loadMoreModel && loadMoreModel.hasNext) { %>
+    <div class="page-load-more" data-load-more-container>
+      <a href="?page=<%= loadMoreModel.nextPage %><%= loadMoreModel.querySuffix %>" class="btn page-load-more-button" data-load-more aria-controls="<%= isSearching ? 'pageSearchResults' : 'pagesTree' %>">Load more</a>
+    </div>
+  <% } %>
+
+  <% if (batchDeleteAction) { %>
+    <form id="pageBatchDeleteForm" method="POST" action="<%= batchDeleteAction.action %>" class="page-selection-toolbar page-batch-delete-form" data-page-batch-delete-form data-item-label="<%= batchDeleteAction.itemLabel %>" data-item-label-plural="<%= batchDeleteAction.itemLabelPlural %>" data-confirm-title="Remove selected <%= batchDeleteAction.itemLabelPlural %>?" data-confirm-message="Remove the selected <%= batchDeleteAction.itemLabelPlural %>? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger" hidden>
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="section" value="<%= batchDeleteAction.section %>">
+      <span class="page-selection-summary" aria-live="polite">
+        Selected <strong data-page-selection-count>0</strong> <span data-page-selection-label><%= batchDeleteAction.itemLabelPlural %></span>
+      </span>
+      <button type="button" class="btn page-selection-reset" data-page-selection-reset>Reset</button>
+      <button type="submit" class="btn page-selection-delete">
+        <i class="ph ph-trash"></i>
+        <span>Delete</span>
+      </button>
+    </form>
   <% } %>
 </div>
 
@@ -173,49 +144,16 @@
           <ul class="markdown-import-file-list" data-markdown-import-file-list hidden></ul>
         </div>
         <div class="dialog-footer">
-          <button type="button" class="btn btn-outline" data-markdown-import-close>Cancel</button>
+          <button type="button" class="btn btn-ghost" data-markdown-import-close>Close</button>
           <button type="submit" class="btn btn-primary" data-markdown-import-submit disabled><i class="ph ph-upload-simple"></i> Import <%= isDocumentsSection ? 'Pages' : 'Articles' %></button>
         </div>
       </form>
     </div>
   </dialog>
 
-  <% if (isDocumentsSection) { %>
-    <dialog id="createSidebarItemDialog" class="admin-dialog" data-sidebar-item-create-dialog>
-      <div class="dialog-content">
-        <div class="dialog-header">
-          <h2>Add Sidebar Item</h2>
-          <button type="button" class="dialog-close" data-dialog-close="createSidebarItemDialog" aria-label="Close">
-            <i class="ph ph-x"></i>
-          </button>
-        </div>
-        <form method="POST" action="/admin/projects/<%= project.id %>/versions/<%= version.id %>/pages/sidebar-items" data-sidebar-item-create-form data-save-shortcut="off">
-          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-          <div class="dialog-body">
-            <div class="form-group">
-              <label for="sidebarItemType">Item type</label>
-              <select id="sidebarItemType" name="itemType" data-sidebar-item-type>
-                <option value="header">Header</option>
-                <option value="separator">Separator</option>
-              </select>
-            </div>
-            <div class="form-group" data-sidebar-item-title-group>
-              <label for="sidebarItemTitle">Header title <span class="required">*</span></label>
-              <input type="text" id="sidebarItemTitle" name="title" required maxlength="200" placeholder="API Reference" data-sidebar-item-title>
-            </div>
-            <p class="form-hint" data-sidebar-item-help>A header is displayed as a non-clickable label in the public sidebar.</p>
-          </div>
-          <div class="dialog-footer">
-            <button type="button" class="btn btn-outline" data-dialog-close="createSidebarItemDialog">Cancel</button>
-            <button type="submit" class="btn btn-primary">Add Item</button>
-          </div>
-        </form>
-      </div>
-    </dialog>
-  <% } %>
 <% } %>
 
-<% if (isDocumentsSection && treeItems.some((item) => (item.item_type || pageItemTypes.PAGE) === pageItemTypes.HEADER)) { %>
+<% if (isDocumentsSection) { %>
   <dialog id="editSidebarHeaderDialog" class="admin-dialog" data-sidebar-header-dialog>
     <div class="dialog-content">
       <div class="dialog-header">
@@ -233,7 +171,7 @@
           </div>
         </div>
         <div class="dialog-footer">
-          <button type="button" class="btn btn-outline" data-dialog-close="editSidebarHeaderDialog">Cancel</button>
+          <button type="button" class="btn btn-ghost" data-dialog-close="editSidebarHeaderDialog">Close</button>
           <button type="submit" class="btn btn-primary">Save Header</button>
         </div>
       </form>

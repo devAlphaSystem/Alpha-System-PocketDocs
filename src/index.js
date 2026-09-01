@@ -31,7 +31,7 @@ import changelogRoutes from "./modules/changelogs/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
 import userRoutes from "./modules/users/controller.js";
 import publicRoutes from "./modules/public/controller.js";
-import { loadSettings, getSettings } from "./modules/settings/service.js";
+import { getSettings, getSiteIconAsset, getSiteIconUrl, loadSettings } from "./modules/settings/service.js";
 import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
 import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
 import { checkOwnerExists, isOwnerSetupComplete } from "./modules/setup/service.js";
@@ -40,7 +40,7 @@ import { boot as bootEmbeddedPb, stop as stopEmbeddedPb, applySchema } from "./l
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
-const { updated: assetVersion } = require("../package.json");
+const { updated: assetVersion, version: appVersion } = require("../package.json");
 
 const assetUrlFn = (path) => {
   if (typeof path !== "string" || !path.startsWith("/")) {
@@ -88,6 +88,27 @@ app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
 app.use(securityHeadersMiddleware);
 
+async function serveSiteIcon(req, res, next) {
+  try {
+    const icon = await getSiteIconAsset();
+    if (!icon) {
+      return res.sendFile(join(__dirname, "../public/img/pd-logo.svg"));
+    }
+
+    res.type(icon.contentType);
+    if (icon.contentType === "image/svg+xml") {
+      res.set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+    }
+    res.set("Cache-Control", req.path === "/favicon.ico" ? "no-cache" : "public, max-age=31536000, immutable");
+    return res.send(icon.data);
+  } catch (err) {
+    return next(err);
+  }
+}
+
+app.get("/site-icon", serveSiteIcon);
+app.get("/favicon.ico", serveSiteIcon);
+
 app.get("/health", async (_req, res) => {
   const uptime = process.uptime();
   const mem = process.memoryUsage();
@@ -102,7 +123,7 @@ app.get("/health", async (_req, res) => {
         heap_total_mb: Math.round(mem.heapTotal / 1048576),
       },
     });
-  } catch (_err) {
+  } catch {
     res.status(503).json({
       status: "unhealthy",
       uptime_s: Math.floor(uptime),
@@ -149,6 +170,7 @@ app.use((req, res, next) => {
   res.locals.siteUrl = env.SITE_URL;
   res.locals.sitePbUrl = env.POCKETBASE_URL;
   res.locals.assetVersion = assetVersion;
+  res.locals.appVersion = appVersion;
   res.locals.assetUrl = assetUrlFn;
   res.locals.normalizeViewAssetList = normalizeViewAssetList;
   res.locals.buildPaginationViewModel = buildPaginationViewModel;
@@ -158,6 +180,7 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.user || null;
   res.locals.currentPath = req.path;
   res.locals.siteSettings = getSettings();
+  res.locals.siteIconUrl = assetUrlFn(getSiteIconUrl());
   res.locals.ipAllowed = isIpAllowed(getClientIp(req));
   next();
 });
@@ -206,10 +229,6 @@ app.use("/admin/projects/:projectId/versions/:versionId/changelog", ipRestrictio
 
 app.use("/", generalLimiter, publicRoutes);
 
-app.get("/favicon.ico", (_req, res) => {
-  res.sendFile(join(__dirname, "../public/img/logo.png"));
-});
-
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
@@ -236,9 +255,6 @@ async function start() {
     });
     embeddedRunning = true;
   }
-
-  await loadSettings();
-  logger.info("Site settings loaded");
 
   await loadIpRestriction();
   logger.info("IP restriction settings loaded");
@@ -267,6 +283,9 @@ async function start() {
       process.exit(1);
     }
   }
+
+  await loadSettings();
+  logger.info("Site settings loaded");
 
   const ownerReady = await checkOwnerExists();
   logger.info(ownerReady ? "Owner account found" : "No owner account — setup required");

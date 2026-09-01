@@ -30,7 +30,6 @@ router.use((_req, res, next) => {
 router.get("/", csrfMiddleware, (_req, res) => {
   res.render("admin/setup", {
     layout: false,
-    title: "Setup",
     error: null,
     csrfToken: res.locals.csrfToken,
     siteName: env.SITE_NAME,
@@ -46,7 +45,6 @@ router.post("/", csrfMiddleware, validate(registerSchema), async (req, res, next
     if (err.statusCode === 409 || err.statusCode === 422) {
       return res.status(err.statusCode).render("admin/setup", {
         layout: false,
-        title: "Setup",
         error: err.message,
         csrfToken: res.locals.csrfToken,
         siteName: env.SITE_NAME,

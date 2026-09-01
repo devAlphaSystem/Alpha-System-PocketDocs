@@ -1,56 +1,86 @@
-<% const sidebarSiteName = typeof siteName !== 'undefined' ? siteName : 'PocketDocs'; %>
-<% const sidebarUserLabel = user ? (user.name || user.email) : 'Guest'; %>
+<% const isProjectsSection = currentPath && currentPath.startsWith('/admin/projects'); %>
+<% const isUsersSection = currentPath && currentPath.startsWith('/admin/users'); %>
+<% const isSettingsSection = currentPath && currentPath.startsWith('/admin/settings'); %>
+<% const projectMatch = isProjectsSection ? currentPath.match(/^\/admin\/projects\/([^/]+)/) : null; %>
+<% const projectId = projectMatch && projectMatch[1] !== 'create' ? projectMatch[1] : null; %>
+<% const sidebarProjects = Array.isArray(projects) ? projects : []; %>
+<% const currentProject = project || null; %>
+<% const currentVersion = typeof version !== 'undefined' ? version : null; %>
+<% const currentContentSection = typeof section !== 'undefined' ? section : null; %>
+<% const contentSectionOptions = typeof sectionOptions !== 'undefined' && Array.isArray(sectionOptions) ? sectionOptions : []; %>
+<% const showContentSectionNav = Boolean(currentProject && currentVersion && contentSectionOptions.length); %>
 
-<div class="sidebar-brand">
-  <a href="/admin" class="sidebar-logo">
-    <% if (sidebarSiteName === 'PocketDocs') { %>
-      <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
-    <% } else { %>
-      <span><%= sidebarSiteName %></span>
+<% if (headerSearch && headerSearch.action) { %>
+  <form method="GET" action="<%= headerSearch.action %>" class="sidebar-search" role="search">
+    <% if (headerSearch.params) { %>
+      <% for (const [paramName, paramValue] of Object.entries(headerSearch.params)) { %>
+        <% if (paramValue !== undefined && paramValue !== null && paramValue !== '') { %>
+          <input type="hidden" name="<%= paramName %>" value="<%= paramValue %>">
+        <% } %>
+      <% } %>
     <% } %>
-  </a>
-</div>
+    <input type="search" name="search" value="<%= headerSearch.value || '' %>" placeholder="<%= headerSearch.placeholder || 'Search...' %>" aria-label="Search">
+  </form>
+<% } %>
 
-<nav class="sidebar-nav">
-  <a href="/admin/projects" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/projects') ? ' active' : '' %>">
-    <i class="ph ph-folders"></i>
-    <span>Projects</span>
-  </a>
-
-  <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
-    <div class="sidebar-section-label">Administration</div>
-
-    <% if (user && user.role === 'owner') { %>
-      <a href="/admin/users" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/users') ? ' active' : '' %>">
-        <i class="ph ph-users"></i>
-        <span>Users</span>
+<nav class="sidebar-content">
+  <% if (isProjectsSection) { %>
+    <div class="sidebar-section-label">Projects</div>
+    <% if (sidebarProjects.length) { %>
+      <% for (const sidebarProject of sidebarProjects) { %>
+        <a href="/admin/projects/<%= sidebarProject.id %>" class="sidebar-nav-link<%= projectId === sidebarProject.id ? ' active' : '' %>">
+          <i class="ph ph-folder"></i>
+          <span><%= sidebarProject.name %></span>
+        </a>
+      <% } %>
+    <% } else if (currentProject && projectId) { %>
+      <a href="/admin/projects/<%= currentProject.id %>" class="sidebar-nav-link active">
+        <i class="ph ph-folder-open"></i>
+        <span><%= currentProject.name %></span>
+      </a>
+    <% } else { %>
+      <a href="/admin/projects" class="sidebar-nav-link active">
+        <i class="ph ph-folders"></i>
+        <span>All projects</span>
       </a>
     <% } %>
 
-    <a href="/admin/settings" class="sidebar-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
-      <i class="ph ph-gear"></i>
-      <span>Settings</span>
+    <% if (showContentSectionNav) { %>
+      <div class="sidebar-section-label">Content</div>
+      <% for (const option of contentSectionOptions) { %>
+        <a href="/admin/projects/<%= currentProject.id %>/versions/<%= currentVersion.id %>/pages?section=<%= option.value %>" class="sidebar-nav-link<%= option.value === currentContentSection ? ' active' : '' %>"<% if (option.value === currentContentSection) { %> aria-current="page"<% } %>>
+          <i class="ph ph-<%= option.icon %>"></i>
+          <span><%= option.label %></span>
+        </a>
+      <% } %>
+    <% } %>
+  <% } else if (isUsersSection) { %>
+    <div class="sidebar-section-label">Access</div>
+    <a href="/admin/users" class="sidebar-nav-link active">
+      <i class="ph ph-users"></i>
+      <span>Users</span>
+    </a>
+  <% } else if (isSettingsSection) { %>
+    <div class="sidebar-section-label">System</div>
+    <a href="/admin/settings" class="sidebar-nav-link active">
+      <i class="ph ph-house"></i>
+      <span>Application</span>
     </a>
   <% } %>
 </nav>
 
-<div class="sidebar-footer">
-  <div class="sidebar-footer-card">
-    <div class="sidebar-user">
-      <div class="sidebar-user-avatar">
-        <%= sidebarUserLabel.charAt(0).toUpperCase() %>
-      </div>
-      <div class="sidebar-user-info">
-        <span class="sidebar-user-name"><%= sidebarUserLabel %></span>
-      </div>
-    </div>
-
-    <form action="/auth/logout" method="POST" class="sidebar-logout-form" id="logoutForm">
-      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-      <button type="submit" class="btn btn-outline sidebar-logout-btn" title="Sign out">
-        <i class="ph ph-sign-out"></i>
-        <span>Sign Out</span>
+<% if ((isProjectsSection && user && (user.role === 'owner' || user.role === 'admin')) || (isUsersSection && user && user.role === 'owner')) { %>
+  <div class="sidebar-actions">
+    <% if (isProjectsSection) { %>
+    <a href="/admin/projects/create" class="btn btn-sidebar btn-full" data-drawer-url="/admin/projects/create" data-drawer-title="New Project">
+      <i class="ph ph-plus"></i>
+      <span>New project</span>
+    </a>
+    <% } else { %>
+      <button type="button" class="btn btn-sidebar btn-full" data-dialog-open="createUserModal">
+        <i class="ph ph-plus"></i>
+        <span>New user</span>
       </button>
-    </form>
+    <% } %>
   </div>
-</div>
+<% } %>

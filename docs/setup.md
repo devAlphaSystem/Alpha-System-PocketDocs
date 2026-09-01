@@ -48,11 +48,10 @@ POCKETBASE_MODE=embedded
 POCKETBASE_ADMIN_EMAIL=admin@pocketdocs.local
 POCKETBASE_ADMIN_PASSWORD=your-admin-password-here
 
-SESSION_SECRET=<64-character-random-string>
 CSRF_SECRET=<64-character-random-string>
 ```
 
-`POCKETBASE_URL` defaults to `http://127.0.0.1:8090` in embedded mode (override if needed).
+In embedded mode, PocketDocs selects and persists an available loopback port from `8090`–`8190`. Set `POCKETBASE_PORT` when a fixed port is required.
 
 To pin a specific PocketBase version instead of downloading the latest:
 
@@ -72,7 +71,8 @@ On first start PocketDocs will:
 2. Create the superuser account using your `.env` credentials
 3. Start the PocketBase process
 4. Apply the database schema (`db_schema.json`)
-5. Start the Express server
+5. Initialize any missing `site_settings` records
+6. Start the Express server
 
 Subsequent starts skip the download and superuser creation (both are idempotent).
 
@@ -120,7 +120,6 @@ POCKETBASE_URL=http://127.0.0.1:8090
 POCKETBASE_ADMIN_EMAIL=admin@pocketdocs.local
 POCKETBASE_ADMIN_PASSWORD=your-pocketbase-admin-password
 
-SESSION_SECRET=<64-character-random-string>
 CSRF_SECRET=<64-character-random-string>
 ```
 
@@ -141,6 +140,8 @@ npm run dev
 # Production
 npm start
 ```
+
+At startup PocketDocs verifies the external PocketBase connection, applies `db_schema.json`, and initializes missing `site_settings` records before accepting requests.
 
 ### 5. Complete Owner Setup
 
@@ -199,27 +200,25 @@ pm2 startup
 ### Environment Checklist
 
 - [ ] `NODE_ENV=production`
-- [ ] Strong `SESSION_SECRET` and `CSRF_SECRET` (≥ 32 characters each)
+- [ ] Strong `CSRF_SECRET` (≥ 32 characters)
 - [ ] `SITE_URL` set to public URL (e.g. `https://docs.example.com`)
-- [ ] `COOKIE_DOMAIN` set if using a custom domain
 - [ ] PocketBase running and accessible from the server
 - [ ] Reverse proxy configured with TLS
 - [ ] IP restriction configured (optional — see Settings in admin panel)
-- [ ] Log directory writable: `LOG_DIR` (default: `logs/`)
 
 ## Troubleshooting
 
 ### "Failed to connect to PocketBase"
 
 - **External mode:** Confirm PocketBase is running and reachable at `POCKETBASE_URL`
-- **Embedded mode:** Check `data/pocketbase/` for the binary and `pb_data/` for the database files
+- **Embedded mode:** Check `data/pocketbase/` for the binary and `data/pocketbase/pb_data/` for the database files
 - Verify `POCKETBASE_ADMIN_EMAIL` and `POCKETBASE_ADMIN_PASSWORD` match a PocketBase superuser account
 - Restart PocketDocs — the schema is applied automatically on every startup
 
 ### "PocketBase did not become healthy" (Embedded Mode)
 
-- The PocketBase port may already be in use — check with `lsof -i :8090` or `netstat -an | findstr 8090`
-- Set a different port via `POCKETBASE_URL=http://127.0.0.1:9090`
+- The configured or persisted PocketBase port may already be in use. Check `POCKETBASE_PORT` or `data/pocketbase/.pb_port`, then inspect that port with `lsof` or `netstat`.
+- Set a fixed port with `POCKETBASE_PORT=9090`
 - Check `data/pocketbase/` for a corrupted binary — delete it and restart to re-download
 
 ### "Unsupported platform" (Embedded Mode)
@@ -252,4 +251,4 @@ Restart the server to apply.
 ### Static Assets Not Loading
 
 - In development: assets are served without cache (`maxAge: 0`)
-- In production: assets are cached for 7 days with ETag. Force a cache clear if assets appear stale after an update
+- In production: assets are cached for 30 days with ETag and immutable caching. Force a cache clear if assets appear stale after an update

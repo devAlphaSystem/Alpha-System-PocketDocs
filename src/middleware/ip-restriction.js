@@ -23,12 +23,9 @@ export function ipRestrictionMiddleware(req, res, next) {
     });
     return res.status(403).render("error", {
       layout: false,
-      title: "Access Denied",
       statusCode: 403,
       message: "Your IP address is not allowed to access this page.",
-      code: "IP_RESTRICTED",
       requestId: req.requestId || "",
-      user: req.user || null,
       siteName: env.SITE_NAME,
     });
   }

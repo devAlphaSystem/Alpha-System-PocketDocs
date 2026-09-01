@@ -55,7 +55,7 @@ export function csrfMiddleware(req, res, next) {
       logger.warn("CSRF validation failed", { requestId: req.requestId, reason: "token_mismatch", path: req.originalUrl });
       return next(new CsrfError());
     }
-  } catch (_err) {
+  } catch {
     logger.warn("CSRF validation failed", { requestId: req.requestId, reason: "invalid_format", path: req.originalUrl });
     return next(new CsrfError());
   }

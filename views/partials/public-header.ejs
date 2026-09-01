@@ -1,9 +1,22 @@
-<header class="public-header">
-  <% if (typeof project !== 'undefined' && project) { %>
+<% const hasProject = typeof project !== 'undefined' && project; %>
+<header class="public-header<%= hasProject ? '' : ' public-header-home' %>">
+  <% if (hasProject) { %>
+    <button type="button" class="btn btn-ghost docs-sidebar-toggle" aria-label="Open documentation navigation" aria-controls="docsSidebar" aria-expanded="false">
+      <i class="ph ph-list" aria-hidden="true"></i>
+    </button>
     <ul class="header-breadcrumb">
       <li><a href="/">Home</a></li>
       <li><a href="/docs/<%= project.slug %>"><%= project.name %></a></li>
     </ul>
+  <% } else { %>
+    <a href="/" class="public-brand" aria-label="<%= headerTitleText %> home">
+      <img src="<%= siteIconUrl %>" alt="" aria-hidden="true">
+      <% if (headerTitleHtml) { %>
+        <span class="public-brand-title"><%- headerTitleHtml %></span>
+      <% } else { %>
+        <span class="public-brand-title"><%= siteName %></span>
+      <% } %>
+    </a>
   <% } %>
   
   <div class="header-right">

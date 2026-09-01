@@ -86,9 +86,7 @@
         if (!pageId) return;
         window.localStorage.removeItem("smde_" + pageEditorBaseUrl + "/" + pageId);
       });
-    } catch (_error) {
-      return;
-    }
+    } catch {}
   }
 
   function resetDialog() {
@@ -212,7 +210,7 @@
     try {
       var body = await response.json();
       return (body && body.error && body.error.message) || "We couldn't import the selected Markdown files.";
-    } catch (_error) {
+    } catch {
       return "We couldn't import the selected Markdown files.";
     }
   }

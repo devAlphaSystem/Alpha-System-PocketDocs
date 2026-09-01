@@ -28,11 +28,9 @@ router.get("/login", csrfMiddleware, (req, res) => {
   }
   res.render("admin/login", {
     layout: false,
-    title: "Sign In",
     error: null,
     csrfToken: res.locals.csrfToken,
     siteName: env.SITE_NAME,
-    mode: "login",
   });
 });
 
@@ -45,11 +43,9 @@ router.post("/login", csrfMiddleware, validate(loginSchema), async (req, res, ne
     if (err.statusCode === 401) {
       return res.status(401).render("admin/login", {
         layout: false,
-        title: "Sign In",
         error: err.message,
         csrfToken: res.locals.csrfToken,
         siteName: env.SITE_NAME,
-        mode: "login",
       });
     }
     next(err);

@@ -1,14 +1,4 @@
 <div class="form-page">
-  <div class="page-header">
-    <div>
-      <a href="/admin/projects" class="back-link"><i class="ph ph-arrow-left"></i> Projects</a>
-    </div>
-    <button type="submit" form="settings-form" class="btn btn-primary">
-      <i class="ph ph-floppy-disk"></i>
-      Save Settings
-    </button>
-  </div>
-
   <% if (typeof error !== 'undefined' && error) { %>
     <div class="alert alert-error"><i class="ph ph-warning-circle"></i> <%= error %></div>
   <% } %>
@@ -20,69 +10,83 @@
   <form method="POST" action="/admin/settings" novalidate id="settings-form" class="settings-form">
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-    <div class="settings-tabs" data-tabs>
-      <div class="settings-tabs-nav" role="tablist" aria-label="Settings sections">
-        <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-hero" aria-controls="settings-panel-hero" aria-selected="true" data-tab-target="settings-panel-hero" tabindex="0">
-          <i class="ph ph-image"></i>
-          <span>Home Hero</span>
-        </button>
-        
-        <% if (canManageIpRestriction) { %>
-          <button type="button" class="settings-tab-btn" role="tab" id="settings-tab-ip" aria-controls="settings-panel-ip" aria-selected="false" data-tab-target="settings-panel-ip" tabindex="-1">
-            <i class="ph ph-shield-check"></i>
-            <span>IP Restriction</span>
-          </button>
-        <% } %>
+    <div class="settings-application">
+      <div class="settings-field-grid">
+        <div class="form-group pb-form-field settings-icon-field">
+          <label for="siteIconFile">Icon</label>
+          <div class="settings-icon-control">
+            <span class="settings-icon-preview">
+              <img src="<%= siteIconUrl %>" alt="" data-site-icon-preview data-default-src="<%= assetUrl('/img/pd-logo.svg') %>">
+            </span>
+            <div class="settings-icon-actions">
+              <input type="file" id="siteIconFile" accept="image/svg+xml,image/png,image/jpeg,image/webp" data-site-icon-file>
+              <input type="hidden" id="siteIcon" name="siteIcon" value="" data-site-icon-value>
+              <input type="hidden" name="removeSiteIcon" value="false" data-site-icon-remove>
+              <button type="button" class="btn btn-outline btn-sm" data-site-icon-reset <%= hasCustomSiteIcon ? '' : 'hidden' %>>Use default icon</button>
+            </div>
+          </div>
+          <p class="form-hint">SVG, PNG, JPEG or WebP, up to 256 KB. Used in the browser tab, public header and homepage hero.</p>
+        </div>
+
+        <div class="form-group pb-form-field settings-markdown-field">
+          <label for="heroTitle">Title <span class="required">*</span></label>
+          <textarea id="heroTitle" name="heroTitle" rows="2" required maxlength="200" placeholder="e.g. Acme **Docs**"><%= settings.heroTitle %></textarea>
+          <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
+        </div>
+        <div class="form-group pb-form-field settings-markdown-field">
+          <label for="heroSubtitle">Subtitle</label>
+          <textarea id="heroSubtitle" name="heroSubtitle" rows="2" maxlength="300" placeholder="e.g. Documentation for **your team**."><%= settings.heroSubtitle %></textarea>
+          <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
+        </div>
       </div>
 
-      <section class="settings-tab-panel" id="settings-panel-hero" role="tabpanel" aria-labelledby="settings-tab-hero" data-tab-panel>
-        <div class="form-section">
-          <h3>Home Page Hero</h3>
-          <p class="form-section-desc">The hero section on the landing page. Word 1 is rendered in light weight, Word 2 in bold.</p>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="heroWord1">Word 1 <span class="required">*</span></label>
-              <input type="text" id="heroWord1" name="heroWord1" value="<%= settings.heroWord1 %>" required maxlength="50" placeholder="e.g. Acme">
-            </div>
-            <div class="form-group">
-              <label for="heroWord2">Word 2 <span class="required">*</span></label>
-              <input type="text" id="heroWord2" name="heroWord2" value="<%= settings.heroWord2 %>" required maxlength="50" placeholder="e.g. Docs">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="heroSubtitle">Subtitle</label>
-            <input type="text" id="heroSubtitle" name="heroSubtitle" value="<%= settings.heroSubtitle %>" maxlength="300" placeholder="e.g. Documentation for your team.">
-          </div>
-        </div>
-      </section>
-
       <% if (canManageIpRestriction) { %>
-        <section class="settings-tab-panel" id="settings-panel-ip" role="tabpanel" aria-labelledby="settings-tab-ip" data-tab-panel hidden>
-          <div class="form-section">
-            <h3>IP Restriction</h3>
-            <p class="form-section-desc">Restrict access to the admin dashboard and login pages by IP address. When enabled, only the listed IPs can access <code>/admin</code> and <code>/auth/login</code> routes.</p>
+        <div class="settings-option-list">
+          <details class="settings-option-disclosure">
+            <summary class="settings-option-row">
+              <span><i class="ph ph-shield-check"></i> Admin IP restriction</span>
+              <span class="settings-option-state">
+                <span class="badge badge-<%= ipRestriction.enabled === 'enable' ? 'public' : 'private' %>" data-ip-status-badge><%= ipRestriction.enabled === 'enable' ? 'Enabled' : 'Disabled' %></span>
+                <i class="ph ph-caret-down settings-option-caret" aria-hidden="true"></i>
+              </span>
+            </summary>
+            <div class="settings-option-body">
+              <input type="hidden" id="ipEnabled" name="enabled" value="<%= ipRestriction.enabled %>">
+              <label class="settings-toggle-row" for="ipEnabledToggle">
+                <span class="settings-switch">
+                  <input
+                    type="checkbox"
+                    id="ipEnabledToggle"
+                    role="switch"
+                    aria-checked="<%= ipRestriction.enabled === 'enable' ? 'true' : 'false' %>"
+                    data-value-target="ipEnabled"
+                    <%= ipRestriction.enabled === 'enable' ? 'checked' : '' %>>
+                  <span class="settings-switch-track" aria-hidden="true"></span>
+                </span>
+                <span>Enable</span>
+              </label>
 
-            <div class="form-group">
-              <label for="ipEnabled">Status</label>
-              <select id="ipEnabled" name="enabled">
-                <option value="disable" <%= ipRestriction.enabled === 'disable' ? 'selected' : '' %>>Disabled</option>
-                <option value="enable" <%= ipRestriction.enabled === 'enable' ? 'selected' : '' %>>Enabled</option>
-              </select>
+              <div class="form-group pb-form-field settings-ips-field">
+                <label for="allowedIps">Allowed IPs</label>
+                <textarea id="allowedIps" name="allowedIps" rows="9" maxlength="5000" placeholder="e.g. 127.0.0.1&#10;192.168.1.100&#10;10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
+              </div>
+              <div class="settings-field-hints">
+                <p class="form-hint">Enter one IP address per line. IPv4 and IPv6 are supported.</p>
+                <% if (detectedIp) { %>
+                  <p class="form-hint"><strong>Your current IP:</strong> <a href="#" id="insert-my-ip" data-ip="<%= detectedIp %>"><code><%= detectedIp %></code></a> — click to add to the list above.</p>
+                <% } %>
+              </div>
             </div>
-
-            <div class="form-group">
-              <label for="allowedIps">Allowed IPs</label>
-              <textarea id="allowedIps" name="allowedIps" rows="5" maxlength="5000" placeholder="e.g. 127.0.0.1&#10;192.168.1.100&#10;10.0.0.5"><%= ipRestriction.allowedIps %></textarea>
-              <p class="form-hint">Enter one IP address per line. IPv4 and IPv6 are supported.</p>
-              <% if (detectedIp) { %>
-                <p class="form-hint"><strong>Your current IP:</strong> <a href="#" id="insert-my-ip" data-ip="<%= detectedIp %>"><code><%= detectedIp %></code></a> — click to add to the list above.</p>
-              <% } %>
-            </div>
-          </div>
-        </section>
+          </details>
+        </div>
       <% } %>
+    </div>
+
+    <div class="form-submit-row">
+      <button type="submit" class="btn btn-primary">
+        <i class="ph ph-floppy-disk"></i>
+        Save changes
+      </button>
     </div>
   </form>
 </div>

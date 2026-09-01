@@ -3,7 +3,7 @@
  * @description Express routes for CRUD operations on version content sections.
  */
 import { Router } from "express";
-import { listPages, listPagesPaginated, countContentPages, buildPageTree, flattenPageTree, getPage, createPage, createSidebarNavigationItem, importMarkdownPages, updatePage, updateSidebarHeader, deletePage, deletePages, deleteSidebarNavigationItem, reorderPages, isPageContentItem, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
+import { listPages, listPagesPaginated, buildPageTree, flattenPageTree, getPage, createPage, createSidebarNavigationItem, importMarkdownPages, updatePage, updateSidebarHeader, deletePage, deletePages, deleteSidebarNavigationItem, reorderPages, isPageContentItem, PAGE_SECTION_OPTIONS, isPageSection, assertPageSection, getPageSectionLabel, getPageSectionIcon, getPageSectionOption } from "./service.js";
 import { createPageSchema, createSidebarItemSchema, updatePageSchema, updateSidebarHeaderSchema, reorderPagesSchema, deletePagesSchema, importMarkdownPagesSchema } from "./validation.js";
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
@@ -54,10 +54,6 @@ function pageAdminUrl(projectId, versionId, section, extraParams = {}) {
   return `/admin/projects/${projectId}/versions/${versionId}/pages?${params.toString()}`;
 }
 
-function pageEditorUrl(projectId, versionId, pageId) {
-  return `/admin/projects/${projectId}/versions/${versionId}/pages/${pageId}`;
-}
-
 function publicSectionUrl(project, version, section) {
   if (section === PAGE_SECTIONS.DOCUMENTS) {
     return isNonVersioned(project) ? `/docs/${project.slug}` : `/docs/${project.slug}/${version.slug}`;
@@ -83,6 +79,17 @@ function renderEditor(res, req, context, values) {
   const { project, version, nonVersionedMode } = context;
   const section = values.section;
   const sectionOption = getPageSectionOption(section);
+
+  if (!req.xhr) {
+    return res.redirect(
+      303,
+      pageAdminUrl(project.id, version.id, section, {
+        error: values.error,
+        success: req.query.success,
+      }),
+    );
+  }
+
   return res.status(values.statusCode || 200).render("admin/pages/editor", {
     title: values.title,
     project,
@@ -105,21 +112,38 @@ function renderEditor(res, req, context, values) {
   });
 }
 
+async function renderNewItemEditor(res, req, context, section, values = {}) {
+  const pagesResult = await listPages(context.version.id, section);
+  return renderEditor(res, req, context, {
+    title: section === PAGE_SECTIONS.DOCUMENTS ? "New Item" : `New ${getPageSectionLabel(section)} Article`,
+    section,
+    page: null,
+    pages: pagesResult.items || [],
+    ...values,
+  });
+}
+
 router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) => {
   try {
     const section = selectedSection(req);
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const search = (req.query.search || "").trim();
     const { project, version, nonVersionedMode } = await getAdminContext(req);
-    const [pagesResult, documentCount] = await Promise.all([listPagesPaginated(version.id, section, page, search), section === PAGE_SECTIONS.DOCUMENTS && !search ? countContentPages(version.id, section) : Promise.resolve(null)]);
+    const pagesResult = await listPagesPaginated(version.id, section, page, search);
 
     const pages = pagesResult.items || [];
     const pageTree = search ? [] : buildPageTree(pages);
     const pageTreeItems = search ? [] : flattenPageTree(pageTree);
-    const totalContentItems = documentCount ?? pagesResult.totalItems ?? pages.length;
     const sectionLabel = getPageSectionLabel(section);
     const sectionOption = getPageSectionOption(section);
-    const extraJs = [];
+    const isDocumentsSection = section === PAGE_SECTIONS.DOCUMENTS;
+    const itemLabel = sectionOption.itemLabel || (isDocumentsSection ? "page" : "article");
+    const itemLabelPlural = sectionOption.itemLabelPlural || `${itemLabel}s`;
+    const selectionItemLabel = isDocumentsSection ? "sidebar item" : itemLabel;
+    const selectionItemLabelPlural = isDocumentsSection ? "sidebar items" : itemLabelPlural;
+    const canManagePages = userCanManagePages(req.user);
+    const pagesBaseUrl = `/admin/projects/${project.id}/versions/${version.id}/pages`;
+    const extraJs = ["/js/page-load-more.js"];
 
     if (!search) {
       extraJs.push("/js/sidebar-sort.js");
@@ -129,30 +153,46 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       extraJs.push("/js/sidebar-navigation.js");
     }
 
-    if (userCanManagePages(req.user)) {
+    if (canManagePages) {
       extraJs.push("/js/page-selection.js", "/js/markdown-import.js");
     }
 
     res.render("admin/pages/index", {
       title: nonVersionedMode ? `${project.name} - ${sectionLabel}` : `${project.name} - ${version.label} - ${sectionLabel}`,
-      headerSubtitle: `${sectionLabel} - ${totalContentItems} ${totalContentItems === 1 ? sectionOption.itemLabel : sectionOption.itemLabelPlural}`,
       headerSearch: {
-        action: `/admin/projects/${project.id}/versions/${version.id}/pages`,
+        action: pagesBaseUrl,
         params: { section },
         placeholder: `Search ${sectionLabel}...`,
         value: search,
       },
+      pageListActions: {
+        publicUrl: publicSectionUrl(project, version, section),
+        editProjectUrl: canManagePages && nonVersionedMode ? `/admin/projects/${project.id}/edit` : null,
+        exportProjectUrl: canManagePages ? `/admin/projects/${project.id}/export` : null,
+        showImportAction: canManagePages,
+        batchDelete: canManagePages
+          ? {
+              action: `${pagesBaseUrl}/delete-selected`,
+              section,
+              itemLabel: selectionItemLabel,
+              itemLabelPlural: selectionItemLabelPlural,
+            }
+          : null,
+        create: canManagePages
+          ? {
+              url: `${pagesBaseUrl}/new?section=${section}`,
+              label: isDocumentsSection ? "Item" : "Article",
+            }
+          : null,
+      },
       project,
       version,
-      nonVersionedMode,
       section,
       sectionLabel,
-      sectionIcon: getPageSectionIcon(section),
       sectionOption,
       sectionOptions: PAGE_SECTION_OPTIONS,
       pageItemTypes: PAGE_ITEM_TYPES,
       pages,
-      pageTree,
       pageTreeItems,
       pagination: { page: pagesResult.page, totalPages: pagesResult.totalPages, totalItems: pagesResult.totalItems },
       search,
@@ -162,7 +202,6 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
       success: req.query.success || null,
       siteName: env.SITE_NAME,
       markdownImport: MARKDOWN_IMPORT,
-      publicSectionUrl: publicSectionUrl(project, version, section),
       extraJs: extraJs.length > 0 ? extraJs : null,
     });
   } catch (err) {
@@ -174,14 +213,7 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req
   try {
     const section = selectedSection(req);
     const context = await getAdminContext(req);
-    const pagesResult = await listPages(context.version.id, section);
-
-    return renderEditor(res, req, context, {
-      title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
-      section,
-      page: null,
-      pages: pagesResult.items || [],
-    });
+    return renderNewItemEditor(res, req, context, section);
   } catch (err) {
     next(err);
   }
@@ -190,58 +222,44 @@ router.get("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req
 router.post("/new", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
   try {
     const section = selectedSection(req);
+    const context = await getAdminContext(req);
+    const itemType = section === PAGE_SECTIONS.DOCUMENTS ? req.body.itemType || PAGE_ITEM_TYPES.PAGE : PAGE_ITEM_TYPES.PAGE;
+
+    if (itemType !== PAGE_ITEM_TYPES.PAGE) {
+      const parsed = createSidebarItemSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return renderNewItemEditor(res, req, context, section, {
+          statusCode: 422,
+          error: parsed.error.issues[0].message,
+          formValues: req.body,
+        });
+      }
+
+      const item = await createSidebarNavigationItem(context.version.id, parsed.data, req.requestId);
+      const label = item.item_type === PAGE_ITEM_TYPES.HEADER ? "Header" : "Separator";
+      return res.redirect(pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { success: `${label} added to the public sidebar.` }));
+    }
+
     const parsed = createPageSchema.safeParse({ ...req.body, section });
     if (!parsed.success) {
-      const firstIssue = parsed.error.issues[0];
-      const context = await getAdminContext(req);
-      const pagesResult = await listPages(context.version.id, section);
-      return renderEditor(res, req, context, {
+      return renderNewItemEditor(res, req, context, section, {
         statusCode: 422,
-        title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
-        section,
-        page: null,
-        pages: pagesResult.items || [],
-        error: firstIssue.message,
+        error: parsed.error.issues[0].message,
         formValues: req.body,
       });
     }
 
-    await getAdminContext(req);
-    const page = await createPage(req.params.versionId, parsed.data, req.requestId);
-    res.redirect(`${pageEditorUrl(req.params.projectId, req.params.versionId, page.id)}?success=Page created.`);
+    await createPage(req.params.versionId, parsed.data, req.requestId);
+    res.redirect(pageAdminUrl(context.project.id, context.version.id, section, { success: "Page created." }));
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const section = selectedSection(req);
       const context = await getAdminContext(req);
-      const pagesResult = await listPages(context.version.id, section);
-      return renderEditor(res, req, context, {
+      return renderNewItemEditor(res, req, context, section, {
         statusCode: err.statusCode,
-        title: section === PAGE_SECTIONS.DOCUMENTS ? "New Page" : `New ${getPageSectionLabel(section)} Article`,
-        section,
-        page: null,
-        pages: pagesResult.items || [],
         error: err.message,
         formValues: req.body,
       });
-    }
-    next(err);
-  }
-});
-
-router.post("/sidebar-items", csrfMiddleware, requireProjectAccess(ROLES.ADMIN), async (req, res, next) => {
-  try {
-    const context = await getAdminContext(req);
-    const parsed = createSidebarItemSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return res.redirect(303, pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { error: parsed.error.issues[0].message }));
-    }
-
-    const item = await createSidebarNavigationItem(context.version.id, parsed.data, req.requestId);
-    const label = item.item_type === PAGE_ITEM_TYPES.HEADER ? "Header" : "Separator";
-    res.redirect(pageAdminUrl(context.project.id, context.version.id, PAGE_SECTIONS.DOCUMENTS, { success: `${label} added to the public sidebar.` }));
-  } catch (err) {
-    if (err.statusCode === 422) {
-      return res.redirect(303, pageAdminUrl(req.params.projectId, req.params.versionId, PAGE_SECTIONS.DOCUMENTS, { error: err.message }));
     }
     next(err);
   }
@@ -307,7 +325,7 @@ router.post("/reorder", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
     let pages;
     try {
       pages = typeof req.body.pages === "string" ? JSON.parse(req.body.pages) : req.body.pages;
-    } catch (_err) {
+    } catch {
       return res.status(400).json({ error: { code: "INVALID_FORMAT", message: "Invalid page order data." } });
     }
 
@@ -410,7 +428,7 @@ router.post("/:pageId", csrfMiddleware, requireProjectAccess(ROLES.ADMIN, ROLES.
     }
 
     await updatePage(req.params.pageId, parsed.data, req.requestId);
-    res.redirect(`${pageEditorUrl(req.params.projectId, req.params.versionId, req.params.pageId)}?success=Page saved.`);
+    res.redirect(pageAdminUrl(context.project.id, context.version.id, section, { success: "Page saved." }));
   } catch (err) {
     if (err.statusCode === 409 || err.statusCode === 422) {
       const context = await getAdminContext(req);

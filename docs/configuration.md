@@ -2,7 +2,7 @@
 
 ## Environment Variables
 
-All environment variables are validated at startup via Zod. Invalid values cause the server to exit with a descriptive error. Copy `.env.example` to `.env` and configure.
+Core application environment variables are validated at startup via Zod. Invalid values cause the server to exit with a descriptive error. The embedded PocketBase manager additionally reads its optional fixed-port setting. Copy `.env.example` to `.env` and configure.
 
 ### Server
 
@@ -18,7 +18,8 @@ All environment variables are validated at startup via Zod. Invalid values cause
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
 | `POCKETBASE_MODE` | `external` \| `embedded` | `external` | No | `external`: you manage PocketBase yourself. `embedded`: PocketDocs downloads, starts, and manages PocketBase automatically. |
-| `POCKETBASE_URL` | URL | `http://127.0.0.1:8090` (embedded) | **Yes** (external) | PocketBase server URL. Required in external mode. Defaults to `http://127.0.0.1:8090` in embedded mode. |
+| `POCKETBASE_URL` | URL | — | **Yes** (external) | URL of the PocketBase instance managed outside PocketDocs. Embedded mode selects its own loopback URL. |
+| `POCKETBASE_PORT` | integer | Automatically selected from 8090–8190 | No | (Embedded only) Fixed port for the managed PocketBase process. |
 | `POCKETBASE_ADMIN_EMAIL` | email | — | **Yes** | PocketBase superuser email. In embedded mode, used to create the superuser. |
 | `POCKETBASE_ADMIN_PASSWORD` | string (min 8) | — | **Yes** | PocketBase superuser password. In embedded mode, used to create the superuser. |
 | `POCKETBASE_VERSION` | string | — | No | (Embedded only) Pin a specific PocketBase version (e.g. `0.26.6`). Leave empty to download the latest release. |
@@ -29,9 +30,7 @@ In embedded mode, PocketDocs enables the PocketBase Batch Web API during startup
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `SESSION_SECRET` | string (min 32) | — | **Yes** | Secret key for signing session data. Must be at least 32 characters. |
 | `CSRF_SECRET` | string (min 32) | — | **Yes** | Secret key for HMAC-SHA256 CSRF token signing. Must be at least 32 characters. |
-| `COOKIE_DOMAIN` | string | — | No | Cookie domain scope. Set when running on a custom domain (e.g. `.example.com`). Leave empty for localhost. |
 
 ### Logging
 
@@ -52,7 +51,7 @@ In embedded mode, PocketDocs enables the PocketBase Batch Web API during startup
 
 | Variable | Type | Default | Required | Description |
 |----------|------|---------|----------|-------------|
-| `SITE_NAME` | string | `PocketDocs` | No | Public site name displayed in the header and page titles. |
+| `SITE_NAME` | string | `PocketDocs` | No | Application name used by admin/auth/error page titles and the admin footer. Public homepage branding is configured through `site_settings`. |
 | `SITE_URL` | URL | `http://localhost:3000` | No | Public base URL. Used for generating canonical links. Set to your production URL in deployment. |
 
 ## Trust Proxy
@@ -71,28 +70,29 @@ The `TRUST_PROXY` variable controls how Express reads the client IP from proxy h
 
 ---
 
-## Runtime Configuration Files
+## Runtime Configuration
 
-These JSON files in the `data/` directory are read at startup and updated from the admin settings panel.
+### PocketBase `site_settings` collection
 
-### `data/site-settings.json`
+Public branding is stored in PocketBase, with one record per setting. PocketDocs creates missing records with the defaults below after applying the database schema.
 
-Controls the public home page hero section.
+| Record key | Field | Default | Description |
+|------------|-------|---------|-------------|
+| `title` | `value` | `Pocket**Docs**` | Required homepage title, up to 200 characters |
+| `subtitle` | `value` | `Beautiful, **self-hosted** documentation for your *projects*.` | Homepage subtitle, up to 300 characters |
+| `icon` | `icon` | No uploaded file | Default icon for public pages; the bundled `/img/pd-logo.svg` is used when absent |
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `heroWord1` | string | `"Alpha"` | First rotating word in hero heading |
-| `heroWord2` | string | `"System"` | Second rotating word in hero heading |
-| `heroSubtitle` | string | `"Most of the time I don't know what I'm doing."` | Subtitle text below the hero heading |
+Title and subtitle support sanitized inline Markdown: bold, italic, strikethrough, links, line breaks, and inline code. Images, raw HTML, and block elements are discarded. The title controls the homepage hero, public homepage header, and homepage browser title; the footer remains branded as PocketDocs.
 
-**Example:**
-```json
-{
-  "heroWord1": "Alpha",
-  "heroWord2": "System",
-  "heroSubtitle": "Most of the time I don't know what I'm doing."
-}
-```
+The icon can be a PNG, JPEG, WebP, or safe SVG file up to 256 KB. SVG uploads cannot contain scripts, embedded HTML, animation, external resources, event handlers, or inline styles. The selected icon is served from the same origin through `/site-icon` and `/favicon.ico` and is used by the public homepage header and hero as well as the browser tab. A project logo still takes precedence for that project's favicon.
+
+Admins and owners can update public branding from **Settings → Application**. Only owners can update the IP restriction settings on the same page.
+
+The legacy `data/site-settings.json` file is no longer read or migrated automatically. After upgrading from a file-backed release, reapply any custom homepage branding from **Settings → Application**.
+
+### File-backed runtime configuration
+
+The IP restriction JSON file in `data/` is read at startup and updated from the admin settings panel.
 
 ### `data/ip-restriction.json`
 
@@ -100,8 +100,8 @@ Controls IP-based access restriction for admin and auth routes.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `enabled` | `"enable"` \| `"disable"` | `"enable"` | Whether IP restriction is active |
-| `allowedIps` | string | `""` | Newline-separated list of allowed IP addresses |
+| `enabled` | `"enable"` \| `"disable"` | `"disable"` | Whether IP restriction is active |
+| `allowedIps` | string | `"127.0.0.1"` | Newline-separated list of allowed IP addresses |
 
 **Example:**
 ```json
@@ -130,20 +130,26 @@ The PocketBase schema is defined in `db_schema.json` and applied automatically e
 | `versions` | Base | Project versions with ordering |
 | `pages` | Base | Documents, Frequently Asked Questions, and Troubleshooting pages with nested hierarchy |
 | `changelogs` | Base | Per-version changelogs |
+| `site_settings` | Base | One record per public title, subtitle, and site-icon setting |
 | `_superusers` | System Auth | PocketBase admin accounts |
 
 See [Architecture Overview](architecture.md#database-schema-er-diagram) for the full ER diagram and constraint details.
 
 ---
 
-## Cookies
+## Browser State
+
+### Cookies
 
 | Cookie | Purpose | Options |
 |--------|---------|---------|
 | `pd_auth` | JWT authentication token from PocketBase | httpOnly, secure (production), sameSite: strict, 7-day expiry |
-| `pd_csrf` | CSRF double-submit token | httpOnly: false, secure (production), sameSite: strict |
+| `pd_csrf` | Random seed used to validate signed CSRF form/header tokens | httpOnly, secure (production), sameSite: strict |
 | `pd_download` | Short-lived download handshake token for ZIP exports | httpOnly: false, secure (production), sameSite: strict, 60-second expiry |
-| `pd_theme` | User theme preference (light/dark) | Client-accessible |
+
+### Local Storage
+
+The `pd_theme` key is stored in `localStorage` with the user's `light`, `dark`, or `auto` color-scheme preference. It is not a cookie and is not sent to the server.
 
 ---
 
@@ -164,5 +170,5 @@ Defined in `src/config/constants.js`. These are compile-time values and cannot b
 | `PAGE_SECTIONS.DOCUMENTS` | `documents` | Documents section value |
 | `PAGE_SECTIONS.FAQ` | `faq` | Frequently Asked Questions section value |
 | `PAGE_SECTIONS.TROUBLESHOOTING` | `troubleshooting` | Troubleshooting section value |
-| `PAGINATION.DEFAULT_PER_PAGE` | 30 | Items per page |
-| `PAGINATION.MAX_PER_PAGE` | 100 | Maximum items per page |
+| `PAGINATION.DEFAULT_PAGE` | 1 | Initial page number for paginated queries |
+| `PAGINATION.DEFAULT_PER_PAGE` | 25 | Default items per project, version, and content-page query |

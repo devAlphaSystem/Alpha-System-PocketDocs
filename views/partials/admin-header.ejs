@@ -1,39 +1,70 @@
-<div class="header-left">
-  <div class="header-title-wrap">
-    <h1 class="header-title"><%= title %></h1>
-    <% if (headerSubtitle || (headerBadge && headerBadge.text)) { %>
-      <div class="header-meta">
-        <% if (headerSubtitle) { %>
-          <span class="header-subtitle"><%= headerSubtitle %></span>
-        <% } %>
+<a href="/admin" class="admin-logo" aria-label="<%= siteName %> admin">
+  <img src="<%= assetUrl('/img/pd-logo-white.svg') %>" alt="">
+</a>
 
-        <% if (headerBadge && headerBadge.text) { %>
-          <span class="badge badge-<%= headerBadge.variant || 'draft' %>"><%= headerBadge.text %></span>
-        <% } %>
-      </div>
-    <% } %>
-  </div>
-</div>
+<nav class="admin-main-nav" aria-label="Admin navigation">
+  <a href="/admin/projects" class="admin-nav-link<%= currentPath && currentPath.startsWith('/admin/projects') ? ' active' : '' %>">
+    <i class="ph ph-database"></i>
+    <span>Projects</span>
+  </a>
 
-<div class="topbar-right">
-  <% if (headerSearch && headerSearch.action) { %>
-    <form method="GET" action="<%= headerSearch.action %>" class="list-search-form topbar-search-form" role="search">
-      <% if (headerSearch.params) { %>
-        <% for (const [paramName, paramValue] of Object.entries(headerSearch.params)) { %>
-          <% if (paramValue !== undefined && paramValue !== null && paramValue !== '') { %>
-            <input type="hidden" name="<%= paramName %>" value="<%= paramValue %>">
-          <% } %>
-        <% } %>
-      <% } %>
-
-      <div class="list-search-wrap">
-        <i class="ph ph-magnifying-glass list-search-icon"></i>
-        <input type="search" name="search" value="<%= headerSearch.value || '' %>" placeholder="<%= headerSearch.placeholder || 'Search...' %>" class="list-search-input" aria-label="Search">
-      </div>
-    </form>
+  <% if (user && user.role === 'owner') { %>
+    <a href="/admin/users" class="admin-nav-link<%= currentPath && currentPath.startsWith('/admin/users') ? ' active' : '' %>">
+      <i class="ph ph-users"></i>
+      <span>Users</span>
+    </a>
   <% } %>
-  
-  <button class="theme-toggle-btn btn btn-ghost icon-btn" id="themeToggle" aria-label="Toggle theme">
+
+  <% if (user && (user.role === 'admin' || user.role === 'owner')) { %>
+    <a href="/admin/settings" class="admin-nav-link<%= currentPath && currentPath.startsWith('/admin/settings') ? ' active' : '' %>">
+      <i class="ph ph-gear"></i>
+      <span>Settings</span>
+    </a>
+  <% } %>
+</nav>
+
+<div class="admin-header-spacer"></div>
+
+<details class="header-menu theme-menu">
+  <summary class="header-action theme-toggle-btn" aria-label="Color scheme" title="Color scheme">
     <i class="ph ph-moon"></i>
-  </button>
-</div>
+  </summary>
+  <div class="header-popover theme-popover">
+    <button type="button" class="theme-option" data-theme-value="light">
+      <i class="ph ph-sun"></i>
+      <span>Light</span>
+    </button>
+    <button type="button" class="theme-option" data-theme-value="dark">
+      <i class="ph ph-moon"></i>
+      <span>Dark</span>
+    </button>
+    <button type="button" class="theme-option" data-theme-value="auto">
+      <i class="ph ph-desktop"></i>
+      <span>Auto</span>
+    </button>
+  </div>
+</details>
+
+<details class="header-menu user-menu">
+  <summary class="header-user">
+    <span><%= user ? user.email : 'Guest' %></span>
+    <i class="ph ph-caret-down"></i>
+  </summary>
+  <div class="header-popover user-popover">
+    <% if (user && user.role === 'owner') { %>
+      <a href="/admin/users" class="header-popover-item">
+        <i class="ph ph-users"></i>
+        <span>Manage users</span>
+      </a>
+      <div class="header-popover-divider"></div>
+    <% } %>
+
+    <form action="/auth/logout" method="POST">
+      <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+      <button type="submit" class="header-popover-item">
+        <i class="ph ph-sign-out"></i>
+        <span>Logout</span>
+      </button>
+    </form>
+  </div>
+</details>

@@ -18,12 +18,19 @@ router.use(requireAuth, requireRole(ROLES.OWNER), csrfMiddleware);
 router.get("/", async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const result = await listUsers(page);
+    const search = (req.query.search || "").trim();
+    const result = await listUsers(page, search);
     res.render("admin/users/index", {
       title: "Users",
       headerSubtitle: `${result.totalItems} user${result.totalItems !== 1 ? "s" : ""}`,
+      headerSearch: {
+        action: "/admin/users",
+        placeholder: "Search users...",
+        value: search,
+      },
       users: result.items || [],
       pagination: { page: result.page, totalPages: result.totalPages, totalItems: result.totalItems },
+      search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
       error: req.query.error || null,
@@ -38,12 +45,19 @@ router.get("/", async (req, res, next) => {
 router.get("/:id/edit", async (req, res, next) => {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
-    const [result, editUser] = await Promise.all([listUsers(page), getUser(req.params.id)]);
+    const search = (req.query.search || "").trim();
+    const [result, editUser] = await Promise.all([listUsers(page, search), getUser(req.params.id)]);
     res.render("admin/users/index", {
       title: "Users",
       headerSubtitle: `${result.totalItems} user${result.totalItems !== 1 ? "s" : ""}`,
+      headerSearch: {
+        action: "/admin/users",
+        placeholder: "Search users...",
+        value: search,
+      },
       users: result.items || [],
       pagination: { page: result.page, totalPages: result.totalPages, totalItems: result.totalItems },
+      search,
       user: req.user,
       csrfToken: res.locals.csrfToken,
       error: req.query.error || null,

@@ -27,6 +27,17 @@ marked.setOptions({
   breaks: false,
 });
 
+function transformLink(tagName, attribs) {
+  return {
+    tagName,
+    attribs: {
+      ...attribs,
+      rel: "noopener noreferrer",
+      ...(attribs.href && !attribs.href.startsWith("#") && !attribs.href.startsWith("/") ? { target: "_blank" } : {}),
+    },
+  };
+}
+
 const sanitizeOptions = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2", "h3", "h4", "h5", "h6", "details", "summary", "mark", "del", "ins", "table", "thead", "tbody", "tr", "th", "td", "pre", "code", "span", "div", "hr", "br", "input"]),
   allowedAttributes: {
@@ -49,16 +60,42 @@ const sanitizeOptions = {
   },
   allowedSchemes: ["http", "https", "mailto"],
   transformTags: {
-    a: (tagName, attribs) => ({
-      tagName,
-      attribs: {
-        ...attribs,
-        rel: "noopener noreferrer",
-        ...(attribs.href && !attribs.href.startsWith("#") && !attribs.href.startsWith("/") ? { target: "_blank" } : {}),
-      },
-    }),
+    a: transformLink,
   },
 };
+
+const inlineSanitizeOptions = {
+  allowedTags: ["strong", "em", "del", "code", "a", "br"],
+  allowedAttributes: {
+    a: ["href", "title", "target", "rel"],
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+  transformTags: {
+    a: transformLink,
+  },
+};
+
+const inlineSanitizeOptionsWithoutLinks = {
+  ...inlineSanitizeOptions,
+  allowedTags: inlineSanitizeOptions.allowedTags.filter((tag) => tag !== "a"),
+  allowedAttributes: {},
+  transformTags: {},
+};
+
+function inlineTokensToText(tokens) {
+  return tokens.map((token) => {
+    if (token.type === "html" || token.type === "image") {
+      return "";
+    }
+    if (token.type === "br") {
+      return " ";
+    }
+    if (Array.isArray(token.tokens)) {
+      return inlineTokensToText(token.tokens);
+    }
+    return token.text || "";
+  }).join("");
+}
 
 function slugifyHeading(text) {
   return text.toLowerCase().replace(/&[a-z0-9#]+;/gi, "-").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -136,6 +173,39 @@ export function renderMarkdown(content) {
     renderCache.delete(firstKey);
   }
   return result;
+}
+
+/**
+ * Renders inline Markdown to sanitized HTML for short UI text such as titles.
+ * Block elements, images, and raw HTML are removed to keep the result safe for
+ * embedding inside semantic heading elements.
+ *
+ * @param {string} content - The raw inline Markdown source text.
+ * @param {{ allowLinks?: boolean }} [options] - Rendering options.
+ * @returns {string} Sanitized inline HTML string.
+ */
+export function renderInlineMarkdown(content, { allowLinks = true } = {}) {
+  if (!content) {
+    return "";
+  }
+
+  const sanitizeOptions = allowLinks ? inlineSanitizeOptions : inlineSanitizeOptionsWithoutLinks;
+  return sanitizeHtml(marked.parseInline(String(content)), sanitizeOptions);
+}
+
+/**
+ * Extracts the visible plain text from inline Markdown for document metadata.
+ *
+ * @param {string} content - The raw inline Markdown source text.
+ * @returns {string} Plain text without Markdown formatting or embedded HTML.
+ */
+export function extractInlineMarkdownText(content) {
+  if (!content) {
+    return "";
+  }
+
+  const tokens = marked.Lexer.lexInline(String(content), marked.defaults);
+  return inlineTokensToText(tokens).replace(/\s+/g, " ").trim();
 }
 
 /**

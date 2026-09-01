@@ -1,4 +1,4 @@
-import { pbList, pbGetOne, pbCreate, pbUpdate, pbDelete } from "../../lib/pocketbase.js";
+import { pbList, pbGetOne, pbCreate, pbUpdate, pbDelete, pbFilterValue } from "../../lib/pocketbase.js";
 import { COLLECTIONS, ROLES } from "../../config/constants.js";
 import { ConflictError, ValidationError, NotFoundError, AuthorizationError } from "../../errors/taxonomy.js";
 import { logger } from "../../lib/logger.js";
@@ -7,14 +7,19 @@ import { logger } from "../../lib/logger.js";
  * Retrieves a paginated list of all users sorted by creation date.
  *
  * @param {number} [page=1] - The 1-based page number.
+ * @param {string} [search=""] - Optional name or email search term.
  * @returns {Promise<Object>} Paginated result containing user items.
  */
-export async function listUsers(page = 1) {
-  return await pbList(COLLECTIONS.USERS, {
+export async function listUsers(page = 1, search = "") {
+  const options = {
     page,
     perPage: 50,
     sort: "-created",
-  });
+  };
+  if (search) {
+    options.filter = `name ~ "${pbFilterValue(search)}" || email ~ "${pbFilterValue(search)}"`;
+  }
+  return await pbList(COLLECTIONS.USERS, options);
 }
 
 /**

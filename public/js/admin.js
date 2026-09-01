@@ -5,7 +5,7 @@
     type = type || "info";
     var toast = document.createElement("div");
     toast.className = "toast toast-" + type;
-    toast.innerHTML = "<span>" + escapeHtml(message) + "</span>" + '<button class="toast-close" aria-label="Close"><i class="ph ph-x"></i></button>';
+    toast.innerHTML = "<span>" + escapeHtml(message) + '</span><button class="toast-close" aria-label="Close"><i class="ph ph-x"></i></button>';
     container.appendChild(toast);
     toast.querySelector(".toast-close").addEventListener("click", function () {
       toast.remove();
@@ -41,7 +41,7 @@
           expiresAt: Date.now() + 15000,
         }),
       );
-    } catch (_error) {}
+    } catch {}
   }
 
   function flushPendingToast() {
@@ -57,32 +57,77 @@
       if (typeof window.showToast === "function") {
         window.showToast(payload.message, payload.type || "success");
       }
-    } catch (_error) {
+    } catch {
       try {
         sessionStorage.removeItem(PENDING_TOAST_KEY);
-      } catch (_ignored) {}
+      } catch {}
     }
   }
 
   flushPendingToast();
 
-  document.querySelectorAll("[data-auto-slug-source]").forEach(function (source) {
-    var targetId = source.getAttribute("data-auto-slug-target");
-    var target = targetId ? document.getElementById(targetId) : null;
-    if (!target) return;
+  document.addEventListener("click", function (event) {
+    var activeMenu = event.target.closest ? event.target.closest("details.header-menu") : null;
 
-    var autoSlug = source.getAttribute("data-auto-slug-when-empty") === "true" ? !target.value : true;
-
-    target.addEventListener("input", function () {
-      autoSlug = false;
-    });
-
-    source.addEventListener("input", function () {
-      if (autoSlug) {
-        target.value = slugify(source.value);
-      }
+    document.querySelectorAll("details.header-menu[open]").forEach(function (menu) {
+      if (menu === activeMenu) return;
+      menu.removeAttribute("open");
     });
   });
+
+  function initAutoSlug(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+
+    scope.querySelectorAll("[data-auto-slug-source]").forEach(function (source) {
+      if (source.dataset.autoSlugReady === "true") return;
+
+      var targetId = source.getAttribute("data-auto-slug-target");
+      var form = source.closest("form");
+      var target = targetId && form ? form.querySelector("#" + targetId) : null;
+      if (!target && targetId) target = document.getElementById(targetId);
+      if (!target) return;
+
+      source.dataset.autoSlugReady = "true";
+      var autoSlug = source.getAttribute("data-auto-slug-when-empty") === "true" ? !target.value : true;
+
+      target.addEventListener("input", function () {
+        autoSlug = false;
+      });
+
+      source.addEventListener("input", function () {
+        if (autoSlug) {
+          target.value = slugify(source.value);
+        }
+      });
+    });
+  }
+
+  window.PocketDocs.initAutoSlug = initAutoSlug;
+  initAutoSlug(document);
+
+  function initPocketBaseFields(root) {
+    var scope = root && root.querySelectorAll ? root : document;
+
+    scope.querySelectorAll(".dialog-body .form-group, .admin-drawer-body .form-group").forEach(function (group) {
+      if (group.dataset.pocketBaseFieldReady === "true") return;
+
+      var surface = document.createElement("div");
+      surface.className = "pb-field-surface";
+
+      Array.prototype.slice.call(group.childNodes).forEach(function (node) {
+        var isAuxiliaryContent = node.nodeType === 1 && node.matches(".form-hint, .version-label-suggestions, .field-error, .form-error");
+        if (!isAuxiliaryContent) surface.appendChild(node);
+      });
+
+      if (!surface.children.length) return;
+
+      group.insertBefore(surface, group.firstChild);
+      group.dataset.pocketBaseFieldReady = "true";
+    });
+  }
+
+  window.PocketDocs.initPocketBaseFields = initPocketBaseFields;
+  initPocketBaseFields(document);
 
   document.addEventListener("click", function (event) {
     var fillTrigger = event.target.closest ? event.target.closest("[data-fill-target][data-fill-value]") : null;
@@ -174,74 +219,393 @@
     }
   });
 
-  var clickableRows = document.querySelectorAll("[data-row-link]");
-  if (clickableRows.length) {
-    clickableRows.forEach(function (row) {
-      row.addEventListener("click", function (e) {
-        if (e.target.closest("a, button, input, select, textarea, label, form")) return;
-        var href = row.getAttribute("data-row-link");
-        if (href) window.location.href = href;
-      });
+  var adminDrawer = document.getElementById("adminDrawer");
+  var adminDrawerPanel = adminDrawer ? adminDrawer.querySelector(".admin-drawer-panel") : null;
+  var adminDrawerTitle = document.getElementById("adminDrawerTitle");
+  var adminDrawerBody = document.getElementById("adminDrawerBody");
+  var adminDrawerFooter = document.getElementById("adminDrawerFooter");
+  var drawerLastFocus = null;
+  var drawerRequestId = 0;
 
-      row.addEventListener("keydown", function (e) {
-        if (e.key !== "Enter" && e.key !== " ") return;
-        e.preventDefault();
-        var href = row.getAttribute("data-row-link");
-        if (href) window.location.href = href;
-      });
+  function isDrawerOpen() {
+    return Boolean(adminDrawer && !adminDrawer.hasAttribute("hidden"));
+  }
+
+  function setOverlayScrollLock() {
+    var modalOpen = modal && !modal.hasAttribute("hidden");
+    document.body.style.overflow = isDrawerOpen() || modalOpen ? "hidden" : "";
+  }
+
+  function setDrawerLoading() {
+    if (!adminDrawerBody || !adminDrawerFooter) return;
+    adminDrawerBody.classList.add("admin-drawer-body-loading");
+    adminDrawerBody.innerHTML = '<div class="admin-modal-spinner" aria-label="Loading"></div>';
+    adminDrawerFooter.innerHTML = "";
+  }
+
+  function destroyDrawerContent() {
+    if (window.PocketDocs && typeof window.PocketDocs.destroyEditors === "function" && adminDrawerBody) {
+      window.PocketDocs.destroyEditors(adminDrawerBody);
+    }
+    if (adminDrawerBody) {
+      adminDrawerBody.classList.remove("admin-drawer-body-loading");
+      adminDrawerBody.innerHTML = "";
+    }
+    if (adminDrawerFooter) adminDrawerFooter.innerHTML = "";
+  }
+
+  function closeDrawer() {
+    if (!isDrawerOpen()) return;
+    drawerRequestId += 1;
+    destroyDrawerContent();
+    adminDrawer.setAttribute("hidden", "");
+    setOverlayScrollLock();
+
+    if (drawerLastFocus && typeof drawerLastFocus.focus === "function") {
+      drawerLastFocus.focus();
+    }
+    drawerLastFocus = null;
+  }
+
+  function resourceUrl(value) {
+    try {
+      return new URL(value, window.location.href).href;
+    } catch {
+      return "";
+    }
+  }
+
+  function resourceKey(value) {
+    try {
+      var url = new URL(value, window.location.href);
+      return url.origin + url.pathname;
+    } catch {
+      return "";
+    }
+  }
+
+  function loadDrawerStyles(parsedDocument) {
+    var existing = {};
+    document.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (link) {
+      existing[resourceKey(link.getAttribute("href"))] = true;
+    });
+
+    parsedDocument.querySelectorAll('link[rel="stylesheet"][href]').forEach(function (link) {
+      var href = resourceUrl(link.getAttribute("href"));
+      var key = resourceKey(href);
+      if (!href || !key || existing[key]) return;
+
+      var stylesheet = document.createElement("link");
+      stylesheet.rel = "stylesheet";
+      stylesheet.href = href;
+      document.head.appendChild(stylesheet);
+      existing[key] = true;
     });
   }
 
-  var tabContainers = document.querySelectorAll("[data-tabs]");
-  if (tabContainers.length) {
-    tabContainers.forEach(function (container) {
-      var tabs = Array.from(container.querySelectorAll('[role="tab"][data-tab-target]'));
-      var panels = Array.from(container.querySelectorAll("[data-tab-panel]"));
-      if (!tabs.length || !panels.length) return;
+  function loadDrawerScripts(parsedDocument) {
+    var existing = {};
+    document.querySelectorAll("script[src]").forEach(function (script) {
+      existing[resourceKey(script.getAttribute("src"))] = true;
+    });
 
-      function activateTab(tab, moveFocus) {
-        var targetId = tab.getAttribute("data-tab-target");
-        tabs.forEach(function (item) {
-          var isActive = item === tab;
-          item.setAttribute("aria-selected", isActive ? "true" : "false");
-          item.setAttribute("tabindex", isActive ? "0" : "-1");
+    var sources = [];
+    parsedDocument.querySelectorAll("script[src]").forEach(function (script) {
+      var src = resourceUrl(script.getAttribute("src"));
+      var key = resourceKey(src);
+      if (!src || !key || existing[key]) return;
+      existing[key] = true;
+      sources.push(src);
+    });
+
+    return sources.reduce(function (chain, src) {
+      return chain.then(function () {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement("script");
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
         });
+      });
+    }, Promise.resolve());
+  }
 
-        panels.forEach(function (panel) {
-          panel.hidden = panel.id !== targetId;
-        });
+  function normalizeDrawerCloseAction(actions) {
+    if (!actions) return;
 
-        if (moveFocus) tab.focus();
+    var closeAction = actions.querySelector("[data-drawer-close]");
+    if (!closeAction) {
+      actions.querySelectorAll("a.btn, button.btn").forEach(function (action) {
+        if (closeAction) return;
+        var label = action.textContent.trim().toLowerCase();
+        if (label === "cancel" || label === "close") closeAction = action;
+      });
+    }
+
+    if (!closeAction) {
+      closeAction = document.createElement("button");
+      closeAction.type = "button";
+      closeAction.className = "btn";
+    }
+
+    closeAction.setAttribute("data-drawer-close", "");
+    closeAction.classList.remove("btn-outline");
+    closeAction.classList.add("btn-ghost");
+    closeAction.textContent = "Close";
+
+    var dangerButton = actions.querySelector(".btn-danger");
+    var dangerAction = dangerButton ? dangerButton.closest("form") || dangerButton : null;
+    var leadingActions = actions.querySelector(":scope > .drawer-leading-actions");
+
+    if (!leadingActions) {
+      leadingActions = document.createElement("div");
+      leadingActions.className = "drawer-leading-actions";
+      actions.insertBefore(leadingActions, actions.firstChild);
+    }
+
+    leadingActions.appendChild(closeAction);
+    if (dangerAction && dangerAction !== closeAction) leadingActions.appendChild(dangerAction);
+  }
+
+  function prepareDrawerActions(fragment) {
+    var pageHeader = fragment.querySelector(".page-header");
+    if (!pageHeader || !adminDrawerFooter) return;
+
+    var actions = pageHeader.querySelector(".header-actions");
+    if (actions) {
+      normalizeDrawerCloseAction(actions);
+      adminDrawerFooter.appendChild(actions);
+    }
+    pageHeader.remove();
+  }
+
+  function prepareAutoshowDialog(parsedDocument) {
+    var sourceDialog = parsedDocument.querySelector(".admin-view dialog[data-dialog-autoshow]");
+    if (!sourceDialog) return null;
+
+    var sourceForm = sourceDialog.querySelector("form");
+    if (!sourceForm) return null;
+
+    var form = sourceForm.cloneNode(true);
+    var formId = form.id || "admin-drawer-form-" + Date.now().toString(36);
+    form.id = formId;
+    form.classList.add("admin-drawer-form");
+
+    var footer = form.querySelector(".dialog-footer");
+    if (footer && adminDrawerFooter) {
+      var actions = document.createElement("div");
+      actions.className = "header-actions";
+
+      while (footer.firstChild) {
+        var action = footer.firstChild;
+        if (action.nodeType === 1) {
+          if (action.matches("button[type='submit']")) action.setAttribute("form", formId);
+        }
+        actions.appendChild(action);
       }
+      normalizeDrawerCloseAction(actions);
+      footer.remove();
+      adminDrawerFooter.appendChild(actions);
+    }
 
-      tabs.forEach(function (tab, index) {
-        tab.addEventListener("click", function () {
-          activateTab(tab, false);
-        });
+    var body = form.querySelector(".dialog-body");
+    if (body) {
+      while (body.firstChild) {
+        form.insertBefore(body.firstChild, body);
+      }
+      body.remove();
+    }
 
-        tab.addEventListener("keydown", function (event) {
-          var nextIndex = index;
-          if (event.key === "ArrowRight") {
-            nextIndex = (index + 1) % tabs.length;
-          } else if (event.key === "ArrowLeft") {
-            nextIndex = (index - 1 + tabs.length) % tabs.length;
-          } else if (event.key === "Home") {
-            nextIndex = 0;
-          } else if (event.key === "End") {
-            nextIndex = tabs.length - 1;
-          } else {
-            return;
-          }
+    var heading = sourceDialog.querySelector(".dialog-header h2");
+    return {
+      fragment: form,
+      title: heading ? heading.textContent.trim() : "Details",
+    };
+  }
 
-          event.preventDefault();
-          activateTab(tabs[nextIndex], true);
-        });
-      });
+  function initDrawerContent() {
+    if (window.PocketDocs && typeof window.PocketDocs.initPocketBaseFields === "function") {
+      window.PocketDocs.initPocketBaseFields(adminDrawerBody);
+    }
+    if (window.PocketDocs && typeof window.PocketDocs.initAutoSlug === "function") {
+      window.PocketDocs.initAutoSlug(adminDrawerBody);
+    }
+    if (window.PocketDocs && typeof window.PocketDocs.initEditors === "function") {
+      window.PocketDocs.initEditors(adminDrawerBody);
+    }
+  }
 
-      var initiallySelected = container.querySelector('[role="tab"][aria-selected="true"]') || tabs[0];
-      activateTab(initiallySelected, false);
+  function renderDrawerDocument(parsedDocument, title) {
+    var source = parsedDocument.querySelector(".admin-view");
+    if (!source || !adminDrawerBody || !adminDrawerFooter) {
+      throw new Error("The requested form could not be loaded.");
+    }
+
+    destroyDrawerContent();
+    var dialogContent = prepareAutoshowDialog(parsedDocument);
+    var fragment = dialogContent ? dialogContent.fragment : source.cloneNode(true);
+    adminDrawerTitle.textContent = title || (dialogContent && dialogContent.title) || parsedDocument.title.split("|")[0].trim() || "Details";
+
+    if (!dialogContent) prepareDrawerActions(fragment);
+    adminDrawerBody.appendChild(fragment);
+    loadDrawerStyles(parsedDocument);
+
+    return loadDrawerScripts(parsedDocument).then(function () {
+      initDrawerContent();
     });
   }
+
+  function showDrawerError(url) {
+    if (!adminDrawerBody || !adminDrawerFooter) return;
+    destroyDrawerContent();
+    adminDrawerBody.innerHTML = '<div class="admin-drawer-error"><h3>Unable to load this form</h3><p class="text-muted">Try again or open the full page.</p><a class="btn btn-outline" href="' + escapeHtml(url) + '">Open full page</a></div>';
+  }
+
+  function fetchDrawerDocument(url) {
+    return fetch(url, {
+      method: "GET",
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    }).then(function (response) {
+      if (!response.ok) throw new Error("Request failed");
+      return response.text();
+    }).then(function (html) {
+      return new DOMParser().parseFromString(html, "text/html");
+    });
+  }
+
+  function openDrawer(url, title) {
+    if (!adminDrawer || !adminDrawerPanel || !adminDrawerTitle || !adminDrawerBody || !adminDrawerFooter) {
+      window.location.href = url;
+      return;
+    }
+
+    drawerRequestId += 1;
+    var requestId = drawerRequestId;
+    drawerLastFocus = document.activeElement;
+    adminDrawerTitle.textContent = title || "Details";
+    adminDrawer.removeAttribute("hidden");
+    setDrawerLoading();
+    setOverlayScrollLock();
+    adminDrawerPanel.focus();
+
+    fetchDrawerDocument(url).then(function (parsedDocument) {
+      if (requestId !== drawerRequestId) return;
+      return renderDrawerDocument(parsedDocument, title);
+    }).catch(function () {
+      if (requestId !== drawerRequestId) return;
+      showDrawerError(url);
+    });
+  }
+
+  window.PocketDocs.openDrawer = openDrawer;
+  window.PocketDocs.closeDrawer = closeDrawer;
+
+  document.addEventListener("click", function (event) {
+    var closeTrigger = event.target.closest ? event.target.closest("[data-drawer-close]") : null;
+    if (closeTrigger && isDrawerOpen()) {
+      event.preventDefault();
+      closeDrawer();
+      return;
+    }
+
+    if (event.defaultPrevented || event.button !== 0) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+    var trigger = event.target.closest ? event.target.closest("[data-drawer-url]") : null;
+    if (!trigger) return;
+    if (trigger.matches("[data-row-link]") && event.target.closest("a, button, input, select, textarea, label, form")) return;
+
+    var url = trigger.getAttribute("data-drawer-url") || trigger.getAttribute("href");
+    if (!url) return;
+
+    event.preventDefault();
+    openDrawer(url, trigger.getAttribute("data-drawer-title") || trigger.getAttribute("title") || "Details");
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && isDrawerOpen()) {
+      event.preventDefault();
+      closeDrawer();
+      return;
+    }
+
+    if (event.key !== "Enter" && event.key !== " ") return;
+    var row = event.target.closest ? event.target.closest("[data-row-link]") : null;
+    if (!row || event.target !== row) return;
+
+    event.preventDefault();
+    var href = row.getAttribute("data-row-link");
+    if (!href) return;
+    if (row.hasAttribute("data-drawer-url")) {
+      openDrawer(row.getAttribute("data-drawer-url") || href, row.getAttribute("data-drawer-title") || "Details");
+      return;
+    }
+    window.location.href = href;
+  });
+
+  document.addEventListener("click", function (event) {
+    if (event.defaultPrevented) return;
+    var row = event.target.closest ? event.target.closest("[data-row-link]") : null;
+    if (!row || event.target.closest("a, button, input, select, textarea, label, form")) return;
+
+    var href = row.getAttribute("data-row-link");
+    if (!href) return;
+    if (row.hasAttribute("data-drawer-url")) {
+      event.preventDefault();
+      openDrawer(row.getAttribute("data-drawer-url") || href, row.getAttribute("data-drawer-title") || "Details");
+      return;
+    }
+    window.location.href = href;
+  });
+
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (!isDrawerOpen() || !form || !form.matches || !form.matches("form")) return;
+    if (!adminDrawer.contains(form) || form.hasAttribute("data-confirm-message")) return;
+
+    var method = (form.getAttribute("method") || "GET").toUpperCase();
+    if (method === "GET") return;
+
+    event.preventDefault();
+    var submitter = event.submitter;
+    if (submitter) submitter.disabled = true;
+
+    var formData = new FormData(form);
+    var enctype = (form.getAttribute("enctype") || "").toLowerCase();
+    var body = enctype === "multipart/form-data" ? formData : new URLSearchParams(formData);
+
+    fetch(form.action, {
+      method: method,
+      body: body,
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    }).then(function (response) {
+      if (response.redirected) {
+        window.location.href = response.url;
+        return null;
+      }
+      if (response.status === 204) {
+        window.location.reload();
+        return null;
+      }
+      return response.text().then(function (html) {
+        return {
+          response: response,
+          document: new DOMParser().parseFromString(html, "text/html"),
+        };
+      });
+    }).then(function (result) {
+      if (!result) return;
+      return renderDrawerDocument(result.document, adminDrawerTitle.textContent);
+    }).catch(function () {
+      if (submitter) submitter.disabled = false;
+      if (typeof window.showToast === "function") {
+        window.showToast("Unable to save changes. Please try again.", "error");
+      }
+    });
+  });
 
   var modal = document.getElementById("adminModal");
   var modalDialog = modal ? modal.querySelector(".admin-modal-dialog") : null;
@@ -267,6 +631,7 @@
     modalBody.classList.remove("admin-modal-body-loading");
     modalCancel.removeAttribute("hidden");
     modalConfirm.removeAttribute("hidden");
+    modal.removeAttribute("data-presentation");
   }
 
   function canDismissModal() {
@@ -279,7 +644,7 @@
     modalState = null;
     resetModal();
     modal.setAttribute("hidden", "");
-    document.body.style.overflow = "";
+    setOverlayScrollLock();
     if (lastFocus && typeof lastFocus.focus === "function") {
       lastFocus.focus();
     }
@@ -314,6 +679,10 @@
     modalCancel.textContent = options.cancelText || "Cancel";
     modalConfirm.className = "btn " + (options.confirmVariant === "primary" ? "btn-primary" : "btn-danger");
 
+    if (!isLoading && options.confirmVariant !== "primary") {
+      modal.dataset.presentation = "dialog";
+    }
+
     if (isLoading) {
       modal.dataset.mode = "loading";
       if (modalLoading) {
@@ -325,7 +694,7 @@
     }
 
     modal.removeAttribute("hidden");
-    document.body.style.overflow = "hidden";
+    setOverlayScrollLock();
 
     return new Promise(function (resolve) {
       modalState = {
@@ -432,7 +801,7 @@
   }
 
   function getCookieValue(name) {
-    var escaped = name.replace(/([.$?*|{}()\[\]\\/+^])/g, "\\$1");
+    var escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     var match = document.cookie.match(new RegExp("(?:^|; )" + escaped + "=([^;]*)"));
     return match ? decodeURIComponent(match[1]) : "";
   }
@@ -503,7 +872,7 @@
         var doc = state.frame.contentDocument;
         var text = doc && doc.body ? doc.body.textContent.trim() : "";
         if (!text) return;
-      } catch (_error) {
+      } catch {
         return;
       }
 
@@ -593,7 +962,7 @@
       }
     }
 
-    var fallback = document.querySelector("main.admin-content form[method='POST']:not(.inline-form):not(.auth-form):not([data-confirm-message]):not([data-save-shortcut='off'])");
+    var fallback = document.querySelector("#adminDrawer form[method='POST']:not(.inline-form):not(.auth-form):not([data-confirm-message]):not([data-save-shortcut='off']), dialog.admin-dialog[open] form[method='POST']:not(.inline-form):not(.auth-form):not([data-confirm-message]):not([data-save-shortcut='off']), main.admin-content form[method='POST']:not(.inline-form):not(.auth-form):not([data-confirm-message]):not([data-save-shortcut='off'])");
     return fallback || null;
   }
 
@@ -611,6 +980,27 @@
     }
     form.submit();
   });
+
+  var ipEnabledToggle = document.getElementById("ipEnabledToggle");
+  if (ipEnabledToggle) {
+    var ipEnabledValue = document.getElementById(ipEnabledToggle.getAttribute("data-value-target"));
+    var ipStatusBadge = document.querySelector("[data-ip-status-badge]");
+
+    function syncIpRestrictionState() {
+      var enabled = ipEnabledToggle.checked;
+      if (ipEnabledValue) ipEnabledValue.value = enabled ? "enable" : "disable";
+      ipEnabledToggle.setAttribute("aria-checked", enabled ? "true" : "false");
+
+      if (ipStatusBadge) {
+        ipStatusBadge.textContent = enabled ? "Enabled" : "Disabled";
+        ipStatusBadge.classList.toggle("badge-public", enabled);
+        ipStatusBadge.classList.toggle("badge-private", !enabled);
+      }
+    }
+
+    ipEnabledToggle.addEventListener("change", syncIpRestrictionState);
+    syncIpRestrictionState();
+  }
 
   var insertIpLink = document.getElementById("insert-my-ip");
   if (insertIpLink) {
@@ -631,5 +1021,55 @@
       textarea.value = current ? current + "\n" + ip : ip;
       textarea.focus();
     });
+  }
+
+  var siteIconFile = document.querySelector("[data-site-icon-file]");
+  var siteIconValue = document.querySelector("[data-site-icon-value]");
+  var siteIconRemove = document.querySelector("[data-site-icon-remove]");
+  var siteIconPreview = document.querySelector("[data-site-icon-preview]");
+  var siteIconReset = document.querySelector("[data-site-icon-reset]");
+
+  if (siteIconFile && siteIconValue && siteIconPreview) {
+    var siteIconMaxBytes = 256 * 1024;
+    var siteIconTypes = ["image/svg+xml", "image/png", "image/jpeg", "image/webp"];
+
+    siteIconFile.addEventListener("change", function () {
+      var file = siteIconFile.files && siteIconFile.files[0];
+      if (!file) return;
+
+      if (siteIconTypes.indexOf(file.type) === -1 || file.size > siteIconMaxBytes) {
+        siteIconFile.value = "";
+        if (typeof window.showToast === "function") {
+          window.showToast("Choose a PNG, JPEG, or WebP image up to 256 KB.", "error");
+        }
+        return;
+      }
+
+      var reader = new FileReader();
+      reader.addEventListener("load", function () {
+        if (typeof reader.result !== "string") return;
+        siteIconValue.value = reader.result;
+        if (siteIconRemove) siteIconRemove.value = "false";
+        siteIconPreview.src = reader.result;
+        if (siteIconReset) siteIconReset.hidden = false;
+      });
+      reader.addEventListener("error", function () {
+        siteIconFile.value = "";
+        if (typeof window.showToast === "function") {
+          window.showToast("Unable to read this image.", "error");
+        }
+      });
+      reader.readAsDataURL(file);
+    });
+
+    if (siteIconReset) {
+      siteIconReset.addEventListener("click", function () {
+        siteIconFile.value = "";
+        siteIconValue.value = "";
+        if (siteIconRemove) siteIconRemove.value = "true";
+        siteIconPreview.src = siteIconPreview.getAttribute("data-default-src");
+        siteIconReset.hidden = true;
+      });
+    }
   }
 })();

@@ -6,7 +6,7 @@
 import { Router } from "express";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
-import { getSettings, updateSettings } from "./service.js";
+import { getSettings, getSiteIconUrl, hasCustomSiteIcon, updateSettings, updateSiteIcon } from "./service.js";
 import { getIpRestriction, updateIpRestriction } from "./ip-restriction-service.js";
 import { updateAllSettingsSchema, updateSettingsSchema } from "./validation.js";
 import { ROLES } from "../../config/constants.js";
@@ -40,6 +40,8 @@ router.get("/", (req, res) => {
     user: req.user,
     csrfToken: res.locals.csrfToken,
     settings,
+    siteIconUrl: res.locals.siteIconUrl || getSiteIconUrl(),
+    hasCustomSiteIcon: hasCustomSiteIcon(),
     canManageIpRestriction,
     ipRestriction: canManageIpRestriction ? getIpRestriction() : null,
     detectedIp: canManageIpRestriction ? getClientIp(req) : null,
@@ -58,9 +60,10 @@ router.post("/", async (req, res, next) => {
     }
 
     const validatedBody = parseSettingsBody(canManageIpRestriction ? updateAllSettingsSchema : updateSettingsSchema, req.body);
-    const { heroWord1, heroWord2, heroSubtitle } = validatedBody;
+    const { heroTitle, heroSubtitle, siteIcon, removeSiteIcon } = validatedBody;
 
-    await updateSettings({ heroWord1, heroWord2, heroSubtitle }, req.requestId);
+    await updateSiteIcon({ dataUrl: siteIcon, remove: removeSiteIcon === "true" }, req.requestId);
+    await updateSettings({ heroTitle, heroSubtitle }, req.requestId);
 
     if (canManageIpRestriction) {
       const { enabled, allowedIps } = validatedBody;

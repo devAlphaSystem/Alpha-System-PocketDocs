@@ -9,7 +9,7 @@ graph TD
     Browser["Browser (EJS + Vanilla JS)"]
     Express["Express 5 Server"]
     PB["PocketBase"]
-    FS["File System"]
+    FS["Runtime Files"]
 
     Browser -->|HTTP| Express
     Express -->|PocketBase JS SDK| PB
@@ -32,7 +32,7 @@ graph TD
 |-----------|---------------|
 | **Express Server** | HTTP handling, routing, template rendering, static file serving |
 | **PocketBase** | Persistent storage, user authentication, file uploads, full-text filtering |
-| **File System** | Runtime configuration (`data/`), log files (`logs/`) |
+| **Runtime Files** | IP restriction configuration and embedded PocketBase runtime data under `data/` |
 
 ## Request Lifecycle
 
@@ -87,10 +87,10 @@ src/modules/{feature}/
 | `setup` | First-run owner account creation | Owner registration |
 | `projects` | CRUD for documentation projects and mode-specific flow | Project (name, slug, visibility, mode, owner) |
 | `versions` | CRUD for project versions | Version (label, slug, order, is_public) |
-| `pages` | CRUD, bulk Markdown import, and tree ordering for Documents, FAQ, and Troubleshooting | Page (section, title, slug, content, parent, order) |
+| `pages` | CRUD, bulk Markdown import, sidebar navigation, and tree ordering for Documents, FAQ, and Troubleshooting | Page (section, item type, title, slug, content, parent, order) |
 | `changelogs` | Per-version changelog management | Changelog (content, created, updated) |
 | `users` | User management (owner-only) | User (name, email, role) |
-| `settings` | Site settings & IP restriction | Settings JSON, IP restriction rules |
+| `settings` | Public branding & IP restriction | PocketBase-backed title/subtitle/icon records, file-backed IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
 
 ## Database Schema (ER Diagram)
@@ -135,6 +135,7 @@ erDiagram
         string id PK
         string version FK
         string section "documents | faq | troubleshooting"
+        string item_type "page | header | separator"
         string title
         string slug
         text content
@@ -153,6 +154,15 @@ erDiagram
         datetime updated
     }
 
+    site_settings {
+        string id PK
+        string key UK "title | subtitle | icon"
+        text value
+        file icon
+        datetime created
+        datetime updated
+    }
+
     users ||--o{ projects : "owns"
     projects ||--o{ versions : "has"
     versions ||--o{ pages : "contains"
@@ -166,6 +176,7 @@ erDiagram
 - **(versions.project, versions.slug)** — unique per project
 - **(pages.version, pages.section, pages.slug)** — unique per version section
 - **changelogs.version** — one changelog per version
+- **site_settings.key** — one record per site setting
 - **Cascade deletes** — deleting a project removes all its versions, pages, and changelogs
 
 ## Authentication & Authorization
@@ -213,7 +224,8 @@ flowchart TD
 | **Rate Limiting** | `express-rate-limit` — separate limits for general and auth routes |
 | **Security Headers** | HSTS, CSP, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy |
 | **Input Validation** | Zod schemas with max lengths, regex patterns, type coercion |
-| **HTML Sanitization** | `sanitize-html` strips unsafe tags/attributes from rendered Markdown |
+| **HTML Sanitization** | `sanitize-html` strips unsafe tags/attributes from rendered Markdown and inline branding Markdown |
+| **Site Icon Validation** | Binary signatures are checked and SVG active content, external resources, event handlers, and inline styles are rejected |
 | **IP Restriction** | Optional allowlist for `/admin` and `/auth` routes |
 | **Auth Cookies** | `httpOnly`, `secure` (production), `sameSite: strict` |
 
@@ -229,7 +241,7 @@ Error taxonomy (in `src/errors/taxonomy.js`):
 
 | Error Class | HTTP Status | Use Case |
 |-------------|-------------|----------|
-| `ValidationError` | 400 | Invalid input |
+| `ValidationError` | 422 | Invalid input |
 | `AuthenticationError` | 401 | Missing or invalid credentials |
 | `AuthorizationError` | 403 | Insufficient permissions |
 | `NotFoundError` | 404 | Resource does not exist |
@@ -257,9 +269,11 @@ The `renderMarkdown` function in `src/lib/markdown.js` produces sanitized HTML w
 - Auto-generated heading IDs for table-of-contents linking
 - External links open in new tabs with `rel="noopener noreferrer"`
 
+Short branding strings use a separate inline-only pipeline. `renderInlineMarkdown` permits sanitized inline formatting without block elements, images, or raw HTML, while `extractInlineMarkdownText` produces plain text for browser metadata.
+
 ## Logging
 
 Winston logger with:
 - **Console transport** — colorized output (all environments)
-- **Structured format** — each log entry includes `timestamp`, `level`, `message`, and `requestId` for tracing
+- **Structured format** — each log entry includes `timestamp`, `level`, and `message`; request-scoped entries include `requestId` when provided
 - **Sensitive data masking** — passwords, tokens, and secrets are masked in log output via `src/lib/masking.js`

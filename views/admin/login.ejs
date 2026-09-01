@@ -9,11 +9,15 @@
       (function () {
         try {
           var key = 'pd_theme';
-          var theme = localStorage.getItem(key);
-          if (theme !== 'dark' && theme !== 'light') {
-            theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          var preference = localStorage.getItem(key);
+          if (preference !== 'dark' && preference !== 'light' && preference !== 'auto') {
+            preference = 'auto';
           }
+          var theme = preference === 'auto'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : preference;
           document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.setAttribute('data-theme-preference', preference);
         } catch (_e) {
           document.documentElement.setAttribute('data-theme', 'light');
         }
@@ -22,27 +26,20 @@
 
     <title>Sign In | <%= siteName %></title>
 
-    <link rel="icon" type="image/png" href="/img/logo.png">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="/img/pd-logo.svg">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
     <link rel="stylesheet" href="<%= assetUrl('/css/design-system.css') %>">
     <link rel="stylesheet" href="<%= assetUrl('/css/admin.css') %>">
   </head>
 
   <body class="auth-body">
-    <div class="auth-container">
-      <div class="auth-card">
-        <div class="auth-header">
-          <a href="/" class="auth-brand">
-            <% if (siteName === 'PocketDocs') { %>
-              <span class="brand-word-pocket">Pocket</span><span class="brand-word-docs">Docs</span>
-            <% } else { %>
-              <span><%= siteName %></span>
-            <% } %>
-          </a>
-          <h1>Welcome back</h1>
-          <p>Sign in to manage your documentation</p>
-        </div>
+    <main class="auth-app">
+      <div class="auth-container">
+        <header class="auth-header">
+          <img src="<%= assetUrl('/img/pd-logo.svg') %>" alt="" class="auth-logo">
+          <h1>Superuser login</h1>
+        </header>
 
         <% if (typeof error !== 'undefined' && error) { %>
           <div class="alert alert-error">
@@ -54,35 +51,29 @@
         <form method="POST" action="/auth/login" class="auth-form" novalidate>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-          <div class="form-group">
-            <label for="email">Email address</label>
-            <div class="input-wrap">
-              <i class="ph ph-envelope"></i>
-              <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email" value="<%= typeof body !== 'undefined' && body.email ? body.email : '' %>">
-            </div>
+          <div class="auth-field">
+            <label for="email">Email <span class="required">*</span></label>
+            <input type="email" id="email" name="email" required autocomplete="email" value="<%= typeof body !== 'undefined' && body.email ? body.email : '' %>">
           </div>
 
-          <div class="form-group">
-            <label for="password">Password</label>
-            <div class="input-wrap">
-              <i class="ph ph-lock"></i>
-              <input type="password" id="password" name="password" placeholder="Your password" required autocomplete="current-password" minlength="8">
-              <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+          <div>
+            <div class="auth-field auth-password-field">
+              <label for="password">Password <span class="required">*</span></label>
+              <input type="password" id="password" name="password" required autocomplete="current-password" minlength="8">
+              <button type="button" class="password-toggle" aria-label="Toggle password visibility" tabindex="-1">
                 <i class="ph ph-eye"></i>
               </button>
             </div>
+            <a href="/" class="auth-hint">Back to site</a>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-full">
-            <i class="ph ph-sign-in"></i> Sign In
+          <button type="submit" class="btn btn-primary btn-lg btn-full auth-submit">
+            <span>Sign In</span>
+            <i class="ph ph-arrow-right"></i>
           </button>
         </form>
-
-        <div class="auth-footer">
-          <p><a href="/">Back to site</a></p>
-        </div>
       </div>
-    </div>
+    </main>
     
     <script src="<%= assetUrl('/js/theme-toggle.js') %>"></script>
     <script src="<%= assetUrl('/js/auth.js') %>"></script>

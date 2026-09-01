@@ -25,7 +25,7 @@
     <% if (typeof project !== 'undefined' && project && project.logo) { %>
       <link rel="icon" type="image/png" href="<%= sitePbUrl %>/api/files/projects/<%= project.id %>/<%= project.logo %>">
     <% } else { %>
-      <link rel="icon" type="image/png" href="/img/logo.png">
+      <link rel="icon" href="<%= siteIconUrl %>">
     <% } %>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -41,7 +41,14 @@
   </head>
 
   <body class="public-body">
-    <%- include('../partials/public-header', { siteName: siteName, siteUrl: typeof siteUrl !== 'undefined' ? siteUrl : '/', user: typeof currentUser !== 'undefined' ? currentUser : null, project: typeof project !== 'undefined' ? project : null }) %>
+    <%- include('../partials/public-header', {
+      siteName: siteName,
+      siteUrl: typeof siteUrl !== 'undefined' ? siteUrl : '/',
+      user: typeof currentUser !== 'undefined' ? currentUser : null,
+      project: typeof project !== 'undefined' ? project : null,
+      headerTitleHtml: typeof headerTitleHtml !== 'undefined' ? headerTitleHtml : null,
+      headerTitleText: typeof headerTitleText !== 'undefined' ? headerTitleText : siteName
+    }) %>
     
     <main class="public-main">
       <%- body %>

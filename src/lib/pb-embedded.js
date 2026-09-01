@@ -21,7 +21,7 @@
  *   POCKETBASE_DB_SCHEMA        optional   Path to db_schema.json (safe schema)
  *
  * ─── Usage as library ──────────────────────────────────────────────────
- *   import { boot, stop, getClient } from './pb-embedded.js';
+ *   import { boot, stop } from './pb-embedded.js';
  *
  *   const pb = await boot();   // download → provision → start → schema → verify
  *   // ... use pb (authenticated admin client) ...
@@ -37,7 +37,6 @@
  * ─── Exports ───────────────────────────────────────────────────────────
  *   boot(options?)                Full lifecycle: download → start → schema
  *   stop()                        Stop embedded PocketBase process
- *   getClient()                   Get authenticated PocketBase admin client
  *   ensureBinary(options?)        Download PocketBase binary if missing
  *   provisionSuperuser(options?)  Create/update the admin account
  *   startProcess(options?)        Spawn the PocketBase server process
@@ -854,21 +853,6 @@ export async function configureBatchWebApi(options = {}) {
 
   config.log(`[pb-embedded] Batch Web API enabled: ${updated.maxRequests} requests, ${updated.timeout}s timeout`);
   return updated;
-}
-
-/**
- * Returns an authenticated PocketBase admin client.
- * Reuses the instance from boot() or creates a new one.
- *
- * @param {Object} [options] - Config overrides.
- * @returns {Promise<import("pocketbase").default>}
- */
-export async function getClient(options = {}) {
-  if (_adminClient) return _adminClient;
-  const config = resolveConfig(options);
-  requireCredentials(config);
-  _adminClient = await getAuthenticatedClient(config);
-  return _adminClient;
 }
 
 /**

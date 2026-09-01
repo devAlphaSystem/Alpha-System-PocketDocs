@@ -332,7 +332,7 @@ export async function pbAuthRefresh(token) {
   try {
     const result = await client.collection("users").authRefresh();
     return { token: result.token, record: result.record };
-  } catch (_err) {
+  } catch {
     return null;
   }
 }

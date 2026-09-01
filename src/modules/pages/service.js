@@ -38,7 +38,7 @@ export function getPageSectionOption(section) {
   return PAGE_SECTION_OPTIONS.find((option) => option.value === section) || PAGE_SECTION_OPTIONS[0];
 }
 
-export function getPageItemType(page) {
+function getPageItemType(page) {
   return page?.item_type || PAGE_ITEM_TYPES.PAGE;
 }
 
@@ -46,7 +46,7 @@ export function isPageContentItem(page) {
   return getPageItemType(page) === PAGE_ITEM_TYPES.PAGE;
 }
 
-export function isSidebarNavigationItem(page) {
+function isSidebarNavigationItem(page) {
   const itemType = getPageItemType(page);
   return itemType === PAGE_ITEM_TYPES.HEADER || itemType === PAGE_ITEM_TYPES.SEPARATOR;
 }
@@ -126,16 +126,6 @@ export async function listPagesPaginated(versionId, section = PAGE_SECTIONS.DOCU
     page,
     perPage: PAGINATION.DEFAULT_PER_PAGE,
   });
-}
-
-export async function countContentPages(versionId, section = PAGE_SECTIONS.DOCUMENTS) {
-  const result = await pbList(COLLECTIONS.PAGES, {
-    filter: `${pageFilter(versionId, section)} && ${pageContentFilter()}`,
-    page: 1,
-    perPage: 1,
-    fields: "id",
-  });
-  return result.totalItems ?? result.items?.length ?? 0;
 }
 
 export function buildPageTree(pages) {
