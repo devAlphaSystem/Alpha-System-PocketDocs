@@ -88,7 +88,7 @@
     </div>
 
     <div class="editor-content"<%= isSidebarItem ? ' hidden' : '' %> data-content-item-page-only>
-      <textarea id="content" name="content"><%= typeof page !== 'undefined' && page ? page.content : (typeof formValues !== 'undefined' && formValues && formValues.content ? formValues.content : '') %></textarea>
+      <textarea id="content" name="content" class="textarea-content"><%= typeof page !== 'undefined' && page ? page.content : (typeof formValues !== 'undefined' && formValues && formValues.content ? formValues.content : '') %></textarea>
     </div>
   </form>
 </div>

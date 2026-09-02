@@ -11,33 +11,45 @@
     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
     <div class="settings-application">
-      <div class="settings-field-grid">
-        <div class="form-group pb-form-field settings-icon-field">
-          <label for="siteIconFile">Icon</label>
-          <div class="settings-icon-control">
-            <span class="settings-icon-preview">
-              <img src="<%= siteIconUrl %>" alt="" data-site-icon-preview data-default-src="<%= assetUrl('/img/pd-logo.svg') %>">
+      <div class="settings-option-list">
+        <details class="settings-option-disclosure">
+          <summary class="settings-option-row">
+            <span><i class="ph ph-house"></i> Public site</span>
+            <span class="settings-option-state">
+              <i class="ph ph-caret-down settings-option-caret" aria-hidden="true"></i>
             </span>
-            <div class="settings-icon-actions">
-              <input type="file" id="siteIconFile" accept="image/svg+xml,image/png,image/jpeg,image/webp" data-site-icon-file>
-              <input type="hidden" id="siteIcon" name="siteIcon" value="" data-site-icon-value>
-              <input type="hidden" name="removeSiteIcon" value="false" data-site-icon-remove>
-              <button type="button" class="btn btn-outline btn-sm" data-site-icon-reset <%= hasCustomSiteIcon ? '' : 'hidden' %>>Use default icon</button>
+          </summary>
+          <div class="settings-option-body">
+            <div class="settings-field-grid">
+              <div class="form-group pb-form-field settings-icon-field">
+                <label for="siteIconFile">Icon</label>
+                <div class="settings-icon-control">
+                  <span class="settings-icon-preview">
+                    <img src="<%= siteIconUrl %>" alt="" data-site-icon-preview data-default-src="<%= assetUrl('/img/pd-logo.svg') %>">
+                  </span>
+                  <div class="settings-icon-actions">
+                    <input type="file" id="siteIconFile" accept="image/svg+xml,image/png,image/jpeg,image/webp" data-site-icon-file>
+                    <input type="hidden" id="siteIcon" name="siteIcon" value="" data-site-icon-value>
+                    <input type="hidden" name="removeSiteIcon" value="false" data-site-icon-remove>
+                    <button type="button" class="btn btn-outline btn-sm" data-site-icon-reset <%= hasCustomSiteIcon ? '' : 'hidden' %>>Use default icon</button>
+                  </div>
+                </div>
+                <p class="form-hint">SVG, PNG, JPEG or WebP, up to 256 KB. Used in the browser tab, public header and homepage hero.</p>
+              </div>
+
+              <div class="form-group pb-form-field settings-markdown-field">
+                <label for="heroTitle">Title <span class="required">*</span></label>
+                <textarea id="heroTitle" name="heroTitle" rows="2" required maxlength="200" placeholder="e.g. Acme **Docs**"><%= settings.heroTitle %></textarea>
+                <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
+              </div>
+              <div class="form-group pb-form-field settings-markdown-field">
+                <label for="heroSubtitle">Subtitle</label>
+                <textarea id="heroSubtitle" name="heroSubtitle" rows="2" maxlength="300" placeholder="e.g. Documentation for **your team**."><%= settings.heroSubtitle %></textarea>
+                <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
+              </div>
             </div>
           </div>
-          <p class="form-hint">SVG, PNG, JPEG or WebP, up to 256 KB. Used in the browser tab, public header and homepage hero.</p>
-        </div>
-
-        <div class="form-group pb-form-field settings-markdown-field">
-          <label for="heroTitle">Title <span class="required">*</span></label>
-          <textarea id="heroTitle" name="heroTitle" rows="2" required maxlength="200" placeholder="e.g. Acme **Docs**"><%= settings.heroTitle %></textarea>
-          <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
-        </div>
-        <div class="form-group pb-form-field settings-markdown-field">
-          <label for="heroSubtitle">Subtitle</label>
-          <textarea id="heroSubtitle" name="heroSubtitle" rows="2" maxlength="300" placeholder="e.g. Documentation for **your team**."><%= settings.heroSubtitle %></textarea>
-          <p class="form-hint">Supports inline Markdown such as <code>**bold**</code>, <code>*italic*</code>, links and inline code.</p>
-        </div>
+        </details>
       </div>
 
       <% if (canManageIpRestriction) { %>

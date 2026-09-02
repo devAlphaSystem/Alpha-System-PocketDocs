@@ -4,19 +4,21 @@
 <% const _knowledgeBaseSectionCounts = typeof knowledgeBaseSectionCounts !== 'undefined' && knowledgeBaseSectionCounts ? knowledgeBaseSectionCounts : {}; %>
 <% const _showFaqLink = _supportsKnowledgeBase && _kbBaseUrl && Number(_knowledgeBaseSectionCounts.faq || 0) > 0; %>
 <% const _showTroubleshootingLink = _supportsKnowledgeBase && _kbBaseUrl && Number(_knowledgeBaseSectionCounts.troubleshooting || 0) > 0; %>
+<% const _isChangelog = typeof currentPath !== 'undefined' && /\/changelog$/.test(currentPath); %>
 
-<nav class="docs-sidebar" id="docsSidebar">
-  <div class="docs-sidebar-header">
-    <% if (typeof version !== 'undefined' && version && !_nonVersionedMode) { %>
+<nav class="docs-sidebar" id="docsSidebar" aria-label="Documentation navigation">
+  <% if (typeof version !== 'undefined' && version && !_nonVersionedMode) { %>
+    <div class="docs-sidebar-header">
       <%- include('./version-switcher', { project: project, version: version, versions: versions }) %>
-    <% } %>
-  </div>
-  <div class="docs-sidebar-search">
-    <div class="search-input-wrap">
-      <i class="ph ph-magnifying-glass"></i>
-      <input type="search" id="docsSearch" placeholder="Search documentation..." autocomplete="off" data-project="<%= project.slug %>" data-version="<%= version ? version.id : '' %>">
     </div>
-    <div class="search-results" id="searchResults"></div>
+  <% } %>
+  <div class="docs-sidebar-search" role="search">
+    <label for="docsSearch" class="sr-only">Search documentation</label>
+    <div class="search-input-wrap">
+      <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+      <input type="search" id="docsSearch" placeholder="Search documentation..." autocomplete="off" aria-controls="searchResults" data-project="<%= project.slug %>" data-version="<%= version ? version.id : '' %>">
+    </div>
+    <div class="search-results" id="searchResults" aria-live="polite" aria-busy="false" hidden></div>
   </div>
   <ul class="docs-nav" id="docsNav">
     <% if (typeof pageTree !== 'undefined') { %>
@@ -34,22 +36,22 @@
   <% if ((typeof version !== 'undefined' && version && !_nonVersionedMode) || _showFaqLink || _showTroubleshootingLink) { %>
     <div class="docs-sidebar-footer">
       <% if (typeof version !== 'undefined' && version && !_nonVersionedMode) { %>
-        <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="docs-nav-link changelog-link">
-          <i class="ph ph-clock-counter-clockwise"></i>
+        <a href="/docs/<%= project.slug %>/<%= version.slug %>/changelog" class="docs-nav-link changelog-link<%= _isChangelog ? ' active' : '' %>"<%- _isChangelog ? ' aria-current="page"' : '' %>>
+          <i class="ph ph-clock-counter-clockwise" aria-hidden="true"></i>
           <span>Changelog</span>
         </a>
       <% } %>
 
       <% if (_showFaqLink) { %>
-        <a href="<%= _kbBaseUrl %>/faq" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'faq' ? ' active' : '' %>">
-          <i class="ph ph-question"></i>
+        <a href="<%= _kbBaseUrl %>/faq" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'faq' ? ' active' : '' %>"<%- typeof section !== 'undefined' && section === 'faq' ? ' aria-current="page"' : '' %>>
+          <i class="ph ph-question" aria-hidden="true"></i>
           <span>Frequently Asked Questions</span>
         </a>
       <% } %>
       
       <% if (_showTroubleshootingLink) { %>
-        <a href="<%= _kbBaseUrl %>/troubleshooting" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'troubleshooting' ? ' active' : '' %>">
-          <i class="ph ph-wrench"></i>
+        <a href="<%= _kbBaseUrl %>/troubleshooting" class="docs-nav-link changelog-link<%= typeof section !== 'undefined' && section === 'troubleshooting' ? ' active' : '' %>"<%- typeof section !== 'undefined' && section === 'troubleshooting' ? ' aria-current="page"' : '' %>>
+          <i class="ph ph-wrench" aria-hidden="true"></i>
           <span>Troubleshooting</span>
         </a>
       <% } %>

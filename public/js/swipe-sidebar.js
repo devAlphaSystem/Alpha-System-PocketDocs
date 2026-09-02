@@ -20,13 +20,19 @@
     var verticalCancelDistance = options.verticalCancelDistance || 20;
     var reverseCancelDistance = options.reverseCancelDistance || 32;
     var gesture = null;
+    var previouslyFocused = null;
     var backdrop = document.createElement("button");
 
     backdrop.type = "button";
     backdrop.className = "sidebar-backdrop";
     backdrop.setAttribute("aria-label", "Close navigation");
+    backdrop.setAttribute("tabindex", "-1");
     backdrop.hidden = true;
     sidebar.insertAdjacentElement("afterend", backdrop);
+
+    if (!sidebar.hasAttribute("tabindex")) {
+      sidebar.setAttribute("tabindex", "-1");
+    }
 
     function isOverlayMode() {
       return overlayQuery.matches;
@@ -44,24 +50,53 @@
       }
     }
 
+    function syncSidebarAvailability() {
+      var unavailable = isOverlayMode() && !isOpen();
+      if (unavailable && sidebar.contains(document.activeElement) && toggle && typeof toggle.focus === "function") {
+        toggle.focus({ preventScroll: true });
+      }
+      sidebar.toggleAttribute("inert", unavailable);
+      if (unavailable) {
+        sidebar.setAttribute("aria-hidden", "true");
+      } else {
+        sidebar.removeAttribute("aria-hidden");
+      }
+    }
+
+    function getFocusableElements() {
+      return Array.prototype.filter.call(sidebar.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'), function (element) {
+        return !element.hidden && element.getClientRects().length > 0;
+      });
+    }
+
     function openSidebar() {
       if (!isOverlayMode()) return;
+      previouslyFocused = document.activeElement;
       sidebar.classList.add("open");
       backdrop.hidden = false;
       document.body.classList.add("sidebar-overlay-open");
       syncToggleState();
+      syncSidebarAvailability();
+      sidebar.focus({ preventScroll: true });
     }
 
-    function closeSidebar() {
+    function closeSidebar(restoreFocus) {
+      if (restoreFocus && toggle && typeof toggle.focus === "function") {
+        toggle.focus({ preventScroll: true });
+      } else if (restoreFocus && previouslyFocused && typeof previouslyFocused.focus === "function") {
+        previouslyFocused.focus({ preventScroll: true });
+      }
       sidebar.classList.remove("open");
       backdrop.hidden = true;
       document.body.classList.remove("sidebar-overlay-open");
       syncToggleState();
+      syncSidebarAvailability();
+      previouslyFocused = null;
     }
 
     function toggleSidebar() {
       if (isOpen()) {
-        closeSidebar();
+        closeSidebar(false);
         return;
       }
       openSidebar();
@@ -69,6 +104,7 @@
 
     sidebar.dataset.swipeSidebarReady = "true";
     syncToggleState();
+    syncSidebarAvailability();
 
     if (toggle) {
       toggle.addEventListener("click", function () {
@@ -76,19 +112,44 @@
       });
     }
 
-    backdrop.addEventListener("click", closeSidebar);
+    backdrop.addEventListener("click", function () {
+      closeSidebar(true);
+    });
 
     document.addEventListener("keydown", function (event) {
-      if (event.key !== "Escape" || !isOverlayMode() || !isOpen()) return;
-      closeSidebar();
-      if (toggle) toggle.focus();
+      if (!isOverlayMode() || !isOpen()) return;
+
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeSidebar(true);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      var focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        sidebar.focus({ preventScroll: true });
+        return;
+      }
+
+      var firstElement = focusableElements[0];
+      var lastElement = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && (document.activeElement === firstElement || document.activeElement === sidebar)) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
     });
 
     document.addEventListener("click", function (event) {
       if (!isOverlayMode() || !isOpen()) return;
       if (sidebar.contains(event.target)) return;
       if (toggle && toggle.contains(event.target)) return;
-      closeSidebar();
+      closeSidebar(event.target === backdrop);
     });
 
     function resetGesture() {
@@ -187,7 +248,7 @@
           }
 
           if (gesture.mode === "close" && deltaX <= -minDistance && isMostlyHorizontal) {
-            closeSidebar();
+            closeSidebar(true);
           }
 
           resetGesture();
@@ -206,8 +267,10 @@
 
     function handleViewportChange(event) {
       if (!event.matches) {
-        closeSidebar();
+        closeSidebar(false);
+        return;
       }
+      syncSidebarAvailability();
     }
 
     if (typeof overlayQuery.addEventListener === "function") {

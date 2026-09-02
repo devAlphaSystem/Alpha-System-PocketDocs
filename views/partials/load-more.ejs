@@ -1,0 +1,7 @@
+<% const loadMoreModel = buildLoadMoreViewModel({ pagination: typeof pagination !== 'undefined' ? pagination : null, search: typeof search !== 'undefined' ? search : '', queryParams: typeof queryParams !== 'undefined' ? queryParams : null }); %>
+
+<% if (loadMoreModel) { %>
+  <div class="page-load-more" data-load-more-container>
+    <a href="?page=<%= loadMoreModel.nextPage %><%= loadMoreModel.querySuffix %>" class="btn page-load-more-button" data-load-more aria-controls="<%= listId %>">Load more</a>
+  </div>
+<% } %>

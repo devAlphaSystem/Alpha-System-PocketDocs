@@ -6,57 +6,128 @@
   var projectSlug = input.dataset.project;
   var versionId = input.dataset.version;
   var debounceTimer = null;
+  var requestId = 0;
+  var activeController = null;
+
+  function setExpanded(expanded) {
+    resultsContainer.classList.toggle("active", expanded);
+    resultsContainer.hidden = !expanded;
+  }
+
+  function closeResults() {
+    setExpanded(false);
+  }
+
+  function renderStatus(message) {
+    resultsContainer.innerHTML = '<div class="search-results-status" role="status">' + escapeHtml(message) + "</div>";
+    setExpanded(true);
+  }
+
+  function getResultLinks() {
+    return Array.prototype.slice.call(resultsContainer.querySelectorAll(".search-results-item"));
+  }
 
   input.addEventListener("input", function () {
     clearTimeout(debounceTimer);
+    if (activeController) activeController.abort();
+
     var query = input.value.trim();
     if (query.length < 2) {
-      resultsContainer.classList.remove("active");
+      requestId += 1;
       resultsContainer.innerHTML = "";
+      resultsContainer.setAttribute("aria-busy", "false");
+      closeResults();
       return;
     }
+
+    renderStatus("Searching documentation...");
+    resultsContainer.setAttribute("aria-busy", "true");
     debounceTimer = setTimeout(function () {
       fetchResults(query);
     }, 300);
   });
 
-  input.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      resultsContainer.classList.remove("active");
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      closeResults();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      var firstResult = getResultLinks()[0];
+      if (firstResult) {
+        event.preventDefault();
+        firstResult.focus();
+      }
     }
   });
 
-  document.addEventListener("click", function (e) {
-    if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
-      resultsContainer.classList.remove("active");
+  resultsContainer.addEventListener("keydown", function (event) {
+    var links = getResultLinks();
+    var currentIndex = links.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeResults();
+      input.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      var direction = event.key === "ArrowDown" ? 1 : -1;
+      var nextIndex = (currentIndex + direction + links.length) % links.length;
+      links[nextIndex].focus();
+    }
+  });
+
+  document.addEventListener("click", function (event) {
+    if (!input.contains(event.target) && !resultsContainer.contains(event.target)) {
+      closeResults();
     }
   });
 
   function fetchResults(query) {
+    requestId += 1;
+    var currentRequestId = requestId;
+    activeController = typeof AbortController === "function" ? new AbortController() : null;
     var url = "/api/search?project=" + encodeURIComponent(projectSlug) + "&version=" + encodeURIComponent(versionId) + "&q=" + encodeURIComponent(query);
-    fetch(url).then(function (res) {
+    var options = activeController ? { signal: activeController.signal } : {};
+
+    fetch(url, options).then(function (res) {
+      if (!res.ok) throw new Error("Search request failed");
       return res.json();
     }).then(function (data) {
+      if (currentRequestId !== requestId || input.value.trim() !== query) return;
+
       if (!data.results || data.results.length === 0) {
-        resultsContainer.innerHTML = '<div class="search-results-item"><span>No results found</span></div>';
-      } else {
-        resultsContainer.innerHTML = data.results.map(function (r) {
-          var safeTitle = escapeHtml(r.title);
-          var safeSlug = escapeHtml(r.slug);
-          var safeMeta = r.sectionLabel ? escapeHtml(r.sectionLabel) + " / " + safeSlug : "/" + safeSlug;
-          var href = r.href ? escapeHtml(r.href) : r.simpleMode ? "/docs/" + escapeHtml(projectSlug) + "/" + safeSlug : "/docs/" + escapeHtml(projectSlug) + "/" + escapeHtml(r.versionSlug || "") + "/" + safeSlug;
-          return '<a href="' + href + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>" + safeMeta + "</span></a>";
-        }).join("");
+        renderStatus("No documentation found for this search.");
+        return;
       }
-      resultsContainer.classList.add("active");
-    }).catch(function () {
-      resultsContainer.classList.remove("active");
+
+      resultsContainer.innerHTML = data.results.map(function (result) {
+        var safeTitle = escapeHtml(result.title);
+        var safeSlug = escapeHtml(result.slug);
+        var safeMeta = result.sectionLabel ? escapeHtml(result.sectionLabel) + " / " + safeSlug : "/" + safeSlug;
+        var fallbackHref = result.simpleMode ? "/docs/" + encodeURIComponent(projectSlug) + "/" + encodeURIComponent(result.slug) : "/docs/" + encodeURIComponent(projectSlug) + "/" + encodeURIComponent(result.versionSlug || "") + "/" + encodeURIComponent(result.slug);
+        var href = typeof result.href === "string" && result.href.charAt(0) === "/" ? result.href : fallbackHref;
+        return '<a href="' + escapeHtml(href) + '" class="search-results-item"><strong>' + safeTitle + "</strong><span>" + safeMeta + "</span></a>";
+      }).join("");
+      setExpanded(true);
+    }).catch(function (error) {
+      if ((error && error.name === "AbortError") || currentRequestId !== requestId) return;
+      renderStatus("Search is unavailable. Check your connection and try again.");
+    }).finally(function () {
+      if (currentRequestId === requestId) {
+        resultsContainer.setAttribute("aria-busy", "false");
+      }
     });
   }
 
-  function escapeHtml(str) {
+  function escapeHtml(value) {
     var div = document.createElement("div");
-    div.textContent = str;
+    div.textContent = value == null ? "" : String(value);
     return div.innerHTML;
   }
 })();

@@ -1,4 +1,4 @@
-<div class="project-landing">
+<div class="project-landing" id="docs-content" tabindex="-1">
   <div class="project-hero">
     <div class="project-hero-content">
       <% if (project.logo) { %>
@@ -13,8 +13,13 @@
 
       <% if (defaultVersion) { %>
         <a href="/docs/<%= project.slug %>/<%= defaultVersion.slug %>" class="btn btn-primary btn-lg">
-          <i class="ph ph-book-open"></i> Read Documentation
+          <i class="ph ph-book-open" aria-hidden="true"></i> Read Documentation
         </a>
+      <% } else { %>
+        <div class="empty-state small project-empty-state">
+          <h2>No documentation published yet</h2>
+          <p>Published documentation will appear here when it becomes available.</p>
+        </div>
       <% } %>
     </div>
   </div>
@@ -26,7 +31,7 @@
         <% for (const ver of versions) { %>
           <a href="/docs/<%= project.slug %>/<%= ver.slug %>" class="version-tile">
             <span class="version-label"><%= ver.label %></span>
-            <i class="ph ph-arrow-right"></i>
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
           </a>
         <% } %>
       </div>

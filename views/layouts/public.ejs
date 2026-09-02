@@ -41,6 +41,8 @@
   </head>
 
   <body class="public-body">
+    <a class="skip-link" href="<%= typeof project !== 'undefined' && project ? '#docs-content' : '#main-content' %>">Skip to content</a>
+
     <%- include('../partials/public-header', {
       siteName: siteName,
       siteUrl: typeof siteUrl !== 'undefined' ? siteUrl : '/',
@@ -50,7 +52,7 @@
       headerTitleText: typeof headerTitleText !== 'undefined' ? headerTitleText : siteName
     }) %>
     
-    <main class="public-main">
+    <main class="public-main" id="main-content" tabindex="-1">
       <%- body %>
     </main>
 

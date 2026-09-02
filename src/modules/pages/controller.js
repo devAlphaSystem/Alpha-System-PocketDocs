@@ -143,7 +143,7 @@ router.get("/", csrfMiddleware, requireProjectAccess(), async (req, res, next) =
     const selectionItemLabelPlural = isDocumentsSection ? "sidebar items" : itemLabelPlural;
     const canManagePages = userCanManagePages(req.user);
     const pagesBaseUrl = `/admin/projects/${project.id}/versions/${version.id}/pages`;
-    const extraJs = ["/js/page-load-more.js"];
+    const extraJs = [];
 
     if (!search) {
       extraJs.push("/js/sidebar-sort.js");

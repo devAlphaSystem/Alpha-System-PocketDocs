@@ -21,9 +21,9 @@
             <th class="pb-arrow-column"></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="projectsList" data-load-more-list>
           <% for (const proj of projects) { %>
-            <tr class="row-link" data-row-link="/admin/projects/<%= proj.id %>" tabindex="0" aria-label="Open project <%= proj.name %>">
+            <tr class="row-link" data-load-more-item="<%= proj.id %>" data-row-link="/admin/projects/<%= proj.id %>" tabindex="0" aria-label="Open project <%= proj.name %>">
               <td>
                 <div class="table-project-cell">
                   <span><%= proj.name %></span>
@@ -39,6 +39,6 @@
       </table>
     </div>
 
-    <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+    <%- include('../../partials/load-more', { pagination, search: typeof search !== 'undefined' ? search : '', listId: 'projectsList' }) %>
   <% } %>
 </div>

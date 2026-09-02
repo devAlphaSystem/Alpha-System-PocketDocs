@@ -34,25 +34,22 @@
               <% if (proj.logo) { %>
                 <img src="<%= sitePbUrl %>/api/files/projects/<%= proj.id %>/<%= proj.logo %>" alt="" class="project-logo">
               <% } else { %>
-                <div class="project-logo-placeholder" aria-hidden="true">
-                  <%= proj.name.charAt(0).toUpperCase() %>
-                </div>
+                <h3 class="project-card-title"><%= proj.name %></h3>
               <% } %>
               <span class="project-card-open" aria-hidden="true">
                 <i class="ph ph-arrow-up-right"></i>
               </span>
             </div>
             <div class="project-card-body">
-              <h3><%= proj.name %></h3>
+              <% if (proj.logo) { %>
+                <h3><%= proj.name %></h3>
+              <% } %>
               <% if (proj.description) { %>
                 <p><%= proj.description %></p>
               <% } %>
             </div>
             <div class="project-card-footer">
-              <span class="project-card-type">
-                <i class="ph ph-book-open-text" aria-hidden="true"></i>
-                Documentation
-              </span>
+              <span class="project-card-type">Documentation</span>
               <span class="project-slug">/<%= proj.slug %></span>
             </div>
           </a>

@@ -4,6 +4,8 @@
   --color-primary: #417fe0;
   --color-primary-light: #6b9be8;
   --color-primary-dark: #2f69c1;
+  --color-primary-action: var(--color-primary-dark);
+  --color-primary-action-hover: color-mix(in srgb, var(--color-primary-dark) 84%, black);
   --color-primary-bg: #edf3fc;
   --selection-bg: var(--color-primary-dark);
   --selection-text: var(--text-inverse);
@@ -42,14 +44,14 @@
   --surface-2: var(--gray-100);
   --surface-3: var(--gray-200);
   --surface-border: var(--gray-200);
-  --surface-border-strong: var(--gray-300);
+  --surface-border-strong: #8492a6;
 
   --text-primary: var(--gray-900);
-  --text-secondary: var(--gray-600);
-  --text-tertiary: var(--gray-400);
+  --text-secondary: var(--gray-700);
+  --text-tertiary: var(--gray-600);
   --text-inverse: #ffffff;
-  --text-link: var(--color-primary);
-  --text-link-hover: var(--color-primary-dark);
+  --text-link: var(--color-primary-dark);
+  --text-link-hover: var(--color-primary-action-hover);
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -130,11 +132,11 @@
   --surface-2: #1a2236;
   --surface-3: #253045;
   --surface-border: #253045;
-  --surface-border-strong: #374357;
+  --surface-border-strong: #64748b;
 
   --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: var(--gray-500);
   --text-link: var(--color-primary-light);
   --text-link-hover: var(--color-primary);
 
@@ -165,6 +167,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-height) + var(--space-4));
 }
 
 body {
@@ -175,39 +178,12 @@ body {
   background: var(--surface-0);
 }
 
-body * {
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-input,
-textarea,
-.prose pre,
-.prose pre *,
-pre,
-pre *,
-code,
-code * {
-  -webkit-user-select: text;
-  user-select: text;
-}
-
-input::selection,
-textarea::selection,
-pre::selection,
-pre *::selection,
-code::selection,
-code *::selection {
+::selection {
   background: var(--selection-bg);
   color: var(--selection-text);
 }
 
-input::-moz-selection,
-textarea::-moz-selection,
-pre::-moz-selection,
-pre *::-moz-selection,
-code::-moz-selection,
-code *::-moz-selection {
+::-moz-selection {
   background: var(--selection-bg);
   color: var(--selection-text);
 }
@@ -308,14 +284,14 @@ h4 {
 }
 
 .btn-primary {
-  background: var(--color-primary);
+  background: var(--color-primary-action);
   color: var(--text-inverse);
-  border-color: var(--color-primary);
+  border-color: var(--color-primary-action);
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
-  border-color: var(--color-primary-dark);
+  background: var(--color-primary-action-hover);
+  border-color: var(--color-primary-action-hover);
   color: var(--text-inverse);
 }
 
@@ -334,7 +310,7 @@ h4 {
 
 .btn-outline:hover {
   background: var(--surface-1);
-  border-color: var(--gray-400);
+  border-color: var(--text-tertiary);
   color: var(--text-primary);
 }
 
@@ -429,7 +405,7 @@ select:focus {
 input:hover,
 textarea:hover,
 select:hover {
-  border-color: var(--gray-400);
+  border-color: var(--text-tertiary);
 }
 
 select {
@@ -475,7 +451,7 @@ select {
 }
 
 .select-enhanced-trigger:hover {
-  border-color: var(--gray-400);
+  border-color: var(--text-tertiary);
 }
 
 .select-enhanced-trigger:focus-visible,
@@ -608,7 +584,9 @@ textarea::placeholder {
 
 textarea {
   resize: vertical;
-  min-height: 80px;
+  min-height: var(--textarea-min-height, 80px);
+  max-height: var(--textarea-max-height, 320px);
+  overflow-y: auto;
 }
 
 input[type="checkbox"] {
@@ -1016,6 +994,15 @@ input[type="color"] {
   margin: 1.3em 0 0.3em;
 }
 
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+  scroll-margin-top: calc(var(--header-height) + var(--space-4));
+}
+
 .prose h1:first-child,
 .prose h2:first-child,
 .prose h3:first-child {
@@ -1114,6 +1101,12 @@ input[type="color"] {
 
 .prose pre:hover .code-copy-btn {
   opacity: 1;
+}
+
+.code-copy-btn:focus-visible {
+  opacity: 1;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
 }
 
 .code-copy-btn:hover {

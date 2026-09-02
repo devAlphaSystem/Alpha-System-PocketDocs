@@ -23,7 +23,13 @@
     btns.forEach(function (btn) {
       var icon = btn.querySelector("i");
       if (icon) {
-        icon.className = theme === "dark" ? "ph ph-sun" : "ph ph-moon";
+        icon.className = theme === "dark" ? "ph ph-moon" : "ph ph-sun";
+      }
+      if (!btn.closest(".theme-menu")) {
+        var nextTheme = theme === "dark" ? "light" : "dark";
+        var label = "Switch to " + nextTheme + " theme";
+        btn.setAttribute("aria-label", label);
+        btn.setAttribute("title", label);
       }
     });
 

@@ -185,6 +185,7 @@
     <script defer src="<%= assetUrl('/js/custom-select.js') %>"></script>
     <script defer src="<%= assetUrl('/js/swipe-sidebar.js') %>"></script>
     <script defer src="<%= assetUrl('/js/admin.js') %>"></script>
+    <script defer src="<%= assetUrl('/js/page-load-more.js') %>"></script>
 
     <% for (const src of normalizeViewAssetList(typeof extraJs !== 'undefined' ? extraJs : null)) { %>
       <script defer src="<%= assetUrl(src) %>"></script>

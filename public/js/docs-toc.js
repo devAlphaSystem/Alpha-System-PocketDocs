@@ -21,7 +21,13 @@
 
   const setActive = (id) => {
     links.forEach((link) => {
-      link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+      const isActive = link.getAttribute("href") === `#${id}`;
+      link.classList.toggle("active", isActive);
+      if (isActive) {
+        link.setAttribute("aria-current", "location");
+      } else {
+        link.removeAttribute("aria-current");
+      }
     });
   };
 
@@ -33,7 +39,8 @@
 
     const offset = 88;
     const top = target.getBoundingClientRect().top + window.scrollY - offset;
-    window.scrollTo({ top, behavior });
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top, behavior: reduceMotion ? "auto" : behavior });
   };
 
   links.forEach((link) => {

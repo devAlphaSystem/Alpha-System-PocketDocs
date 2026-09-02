@@ -4,7 +4,6 @@
 <% const isSearching = typeof search !== 'undefined' && search; %>
 <% const treeItems = typeof pageTreeItems !== 'undefined' ? pageTreeItems : []; %>
 <% const batchDeleteAction = typeof pageListActions !== 'undefined' ? pageListActions.batchDelete : null; %>
-<% const loadMoreModel = buildPaginationViewModel({ pagination, search: typeof search !== 'undefined' ? search : '', queryParams: { section } }); %>
 
 <div class="pages-page">
   <% if (typeof success !== 'undefined' && success) { %>
@@ -97,11 +96,7 @@
 
   <% } %>
 
-  <% if (loadMoreModel && loadMoreModel.hasNext) { %>
-    <div class="page-load-more" data-load-more-container>
-      <a href="?page=<%= loadMoreModel.nextPage %><%= loadMoreModel.querySuffix %>" class="btn page-load-more-button" data-load-more aria-controls="<%= isSearching ? 'pageSearchResults' : 'pagesTree' %>">Load more</a>
-    </div>
-  <% } %>
+  <%- include('../../partials/load-more', { pagination, search: typeof search !== 'undefined' ? search : '', queryParams: { section }, listId: isSearching ? 'pageSearchResults' : 'pagesTree' }) %>
 
   <% if (batchDeleteAction) { %>
     <form id="pageBatchDeleteForm" method="POST" action="<%= batchDeleteAction.action %>" class="page-selection-toolbar page-batch-delete-form" data-page-batch-delete-form data-item-label="<%= batchDeleteAction.itemLabel %>" data-item-label-plural="<%= batchDeleteAction.itemLabelPlural %>" data-confirm-title="Remove selected <%= batchDeleteAction.itemLabelPlural %>?" data-confirm-message="Remove the selected <%= batchDeleteAction.itemLabelPlural %>? This cannot be undone." data-confirm-button="Delete" data-confirm-variant="danger" hidden>

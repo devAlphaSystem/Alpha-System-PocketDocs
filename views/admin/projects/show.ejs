@@ -27,9 +27,9 @@
         <% } %>
       </div>
     <% } else { %>
-      <div class="versions-list">
+      <div class="versions-list" id="projectPagesList" data-load-more-list>
         <% for (const pg of _pages) { %>
-          <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" data-drawer-title="Edit Page" tabindex="0" aria-label="Edit page <%= pg.title %>">
+          <div class="version-card row-link" data-load-more-item="<%= pg.id %>" data-row-link="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= _defaultVersion.id %>/pages/<%= pg.id %>" data-drawer-title="Edit Page" tabindex="0" aria-label="Edit page <%= pg.title %>">
             <div class="version-card-main">
               <div class="version-info">
                 <h3>
@@ -47,7 +47,7 @@
         <% } %>
       </div>
 
-      <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+      <%- include('../../partials/load-more', { pagination, search: typeof search !== 'undefined' ? search : '', listId: 'projectPagesList' }) %>
     <% } %>
   <% } else { %>
     <% if (_versions.length === 0) { %>
@@ -61,9 +61,9 @@
         <% } %>
       </div>
     <% } else { %>
-      <div class="versions-list">
+      <div class="versions-list pb-record-list" id="versionsList" data-load-more-list>
         <% for (const ver of _versions) { %>
-          <div class="version-card row-link" data-row-link="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" tabindex="0" aria-label="Open version <%= ver.label %>">
+          <div class="version-card row-link" data-load-more-item="<%= ver.id %>" data-row-link="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" tabindex="0" aria-label="Open version <%= ver.label %>">
             <div class="version-card-main">
               <div class="version-info">
                 <h3><%= ver.label %></h3>
@@ -75,16 +75,16 @@
                 <% } %>
               </div>
               <div class="version-actions">
-                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-outline"><i class="ph ph-files"></i> Content</a>
-                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" class="btn btn-outline" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" data-drawer-title="Edit Changelog"><i class="ph ph-clock-counter-clockwise"></i> Changelog</a>
-                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" class="btn btn-outline" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" data-drawer-title="Edit Version"><i class="ph ph-pencil"></i> Edit</a>
+                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/pages" class="btn btn-row-action" title="Content" aria-label="Open content for <%= ver.label %>"><i class="ph ph-files"></i></a>
+                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" class="btn btn-row-action" title="Changelog" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/changelog" data-drawer-title="Edit Changelog" aria-label="Edit changelog for <%= ver.label %>"><i class="ph ph-clock-counter-clockwise"></i></a>
+                <a href="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" class="btn btn-row-action" title="Edit" data-drawer-url="/admin/projects/<%= project.id %>/versions/<%= ver.id %>/edit" data-drawer-title="Edit Version" aria-label="Edit <%= ver.label %>"><i class="ph ph-pencil"></i></a>
               </div>
             </div>
           </div>
         <% } %>
       </div>
 
-      <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+      <%- include('../../partials/load-more', { pagination, search: typeof search !== 'undefined' ? search : '', listId: 'versionsList' }) %>
     <% } %>
   <% } %>
 </div>

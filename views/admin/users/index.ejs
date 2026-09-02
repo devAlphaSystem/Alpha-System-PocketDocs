@@ -29,9 +29,9 @@
             <th class="table-actions-col"></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="usersList" data-load-more-list>
           <% for (const u of users) { %>
-            <tr>
+            <tr data-load-more-item="<%= u.id %>">
               <td>
                 <div class="table-project-cell">
                   <span><%= u.name || '—' %></span>
@@ -64,7 +64,7 @@
       </table>
     </div>
 
-    <%- include('../../partials/pagination', { pagination, search: typeof search !== 'undefined' ? search : '' }) %>
+    <%- include('../../partials/load-more', { pagination, search: typeof search !== 'undefined' ? search : '', listId: 'usersList' }) %>
   <% } %>
 </div>
 

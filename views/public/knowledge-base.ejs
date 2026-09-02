@@ -14,8 +14,8 @@
     knowledgeBaseSectionCounts: typeof knowledgeBaseSectionCounts !== 'undefined' ? knowledgeBaseSectionCounts : {}
   }) %>
 
-  <main class="docs-main">
-    <article class="docs-article">
+  <div class="docs-main">
+    <article class="docs-article" id="docs-content" tabindex="-1">
       <% if (typeof kbPage !== 'undefined' && kbPage) { %>
         <div class="docs-article-header">
           <h1><%= kbPage.title %></h1>
@@ -37,7 +37,7 @@
         <% if (kbCardItems.length > 0) { %>
           <div class="search-results-list">
             <% for (const node of kbCardItems) { %>
-              <a href="<%= kbBaseUrl %>/<%= node.section %>/<%= node.slug %>" class="search-result-card" style="margin-left: <%= node.depth * 16 %>px">
+              <a href="<%= kbBaseUrl %>/<%= node.section %>/<%= node.slug %>" class="search-result-card" style="--result-indent: <%= node.depth * 16 %>px">
                 <h3>
                   <% if (node.icon) { %>
                     <i class="ph ph-<%= node.icon %>"></i>
@@ -72,8 +72,8 @@
     </article>
 
     <% if (typeof headings !== 'undefined' && headings.length > 0) { %>
-      <aside class="docs-toc">
-        <h4>On this page</h4>
+      <aside class="docs-toc" aria-label="On this page">
+        <h2 class="docs-toc-title">On this page</h2>
         <ul>
           <% for (const h of headings) { %>
             <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
@@ -81,7 +81,7 @@
         </ul>
       </aside>
     <% } %>
-  </main>
+  </div>
 </div>
 
 <script src="<%= assetUrl('/js/search.js') %>"></script>
