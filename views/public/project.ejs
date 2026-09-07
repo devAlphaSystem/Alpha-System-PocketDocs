@@ -5,20 +5,20 @@
         <img src="<%= sitePbUrl %>/api/files/projects/<%= project.id %>/<%= project.logo %>" alt="" class="project-hero-logo">
       <% } %>
       
-      <h1><%= project.name %></h1>
+      <h1 dir="auto"><%= project.name %></h1>
 
       <% if (project.description) { %>
-        <p class="project-hero-desc"><%= project.description %></p>
+        <p class="project-hero-desc" dir="auto"><%= project.description %></p>
       <% } %>
 
       <% if (defaultVersion) { %>
         <a href="/docs/<%= project.slug %>/<%= defaultVersion.slug %>" class="btn btn-primary btn-lg">
-          <i class="ph ph-book-open" aria-hidden="true"></i> Read Documentation
+          <i class="ph ph-book-open" aria-hidden="true"></i> <%= t('Read Documentation') %>
         </a>
       <% } else { %>
         <div class="empty-state small project-empty-state">
-          <h2>No documentation published yet</h2>
-          <p>Published documentation will appear here when it becomes available.</p>
+          <h2><%= t('No documentation published yet') %></h2>
+          <p><%= t('Published documentation will appear here when it becomes available.') %></p>
         </div>
       <% } %>
     </div>
@@ -26,11 +26,11 @@
 
   <% if (versions.length > 0) { %>
     <div class="project-versions-section">
-      <h2>Versions</h2>
+      <h2><%= t('Versions') %></h2>
       <div class="versions-grid">
         <% for (const ver of versions) { %>
           <a href="/docs/<%= project.slug %>/<%= ver.slug %>" class="version-tile">
-            <span class="version-label"><%= ver.label %></span>
+            <span class="version-label" dir="auto"><%= ver.label %></span>
             <i class="ph ph-arrow-right" aria-hidden="true"></i>
           </a>
         <% } %>

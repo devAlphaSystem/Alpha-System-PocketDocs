@@ -1,5 +1,5 @@
 <div class="version-switcher">
-  <label for="versionSelect" class="sr-only">Version</label>
+  <label for="versionSelect" class="sr-only"><%= t('Version') %></label>
   <select id="versionSelect" class="version-select" data-project="<%= project.slug %>">
     <% for (const v of versions) { %>
       <option value="<%= v.slug %>"<%= v.id === version.id ? ' selected' : '' %>><%= v.label %></option>

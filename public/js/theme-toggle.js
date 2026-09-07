@@ -27,7 +27,7 @@
       }
       if (!btn.closest(".theme-menu")) {
         var nextTheme = theme === "dark" ? "light" : "dark";
-        var label = "Switch to " + nextTheme + " theme";
+        var label = btn.dataset[nextTheme + "Label"] || "Switch to " + nextTheme + " theme";
         btn.setAttribute("aria-label", label);
         btn.setAttribute("title", label);
       }

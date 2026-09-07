@@ -9,7 +9,7 @@
 
     var btn = document.createElement("button");
     btn.className = "code-copy-btn";
-    btn.setAttribute("aria-label", "Copy code");
+    btn.setAttribute("aria-label", pre.closest("[data-copy-label]").dataset.copyLabel);
     btn.innerHTML = '<i class="ph ph-copy"></i>';
 
     btn.addEventListener("click", function () {

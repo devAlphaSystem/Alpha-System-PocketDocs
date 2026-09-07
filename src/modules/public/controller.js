@@ -129,7 +129,7 @@ async function renderKnowledgeBase(req, res, next, { project, version, versions 
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(allKnowledgeBasePages);
     const pageTree = buildPageTree(docsSidebarItems);
     const kbPageTree = buildPageTree(knowledgeBasePages);
-    const sectionLabel = selectedSection ? getPageSectionLabel(selectedSection) : "Knowledge Base";
+    const sectionLabel = res.locals.t(selectedSection ? getPageSectionLabel(selectedSection) : "Knowledge Base");
 
     let knowledgeBasePage = null;
     let contentHtml = "";
@@ -489,7 +489,7 @@ router.get("/docs/:projectSlug/:versionSlug/changelog", async (req, res, next) =
     const knowledgeBaseSectionCounts = countKnowledgeBaseSections(knowledgeBaseResult.items || []);
 
     res.render("public/changelog", {
-      title: `Changelog - ${version.label} - ${project.name}`,
+      title: `${res.locals.t("Changelog")} - ${version.label} - ${project.name}`,
       project,
       version,
       versions: versionsResult.items || [],
@@ -602,7 +602,7 @@ router.get("/api/search", async (req, res) => {
         title: p.title,
         slug: p.slug,
         section,
-        sectionLabel: getPageSectionLabel(section),
+        sectionLabel: res.locals.t(getPageSectionLabel(section)),
         versionLabel: version.label || "",
         versionSlug: version.slug || "",
         simpleMode: false,

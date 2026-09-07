@@ -8,7 +8,7 @@ import { createPageSchema, createSidebarItemSchema, updatePageSchema, updateSide
 import { requireAuth, requireProjectAccess } from "../../middleware/auth.js";
 import { csrfMiddleware } from "../../middleware/csrf.js";
 import { getVersion } from "../versions/service.js";
-import { ROLES, PROJECT_MODE, PAGE_SECTIONS, PAGE_ITEM_TYPES, MARKDOWN_IMPORT } from "../../config/constants.js";
+import { ROLES, PROJECT_MODE, PAGE_SECTIONS, PAGE_ITEM_TYPES, MARKDOWN_IMPORT, MAX_TITLE_LENGTH, MAX_PAGE_TITLE_LENGTH } from "../../config/constants.js";
 import { env } from "../../config/env.js";
 import { NotFoundError } from "../../errors/taxonomy.js";
 
@@ -106,6 +106,8 @@ function renderEditor(res, req, context, values) {
     error: values.error || null,
     success: req.query.success || null,
     formValues: values.formValues || null,
+    maxTitleLength: MAX_TITLE_LENGTH,
+    maxPageTitleLength: MAX_PAGE_TITLE_LENGTH,
     siteName: env.SITE_NAME,
     extraCss: EDITOR_EXTRA_CSS,
     extraJs: EDITOR_EXTRA_JS,

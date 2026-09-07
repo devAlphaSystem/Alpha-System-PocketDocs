@@ -1,7 +1,7 @@
 <% for (const node of nodes || []) { %>
   <% const itemType = node.item_type || 'page'; %>
   <% if (itemType === 'header') { %>
-    <li class="docs-nav-heading" data-depth="<%= depth %>" style="--nav-indent: <%= depth * 16 %>px"><span><%= node.title %></span></li>
+    <li class="docs-nav-heading" data-depth="<%= depth %>" style="--nav-indent: <%= depth * 16 %>px"><span dir="auto"><%= node.title %></span></li>
   <% } else if (itemType === 'separator') { %>
     <li class="docs-nav-separator" data-depth="<%= depth %>" role="separator" aria-orientation="horizontal" style="--nav-indent: <%= depth * 16 %>px"></li>
   <% } else { %>
@@ -12,7 +12,7 @@
         <% } else { %>
           <i class="ph ph-file-text" aria-hidden="true"></i>
         <% } %>
-        <span><%= node.title %></span>
+        <span dir="auto"><%= node.title %></span>
       </a>
       <% if (node.children && node.children.length > 0) { %>
         <ul class="docs-nav-children">

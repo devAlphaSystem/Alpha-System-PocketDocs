@@ -146,6 +146,7 @@
         if (editorMeta) editorMeta.hidden = !isPage && !isHeader;
         titleGroup.hidden = !isPage && !isHeader;
         titleInput.required = isPage || isHeader;
+        titleInput.maxLength = Number(isPage ? titleInput.dataset.pageTitleMaxlength : titleInput.dataset.headerTitleMaxlength);
         if (titleLabel) titleLabel.textContent = isHeader ? "Header title" : "Title";
         titleInput.placeholder = isHeader ? "API Reference" : "Getting Started";
 

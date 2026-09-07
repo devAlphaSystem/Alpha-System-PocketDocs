@@ -31,6 +31,7 @@ import changelogRoutes from "./modules/changelogs/controller.js";
 import settingsRoutes from "./modules/settings/controller.js";
 import userRoutes from "./modules/users/controller.js";
 import publicRoutes from "./modules/public/controller.js";
+import { createPublicTranslator, publicLocaleMiddleware } from "./modules/public/i18n.js";
 import { getSettings, getSiteIconAsset, getSiteIconUrl, loadSettings } from "./modules/settings/service.js";
 import { loadIpRestriction, isIpAllowed } from "./modules/settings/ip-restriction-service.js";
 import { ipRestrictionMiddleware } from "./middleware/ip-restriction.js";
@@ -51,6 +52,10 @@ const assetUrlFn = (path) => {
 };
 
 const app = express();
+
+app.locals.publicLocale = "en";
+app.locals.publicDirection = "ltr";
+app.locals.t = createPublicTranslator();
 
 app.set("view engine", "ejs");
 app.set("views", join(__dirname, "../views"));
@@ -139,7 +144,7 @@ const generalLimiter = rateLimit({
   legacyHeaders: false,
   handler: (req, res) => {
     logger.warn("Rate limit exceeded", { requestId: req.requestId, ip: getClientIp(req), path: req.originalUrl });
-    res.status(429).json({ error: { code: "RATE_LIMITED", message: "Too many requests. Please try again later." } });
+    res.status(429).json({ error: { code: "RATE_LIMITED", message: (res.locals.t || app.locals.t)("Too many requests. Please try again later.") } });
   },
 });
 
@@ -184,6 +189,8 @@ app.use((req, res, next) => {
   res.locals.ipAllowed = isIpAllowed(getClientIp(req));
   next();
 });
+
+app.use(publicLocaleMiddleware);
 
 app.use(
   "/setup",

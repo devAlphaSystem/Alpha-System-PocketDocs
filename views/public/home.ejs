@@ -3,8 +3,8 @@
 <div class="home-page">
   <section class="home-hero" aria-labelledby="home-title">
     <div class="hero-content">
-      <h1 id="home-title"><%- heroTitleHtml %></h1>
-      <p class="hero-subtitle"><%- heroSubtitleHtml %></p>
+      <h1 id="home-title" dir="auto"><%- heroTitleHtml %></h1>
+      <p class="hero-subtitle" dir="auto"><%- heroSubtitleHtml %></p>
     </div>
 
     <div class="home-hero-mark" aria-hidden="true">
@@ -15,16 +15,16 @@
   <section class="home-projects" aria-labelledby="public-projects-title">
     <div class="home-projects-header">
       <div>
-        <span class="home-section-label">Public library</span>
-        <h2 id="public-projects-title">Explore projects</h2>
+        <span class="home-section-label"><%= t('Public library') %></span>
+        <h2 id="public-projects-title"><%= t('Explore projects') %></h2>
       </div>
-      <span class="home-project-count"><%= _projectCount %> <%= _projectCount === 1 ? 'project' : 'projects' %></span>
+      <span class="home-project-count"><%= t('{count} project', { count: _projectCount }) %></span>
     </div>
 
     <% if (_projectCount === 0) { %>
       <div class="empty-state">
-        <h2>No public projects yet</h2>
-        <p>Documentation projects will appear here once published.</p>
+        <h2><%= t('No public projects yet') %></h2>
+        <p><%= t('Documentation projects will appear here once published.') %></p>
       </div>
     <% } else { %>
       <div class="project-grid">
@@ -34,7 +34,7 @@
               <% if (proj.logo) { %>
                 <img src="<%= sitePbUrl %>/api/files/projects/<%= proj.id %>/<%= proj.logo %>" alt="" class="project-logo">
               <% } else { %>
-                <h3 class="project-card-title"><%= proj.name %></h3>
+                <h3 class="project-card-title" dir="auto"><%= proj.name %></h3>
               <% } %>
               <span class="project-card-open" aria-hidden="true">
                 <i class="ph ph-arrow-up-right"></i>
@@ -42,15 +42,15 @@
             </div>
             <div class="project-card-body">
               <% if (proj.logo) { %>
-                <h3><%= proj.name %></h3>
+                <h3 dir="auto"><%= proj.name %></h3>
               <% } %>
               <% if (proj.description) { %>
-                <p><%= proj.description %></p>
+                <p dir="auto"><%= proj.description %></p>
               <% } %>
             </div>
             <div class="project-card-footer">
-              <span class="project-card-type">Documentation</span>
-              <span class="project-slug">/<%= proj.slug %></span>
+              <span class="project-card-type"><%= t('Documentation') %></span>
+              <span class="project-slug" dir="ltr">/<%= proj.slug %></span>
             </div>
           </a>
         <% } %>

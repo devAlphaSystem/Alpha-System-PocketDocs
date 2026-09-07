@@ -15,7 +15,7 @@
 .skip-link {
   position: fixed;
   top: var(--space-2);
-  left: var(--space-2);
+  inset-inline-start: var(--space-2);
   z-index: var(--z-toast);
   padding: var(--space-2) var(--space-4);
   color: var(--text-inverse);
@@ -100,7 +100,7 @@
 
 .header-breadcrumb li::before {
   content: "/";
-  margin-right: var(--space-2);
+  margin-inline-end: var(--space-2);
   color: var(--text-tertiary);
 }
 
@@ -120,7 +120,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 
 .public-theme-toggle {
@@ -542,8 +542,9 @@
 }
 
 .docs-sidebar {
-  width: var(--sidebar-width);
-  border-right: 1px solid var(--surface-border);
+  width: max-content;
+  min-width: var(--sidebar-width);
+  border-inline-end: 1px solid var(--surface-border);
   background: var(--surface-1);
   position: sticky;
   top: var(--header-height);
@@ -571,24 +572,25 @@
 
 .search-input-wrap > i {
   position: absolute;
-  left: var(--space-3);
+  inset-inline-start: var(--space-3);
   color: var(--text-tertiary);
   pointer-events: none;
 }
 
 .search-input-wrap input {
-  padding-left: var(--space-8);
+  padding-inline-start: var(--space-8);
   background: var(--surface-0);
   font-size: var(--text-sm);
 }
 
 .search-input-wrap.large input {
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-10);
+  padding: var(--space-3);
+  padding-inline-start: var(--space-10);
   font-size: var(--text-base);
 }
 
 .search-input-wrap.large > i {
-  left: var(--space-4);
+  inset-inline-start: var(--space-4);
   font-size: 1.2em;
 }
 
@@ -667,7 +669,7 @@
 
 .docs-nav-heading {
   margin: var(--space-5) var(--space-3) var(--space-2);
-  margin-left: calc(var(--space-3) + min(var(--nav-indent, 0px), var(--space-16)));
+  margin-inline-start: calc(var(--space-3) + min(var(--nav-indent, 0px), var(--space-16)));
   color: var(--text-tertiary);
   font-size: var(--text-xs);
   font-weight: 700;
@@ -687,7 +689,7 @@
 .docs-nav-separator {
   height: 1px;
   margin: var(--space-4) var(--space-3);
-  margin-left: calc(var(--space-3) + min(var(--nav-indent, 0px), var(--space-16)));
+  margin-inline-start: calc(var(--space-3) + min(var(--nav-indent, 0px), var(--space-16)));
   background: var(--surface-border);
 }
 
@@ -703,7 +705,7 @@
 }
 
 .docs-nav-item > .docs-nav-link {
-  margin-left: min(var(--nav-indent, 0px), var(--space-16));
+  margin-inline-start: min(var(--nav-indent, 0px), var(--space-16));
 }
 
 .docs-nav-link:hover {
@@ -728,12 +730,12 @@
 
 .docs-nav-link span {
   min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 .docs-nav-children {
   list-style: none;
-  padding-left: 0;
+  padding-inline-start: 0;
 }
 
 .docs-sidebar-footer {
@@ -753,7 +755,6 @@
 .docs-main {
   flex: 1;
   display: flex;
-  max-width: calc(100% - var(--sidebar-width));
   min-width: 0;
 }
 
@@ -777,11 +778,11 @@
 }
 
 .docs-updated-date {
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--text-secondary);
   font-size: var(--text-sm);
   line-height: 1.5;
-  text-align: right;
+  text-align: end;
   white-space: nowrap;
 }
 
@@ -793,7 +794,7 @@
   height: calc(100vh - var(--header-height));
   overflow-y: auto;
   flex-shrink: 0;
-  border-left: 1px solid var(--surface-border);
+  border-inline-start: 1px solid var(--surface-border);
 }
 
 .docs-toc-title {
@@ -815,8 +816,9 @@
 
 .docs-toc a {
   display: block;
-  padding: 4px 0 4px var(--space-3);
-  border-left: 2px solid transparent;
+  padding: 4px 0;
+  padding-inline-start: var(--space-3);
+  border-inline-start: 2px solid transparent;
   font-size: var(--text-xs);
   color: var(--text-secondary);
   transition: color var(--transition-fast);
@@ -828,16 +830,16 @@
 }
 
 .docs-toc a.active {
-  border-left-color: var(--text-link);
+  border-inline-start-color: var(--text-link);
   font-weight: 600;
 }
 
 .docs-toc .toc-h3 {
-  padding-left: var(--space-4);
+  padding-inline-start: var(--space-4);
 }
 
 .docs-toc .toc-h4 {
-  padding-left: var(--space-8);
+  padding-inline-start: var(--space-8);
 }
 
 .docs-pagination {
@@ -868,8 +870,8 @@
 }
 
 .docs-pagination-link.next {
-  margin-left: auto;
-  text-align: right;
+  margin-inline-start: auto;
+  text-align: end;
 }
 
 .docs-pagination-link i {
@@ -907,7 +909,7 @@
 .search-result-card {
   display: block;
   padding: var(--space-4) var(--space-5);
-  margin-left: min(var(--result-indent, 0px), 25%);
+  margin-inline-start: min(var(--result-indent, 0px), 25%);
   border: 1px solid var(--surface-border);
   border-radius: var(--radius-lg);
   transition: all var(--transition-fast);
@@ -944,6 +946,41 @@
   color: var(--text-tertiary);
 }
 
+.docs-content pre {
+  direction: ltr;
+  text-align: left;
+}
+
+[dir="rtl"] .docs-nav-item.active > .docs-nav-link,
+[dir="rtl"] .docs-nav-link.active {
+  box-shadow: inset -3px 0 0 var(--text-link);
+}
+
+[dir="rtl"] .docs-pagination-link > i,
+[dir="rtl"] .version-tile > i {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .public-body .select-enhanced-trigger,
+[dir="rtl"] .public-body .version-select {
+  padding-right: var(--space-3);
+  padding-left: calc(var(--space-6) + 10px);
+  text-align: right;
+}
+
+[dir="rtl"] .public-body .version-select {
+  background-position: left var(--space-3) center;
+}
+
+[dir="rtl"] .public-body .select-enhanced-icon {
+  right: auto;
+  left: var(--space-3);
+}
+
+[dir="rtl"] .public-body .select-enhanced-option {
+  text-align: right;
+}
+
 @media (max-width: 1180px) {
   .docs-toc {
     display: none;
@@ -960,20 +997,24 @@
 
   .docs-updated-date {
     width: 100%;
-    margin-left: 0;
-    padding-left: 0;
+    margin-inline-start: 0;
+    padding-inline-start: 0;
   }
 }
 
 @media (max-width: 768px) {
   .docs-sidebar {
     position: fixed;
-    left: 0;
+    inset-inline-start: 0;
     top: var(--header-height);
     bottom: 0;
     z-index: var(--z-overlay);
     transform: translateX(-100%);
     transition: transform var(--transition-slow);
+  }
+
+  [dir="rtl"] .docs-sidebar:not(.open) {
+    transform: translateX(100%);
   }
 
   .docs-sidebar.open {
@@ -1148,8 +1189,14 @@
 
   .docs-sidebar {
     width: min(86vw, 320px);
+    min-width: 0;
     max-width: calc(100vw - 48px);
     height: auto;
+  }
+
+  .docs-nav-link span {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .docs-sidebar .version-select,
@@ -1191,8 +1238,8 @@
   .docs-updated-date {
     width: auto;
     margin: var(--space-2) 0 0;
-    padding-left: 0;
-    text-align: left;
+    padding-inline-start: 0;
+    text-align: start;
     white-space: normal;
   }
 

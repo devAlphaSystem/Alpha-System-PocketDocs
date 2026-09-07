@@ -18,15 +18,15 @@
     <article class="docs-article" id="docs-content" tabindex="-1">
       <% if (typeof kbPage !== 'undefined' && kbPage) { %>
         <div class="docs-article-header">
-          <h1><%= kbPage.title %></h1>
+          <h1 dir="auto"><%= kbPage.title %></h1>
 
           <% if (kbPage.updated) { %>
             <p class="docs-updated-date">
-              Last updated <time datetime="<%= kbPage.updated %>"><%= formatLongDateTime(kbPage.updated) %></time>
+              <%= t('Last updated') %> <time datetime="<%= kbPage.updated %>"><%= formatLongDateTime(kbPage.updated, publicLocale) %></time>
             </p>
           <% } %>
         </div>
-        <div class="docs-content prose">
+        <div class="docs-content prose" dir="auto" data-copy-label="<%= t('Copy code') %>">
           <%- contentHtml %>
         </div>
       <% } else if (typeof section !== 'undefined' && section) { %>
@@ -42,29 +42,29 @@
                   <% if (node.icon) { %>
                     <i class="ph ph-<%= node.icon %>"></i>
                   <% } %>
-                    <%= node.title %>
+                    <bdi><%= node.title %></bdi>
                   </h3>
-                <span class="search-result-slug">/<%= node.slug %></span>
+                <span class="search-result-slug" dir="ltr">/<%= node.slug %></span>
               </a>
             <% } %>
           </div>
         <% } else { %>
           <div class="empty-state small">
-            <h3>No articles yet</h3>
-            <p>No <%= sectionLabel %> articles have been published.</p>
+            <h3><%= t('No articles yet') %></h3>
+            <p><%= t('No {section} articles have been published.', { section: sectionLabel }) %></p>
           </div>
         <% } %>
       <% } else { %>
         <div class="docs-article-header">
-          <h1>Knowledge Base</h1>
+          <h1><%= t('Knowledge Base') %></h1>
         </div>
 
         <div class="search-results-list">
           <% for (const group of sectionGroups) { %>
             <a href="<%= kbBaseUrl %>/<%= group.value %>" class="search-result-card">
-              <h3><i class="ph ph-<%= group.icon %>"></i> <%= group.label %></h3>
-              <p><%= group.pages.length %> article<%= group.pages.length !== 1 ? 's' : '' %></p>
-              <span class="search-result-slug">/<%= group.value %></span>
+              <h3><i class="ph ph-<%= group.icon %>"></i> <%= t(group.label) %></h3>
+              <p><%= t('{count} article', { count: group.pages.length }) %></p>
+              <span class="search-result-slug" dir="ltr">/<%= group.value %></span>
             </a>
           <% } %>
         </div>
@@ -72,11 +72,11 @@
     </article>
 
     <% if (typeof headings !== 'undefined' && headings.length > 0) { %>
-      <aside class="docs-toc" aria-label="On this page">
-        <h2 class="docs-toc-title">On this page</h2>
+      <aside class="docs-toc" aria-label="<%= t('On this page') %>">
+        <h2 class="docs-toc-title"><%= t('On this page') %></h2>
         <ul>
           <% for (const h of headings) { %>
-            <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><%= h.text %></a></li>
+            <li class="toc-h<%= h.level %>"><a href="#<%= h.id %>"><bdi><%= h.text %></bdi></a></li>
           <% } %>
         </ul>
       </aside>

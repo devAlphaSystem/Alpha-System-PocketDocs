@@ -1,7 +1,7 @@
 <% if (typeof statusCode !== 'undefined') { %>
   <!DOCTYPE html>
 
-  <html lang="en" data-theme="light">
+  <html lang="<%= publicLocale %>" dir="<%= publicDirection %>" data-theme="light">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -21,7 +21,7 @@
         })();
       </script>
 
-      <title>Error <%= statusCode %> | <%= siteName %></title>
+      <title><%= t('Error {statusCode}', { statusCode }) %> | <%= siteName %></title>
 
       <link rel="icon" type="image/svg+xml" href="/img/pd-logo.svg">
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -43,13 +43,13 @@
             <% } %>
           </div>
           <h1 class="error-code"><%= statusCode %></h1>
-          <p class="error-message"><%= message %></p>
+          <p class="error-message"><%= t(message) %></p>
           <div class="error-actions">
-            <a href="/" class="btn btn-primary">Go Home</a>
-            <button onclick="history.back()" class="btn btn-outline">Go Back</button>
+            <a href="/" class="btn btn-primary"><%= t('Go Home') %></a>
+            <button onclick="history.back()" class="btn btn-outline"><%= t('Go Back') %></button>
           </div>
           <% if (typeof requestId !== 'undefined' && requestId) { %>
-            <p class="error-request-id">Request ID: <%= requestId %></p>
+            <p class="error-request-id"><%= t('Request ID: {requestId}', { requestId }) %></p>
           <% } %>
         </div>
       </main>

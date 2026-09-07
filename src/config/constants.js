@@ -115,6 +115,8 @@ export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const MAX_SLUG_LENGTH = 120;
 /** @type {number} Maximum allowed character length for title fields. */
 export const MAX_TITLE_LENGTH = 200;
+/** @type {number} Maximum allowed character length for page titles. */
+export const MAX_PAGE_TITLE_LENGTH = 45;
 /** @type {number} Maximum allowed character length for description fields. */
 export const MAX_DESCRIPTION_LENGTH = 500;
 /** @type {number} Maximum allowed character length for content fields. */

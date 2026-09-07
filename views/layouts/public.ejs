@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html lang="en" data-theme="light">
+<html lang="<%= publicLocale %>" dir="<%= publicDirection %>" data-theme="light">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,7 +41,7 @@
   </head>
 
   <body class="public-body">
-    <a class="skip-link" href="<%= typeof project !== 'undefined' && project ? '#docs-content' : '#main-content' %>">Skip to content</a>
+    <a class="skip-link" href="<%= typeof project !== 'undefined' && project ? '#docs-content' : '#main-content' %>"><%= t('Skip to content') %></a>
 
     <%- include('../partials/public-header', {
       siteName: siteName,

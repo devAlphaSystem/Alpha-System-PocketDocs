@@ -14,23 +14,23 @@
   <div class="docs-main">
     <article class="docs-article" id="docs-content" tabindex="-1">
       <div class="docs-article-header">
-        <h1>Changelog &mdash; <%= version.label %></h1>
+        <h1><%= t('Changelog') %> &mdash; <bdi><%= version.label %></bdi></h1>
       </div>
 
       <% if (typeof changelog !== 'undefined' && changelog) { %>
         <% if (changelog.created) { %>
           <p class="changelog-date">
-            <time datetime="<%= changelog.created %>"><%= formatLongDate(changelog.created) %></time>
+            <time datetime="<%= changelog.created %>"><%= formatLongDate(changelog.created, publicLocale) %></time>
           </p>
         <% } %>
         
-        <div class="docs-content prose">
+        <div class="docs-content prose" dir="auto" data-copy-label="<%= t('Copy code') %>">
           <%- contentHtml %>
         </div>
       <% } else { %>
         <div class="empty-state small">
-          <h3>No changelog yet</h3>
-          <p>No changelog has been published for this version.</p>
+          <h3><%= t('No changelog yet') %></h3>
+          <p><%= t('No changelog has been published for this version.') %></p>
         </div>
       <% } %>
     </article>

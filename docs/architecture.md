@@ -93,6 +93,18 @@ src/modules/{feature}/
 | `settings` | Public branding & IP restriction | PocketBase-backed title/subtitle/icon records, file-backed IP restriction rules |
 | `public` | Public-facing routes & search API | Read-only access to public data |
 
+## Public Interface Languages
+
+`src/modules/public/i18n.js` selects the public interface language from the browser's `Accept-Language` header, using Express to respect preference order and quality weights. Unsupported or missing preferences use English. Responses include `Content-Language` and `Vary: Accept-Language` so caches distinguish the selected language.
+
+The catalog in `src/modules/public/translations.json` supports English, Portuguese (Brazil and Portugal), Spanish, French, German, Italian, Russian, Chinese (Simplified and Traditional), Japanese, Korean, Arabic, Hindi, Indonesian, and Turkish. Regional preferences use the corresponding language; `pt` defaults to Brazilian Portuguese, and `zh` defaults to Simplified Chinese. Chinese script subtags take precedence over region, with Taiwan, Hong Kong, and Macao using Traditional Chinese when no script is specified.
+
+Only system messages are passed to the request-scoped `t` view helper. The English source text is the catalog key and the default for untranslated messages. Count messages use `Intl.PluralRules`. Existing frontend scripts receive their labels through escaped `data-*` attributes, and search responses translate only the system section label. Project names, descriptions, version labels, page titles, Markdown, headings, and saved homepage branding remain as authored.
+
+Arabic uses right-to-left navigation, including the mobile sidebar gesture. Authored content determines its own text direction. Public date formatting uses the selected locale through the existing view helpers, without changing stored timestamps or timezone behavior. `/admin`, `/auth`, and `/setup` retain the English interface, including shared error views and scripts.
+
+When adding a public message, pass its English source text to `t` and add the matching key to every translated locale. English only needs catalog entries for plural forms. Keep custom content out of `t`.
+
 ## Database Schema (ER Diagram)
 
 ```mermaid

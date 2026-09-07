@@ -12,6 +12,7 @@
     }
 
     var toggle = options.toggleSelector ? document.querySelector(options.toggleSelector) : null;
+    var opensFromRight = window.getComputedStyle(sidebar).direction === "rtl";
     var overlayQuery = window.matchMedia(options.overlayMediaQuery || "(max-width: 768px)");
     var edgeZone = options.edgeZone || 52;
     var minDistance = options.minDistance || 48;
@@ -25,7 +26,7 @@
 
     backdrop.type = "button";
     backdrop.className = "sidebar-backdrop";
-    backdrop.setAttribute("aria-label", "Close navigation");
+    backdrop.setAttribute("aria-label", sidebar.dataset.closeLabel || "Close navigation");
     backdrop.setAttribute("tabindex", "-1");
     backdrop.hidden = true;
     sidebar.insertAdjacentElement("afterend", backdrop);
@@ -169,8 +170,10 @@
           var startX = touch.clientX;
           var startY = touch.clientY;
           var sidebarRect = sidebar.getBoundingClientRect();
-          var canOpen = !isOpen() && startX <= edgeZone;
-          var canClose = isOpen() && (sidebar.contains(event.target) || startX <= Math.min(window.innerWidth, sidebarRect.right + edgeZone));
+          var atEdge = opensFromRight ? startX >= window.innerWidth - edgeZone : startX <= edgeZone;
+          var nearSidebar = opensFromRight ? startX >= Math.max(0, sidebarRect.left - edgeZone) : startX <= Math.min(window.innerWidth, sidebarRect.right + edgeZone);
+          var canOpen = !isOpen() && atEdge;
+          var canClose = isOpen() && (sidebar.contains(event.target) || nearSidebar);
 
           if (!canOpen && !canClose) {
             resetGesture();
@@ -193,7 +196,7 @@
           if (!gesture || !isOverlayMode()) return;
 
           var touch = event.touches[0];
-          var deltaX = touch.clientX - gesture.startX;
+          var deltaX = (touch.clientX - gesture.startX) * (opensFromRight ? -1 : 1);
           var deltaY = touch.clientY - gesture.startY;
           var absX = Math.abs(deltaX);
           var absY = Math.abs(deltaY);
@@ -239,7 +242,7 @@
             return;
           }
 
-          var deltaX = touch.clientX - gesture.startX;
+          var deltaX = (touch.clientX - gesture.startX) * (opensFromRight ? -1 : 1);
           var deltaY = touch.clientY - gesture.startY;
           var isMostlyHorizontal = Math.abs(deltaY) <= maxVerticalDistance;
 

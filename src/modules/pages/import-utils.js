@@ -1,4 +1,4 @@
-import { MARKDOWN_IMPORT, MAX_CONTENT_LENGTH, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, SLUG_PATTERN } from "../../config/constants.js";
+import { MARKDOWN_IMPORT, MAX_CONTENT_LENGTH, MAX_SLUG_LENGTH, MAX_PAGE_TITLE_LENGTH, SLUG_PATTERN } from "../../config/constants.js";
 import { ValidationError } from "../../errors/taxonomy.js";
 
 const MARKDOWN_EXTENSION_PATTERN = /\.(?:md|markdown)$/i;
@@ -134,8 +134,8 @@ function deriveMarkdownImportTitle(filename, heading) {
   if (!title) {
     throw new ValidationError(`Could not infer a page title from ${displayFilename(filename)}.`);
   }
-  if (title.length > MAX_TITLE_LENGTH) {
-    throw new ValidationError(`The title inferred from ${displayFilename(filename)} is longer than ${MAX_TITLE_LENGTH} characters.`);
+  if (title.length > MAX_PAGE_TITLE_LENGTH) {
+    throw new ValidationError(`The title inferred from ${displayFilename(filename)} is longer than ${MAX_PAGE_TITLE_LENGTH} characters.`);
   }
   return title;
 }
@@ -168,8 +168,8 @@ function normalizeMarkdownImportDirectory(segment) {
   if (!title) {
     throw new ValidationError("Could not infer a page title from an imported folder.");
   }
-  if (title.length > MAX_TITLE_LENGTH) {
-    throw new ValidationError(`The title inferred from folder ${segment} is longer than ${MAX_TITLE_LENGTH} characters.`);
+  if (title.length > MAX_PAGE_TITLE_LENGTH) {
+    throw new ValidationError(`The title inferred from folder ${segment} is longer than ${MAX_PAGE_TITLE_LENGTH} characters.`);
   }
 
   const slug = slugifyMarkdownImportValue(segment);

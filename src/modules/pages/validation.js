@@ -1,12 +1,12 @@
 import { z } from "zod";
-import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT, PAGE_SECTIONS, PAGE_ITEM_TYPES } from "../../config/constants.js";
+import { SLUG_PATTERN, MAX_SLUG_LENGTH, MAX_TITLE_LENGTH, MAX_PAGE_TITLE_LENGTH, MAX_CONTENT_LENGTH, MARKDOWN_IMPORT, PAGE_SECTIONS, PAGE_ITEM_TYPES } from "../../config/constants.js";
 
 const sectionSchema = z.enum([PAGE_SECTIONS.DOCUMENTS, PAGE_SECTIONS.FAQ, PAGE_SECTIONS.TROUBLESHOOTING]);
 
 /** @type {import("zod").ZodObject} Validates page creation data including title, slug, and content. */
 export const createPageSchema = z.object({
   section: sectionSchema.default(PAGE_SECTIONS.DOCUMENTS),
-  title: z.string().trim().min(1, "Page title is required.").max(MAX_TITLE_LENGTH),
+  title: z.string().trim().min(1, "Page title is required.").max(MAX_PAGE_TITLE_LENGTH, `Page title must be at most ${MAX_PAGE_TITLE_LENGTH} characters.`),
   slug: z.string().trim().min(1, "Slug is required.").max(MAX_SLUG_LENGTH).regex(SLUG_PATTERN, "Slug must contain only lowercase letters, numbers, and hyphens."),
   content: z.string().max(MAX_CONTENT_LENGTH).default(""),
   parent: z.string().max(15).optional().default(""),
@@ -15,7 +15,7 @@ export const createPageSchema = z.object({
 
 /** @type {import("zod").ZodObject} Validates partial page update data. */
 export const updatePageSchema = z.object({
-  title: z.string().trim().min(1).max(MAX_TITLE_LENGTH).optional(),
+  title: z.string().trim().min(1).max(MAX_PAGE_TITLE_LENGTH, `Page title must be at most ${MAX_PAGE_TITLE_LENGTH} characters.`).optional(),
   slug: z.string().trim().min(1).max(MAX_SLUG_LENGTH).regex(SLUG_PATTERN).optional(),
   content: z.string().max(MAX_CONTENT_LENGTH).optional(),
   parent: z.string().max(15).optional(),
