@@ -162,7 +162,7 @@ Defined in `src/config/constants.js`. These are compile-time values and cannot b
 | `SLUG_PATTERN` | `/^[a-z0-9]+(?:-[a-z0-9]+)*$/` | Valid slug format |
 | `MAX_SLUG_LENGTH` | 120 | Maximum slug characters |
 | `MAX_TITLE_LENGTH` | 200 | Maximum title characters |
-| `MAX_PAGE_TITLE_LENGTH` | 45 | Maximum page title characters, including Markdown imports |
+| `MAX_PAGE_TITLE_LENGTH` | 80 | Maximum page title characters, including Markdown imports |
 | `MAX_DESCRIPTION_LENGTH` | 500 | Maximum description characters |
 | `MAX_CONTENT_LENGTH` | 500,000 | Maximum page/changelog content characters |
 | `MAX_LABEL_LENGTH` | 100 | Maximum version label characters |

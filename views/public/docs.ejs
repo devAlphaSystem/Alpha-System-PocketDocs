@@ -18,9 +18,9 @@
       <div class="docs-article-header">
         <h1 dir="auto"><%= page ? page.title : project.name %></h1>
 
-        <% if (page && page.updated) { %>
+        <% if (page && page.content_updated) { %>
           <p class="docs-updated-date">
-            <%= t('Last updated') %> <time datetime="<%= page.updated %>"><%= formatLongDateTime(page.updated, publicLocale) %></time>
+            <%= t('Last updated') %> <time datetime="<%= page.content_updated %>"><%= formatLongDateTime(page.content_updated, publicLocale) %></time>
           </p>
         <% } %>
       </div>

@@ -20,9 +20,9 @@
         <div class="docs-article-header">
           <h1 dir="auto"><%= kbPage.title %></h1>
 
-          <% if (kbPage.updated) { %>
+          <% if (kbPage.content_updated) { %>
             <p class="docs-updated-date">
-              <%= t('Last updated') %> <time datetime="<%= kbPage.updated %>"><%= formatLongDateTime(kbPage.updated, publicLocale) %></time>
+              <%= t('Last updated') %> <time datetime="<%= kbPage.content_updated %>"><%= formatLongDateTime(kbPage.content_updated, publicLocale) %></time>
             </p>
           <% } %>
         </div>

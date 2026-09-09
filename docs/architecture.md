@@ -154,6 +154,7 @@ erDiagram
         string parent FK "self-referencing"
         string icon
         int order
+        datetime content_updated
         datetime created
         datetime updated
     }

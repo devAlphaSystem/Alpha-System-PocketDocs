@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
   "source": "pb_schema.json",
-  "generatedAt": "2026-09-01T02:46:46.876Z",
+  "generatedAt": "2026-09-09T00:18:46.877Z",
   "collections": [
     {
       "name": "users",
@@ -339,6 +339,13 @@
         "CREATE INDEX `idx_page_parent` ON `pages` (`parent`)"
       ],
       "fields": [
+        {
+          "name": "content_updated",
+          "type": "date",
+          "required": false,
+          "min": "",
+          "max": ""
+        },
         {
           "name": "version",
           "type": "relation",

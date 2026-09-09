@@ -72,6 +72,7 @@ async function rollbackMarkdownImport(createdPages, updatedPageSnapshots, reques
         title: page.title,
         content: page.content || "",
         parent: page.parent || "",
+        content_updated: page.content_updated,
       });
       if (!restored.ok) {
         failures.push(page.id);
@@ -217,6 +218,7 @@ export async function createPage(versionId, data, requestId) {
     title: data.title,
     slug: data.slug,
     content: data.content || "",
+    content_updated: new Date().toISOString(),
     parent: data.parent || "",
     icon: data.icon || "",
     item_type: PAGE_ITEM_TYPES.PAGE,
@@ -268,6 +270,7 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
         title: folder.title,
         slug: folder.slug,
         content: "",
+        content_updated: new Date().toISOString(),
         parent,
         icon: "",
         item_type: PAGE_ITEM_TYPES.PAGE,
@@ -314,6 +317,7 @@ export async function importMarkdownPages(versionId, section, files, requestId) 
         title: file.title,
         slug: file.slug,
         content: file.content,
+        content_updated: new Date().toISOString(),
         parent,
         icon: "",
         item_type: PAGE_ITEM_TYPES.PAGE,
@@ -371,6 +375,14 @@ export async function updatePage(pageId, data, requestId) {
   if (updateData.parent !== undefined) {
     const allPages = await listPages(page.version, page.section);
     assertParentAllowedFromPages(allPages.items || [], updateData.parent || "", pageId);
+  }
+
+  if (!Object.entries(updateData).some(([field, value]) => value !== undefined && value !== page[field])) {
+    return page;
+  }
+
+  if (["title", "slug", "content", "icon"].some((field) => updateData[field] !== undefined && updateData[field] !== page[field])) {
+    updateData.content_updated = new Date().toISOString();
   }
 
   const result = await pbUpdate(COLLECTIONS.PAGES, pageId, updateData);
@@ -636,6 +648,7 @@ export async function clonePages(sourceVersionId, targetVersionId, requestId) {
       content: page.content || "",
       parent: newParent,
       icon: page.icon || "",
+      content_updated: page.content_updated,
       item_type: getPageItemType(page),
       order: page.order || 0,
     });
